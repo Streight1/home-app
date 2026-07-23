@@ -1,0 +1,158 @@
+name: homeapp-staging
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: '3'
+
+x-api-environment: &api-environment
+  NODE_ENV: production
+  API_PORT: '3000'
+  DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+  WEB_ORIGIN: ${WEB_ORIGIN:?WEB_ORIGIN is required}
+  GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:?GOOGLE_CLIENT_ID is required}
+  GOOGLE_ALLOWED_EMAILS: ${GOOGLE_ALLOWED_EMAILS:?GOOGLE_ALLOWED_EMAILS is required}
+  SINGLE_HOUSEHOLD_MODE: ${SINGLE_HOUSEHOLD_MODE:?SINGLE_HOUSEHOLD_MODE is required}
+  SINGLE_HOUSEHOLD_OWNER_EMAIL: ${SINGLE_HOUSEHOLD_OWNER_EMAIL:?SINGLE_HOUSEHOLD_OWNER_EMAIL is required}
+  SINGLE_HOUSEHOLD_NAME: ${SINGLE_HOUSEHOLD_NAME:?SINGLE_HOUSEHOLD_NAME is required}
+  SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:?SESSION_COOKIE_NAME is required}
+  CSRF_COOKIE_NAME: ${CSRF_COOKIE_NAME:?CSRF_COOKIE_NAME is required}
+  SESSION_TTL_DAYS: ${SESSION_TTL_DAYS:?SESSION_TTL_DAYS is required}
+  TRUST_PROXY: 'true'
+  INTERNAL_HEALTH_TOKEN: ${INTERNAL_HEALTH_TOKEN:?INTERNAL_HEALTH_TOKEN is required}
+  UPLOAD_ROOT: /app/uploads
+  MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:?MAX_UPLOAD_BYTES is required}
+  FINANCE_IMPORT_MAX_FILE_BYTES: ${FINANCE_IMPORT_MAX_FILE_BYTES:?FINANCE_IMPORT_MAX_FILE_BYTES is required}
+  FINANCE_IMPORT_MAX_ROWS: ${FINANCE_IMPORT_MAX_ROWS:?FINANCE_IMPORT_MAX_ROWS is required}
+  FINANCE_IMPORT_SESSION_TTL_HOURS: ${FINANCE_IMPORT_SESSION_TTL_HOURS:?FINANCE_IMPORT_SESSION_TTL_HOURS is required}
+  MAPY_API_ENABLED: ${MAPY_API_ENABLED:?MAPY_API_ENABLED is required}
+  MAPY_API_KEY: ${MAPY_API_KEY:-}
+  MAPY_API_TIMEOUT_MS: ${MAPY_API_TIMEOUT_MS:?MAPY_API_TIMEOUT_MS is required}
+  MAPY_SUGGEST_MIN_QUERY_LENGTH: ${MAPY_SUGGEST_MIN_QUERY_LENGTH:?MAPY_SUGGEST_MIN_QUERY_LENGTH is required}
+  MAPY_SUGGEST_MAX_RESULTS: ${MAPY_SUGGEST_MAX_RESULTS:?MAPY_SUGGEST_MAX_RESULTS is required}
+  MAPY_DEFAULT_LANGUAGE: ${MAPY_DEFAULT_LANGUAGE:?MAPY_DEFAULT_LANGUAGE is required}
+
+services:
+  gateway:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      target: gateway
+      args:
+        VITE_API_URL: /api/v1
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:?VITE_GOOGLE_CLIENT_ID is required}
+        VITE_MAX_UPLOAD_BYTES: ${VITE_MAX_UPLOAD_BYTES:?VITE_MAX_UPLOAD_BYTES is required}
+        VITE_FINANCE_IMPORT_MAX_FILE_BYTES: ${VITE_FINANCE_IMPORT_MAX_FILE_BYTES:?VITE_FINANCE_IMPORT_MAX_FILE_BYTES is required}
+        VITE_APP_ENV_LABEL: ${VITE_APP_ENV_LABEL:-}
+        CSRF_COOKIE_NAME: ${CSRF_COOKIE_NAME:?CSRF_COOKIE_NAME is required}
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL:?ACME_EMAIL is required}
+      APP_DOMAIN: ${APP_DOMAIN:?APP_DOMAIN is required}
+      GATEWAY_MAX_REQUEST_BODY: ${GATEWAY_MAX_REQUEST_BODY:?GATEWAY_MAX_REQUEST_BODY is required}
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - type: bind
+        source: ./caddy/data
+        target: /data
+      - type: bind
+        source: ./caddy/config
+        target: /config
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - edge
+      - backend
+    restart: unless-stopped
+    logging: *default-logging
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: api
+    environment: *api-environment
+    user: '${APP_RUNTIME_UID:?APP_RUNTIME_UID is required}:${APP_RUNTIME_GID:?APP_RUNTIME_GID is required}'
+    volumes:
+      - type: bind
+        source: ./uploads
+        target: /app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - backend
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/internal/health/ready',{headers:{'X-Internal-Health-Token':process.env.INTERNAL_HEALTH_TOKEN}}).then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 20s
+    logging: *default-logging
+
+  migrate:
+    profiles:
+      - tools
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: migrate
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - backend
+    restart: 'no'
+    read_only: true
+    tmpfs:
+      - /tmp:mode=1777
+    security_opt:
+      - no-new-privileges:true
+    logging: *default-logging
+
+  db:
+    image: postgres:18.4-bookworm
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      PGDATA: /var/lib/postgresql/18/docker
+    volumes:
+      - type: bind
+        source: ./database/postgres
+        target: /var/lib/postgresql
+    networks:
+      - backend
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    logging: *default-logging
+
+networks:
+  edge:
+  backend:

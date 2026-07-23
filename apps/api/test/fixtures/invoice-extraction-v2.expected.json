@@ -1,0 +1,19 @@
+{
+  "supplierName": "Alza.cz",
+  "invoiceNumber": "FV-SYN-2026-77",
+  "variableSymbol": "2026077001",
+  "issueDate": "2026-07-14",
+  "dueDate": "2026-07-28",
+  "totalAmountMinor": 3899000,
+  "currencyCode": "CZK",
+  "purchaseSummary": "Notebook Lenovo ThinkPad",
+  "lineItems": [
+    {
+      "description": "Notebook Lenovo ThinkPad",
+      "quantity": "1",
+      "unit": "ks",
+      "unitPriceMinor": 3899000,
+      "totalAmountMinor": 3899000
+    }
+  ]
+}

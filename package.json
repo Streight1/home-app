@@ -1,0 +1,47 @@
+{
+  "name": "life-admin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.12.0",
+  "engines": {
+    "node": ">=24 <25",
+    "pnpm": ">=11.12.0 <12"
+  },
+  "scripts": {
+    "dev": "concurrently --kill-others --success first --names api,web --prefix-colors blue,green \"pnpm --filter @life-admin/api dev\" \"pnpm --filter @life-admin/web dev\"",
+    "build": "pnpm -r build",
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "format": "prettier --write apps docs scripts AGENTS.md CHANGELOG.md CONTRIBUTING.md DESIGN.md README.md SECURITY.md compose.yaml compose.prod.yaml eslint.config.js package.json pnpm-workspace.yaml tsconfig.base.json .prettierrc.json .markdownlint-cli2.mjs",
+    "format:check": "prettier --check apps docs scripts AGENTS.md CHANGELOG.md CONTRIBUTING.md DESIGN.md README.md SECURITY.md compose.yaml compose.prod.yaml eslint.config.js package.json pnpm-workspace.yaml tsconfig.base.json .prettierrc.json .markdownlint-cli2.mjs",
+    "architecture:check": "node scripts/check-architecture.mjs && node scripts/check-environment.mjs && node scripts/check-deployment.mjs",
+    "deployment:check": "node scripts/check-deployment.mjs",
+    "env:check": "pnpm environment:check",
+    "environment:check": "node scripts/check-environment.mjs",
+    "docs:check": "markdownlint-cli2 && node scripts/check-docs.mjs",
+    "storybook": "pnpm --filter @life-admin/web storybook",
+    "storybook:build": "pnpm --filter @life-admin/web storybook:build",
+    "storybook:test": "pnpm --filter @life-admin/web storybook:test",
+    "test:visual": "pnpm --filter @life-admin/web test:visual",
+    "test:accessibility": "pnpm --filter @life-admin/web test:accessibility",
+    "check": "pnpm architecture:check && pnpm docs:check && pnpm lint && pnpm typecheck && pnpm test && pnpm storybook:test && pnpm build && pnpm storybook:build && pnpm test:visual && pnpm test:accessibility && pnpm format:check",
+    "db:generate": "pnpm --filter @life-admin/api db:generate",
+    "db:migrate": "pnpm --filter @life-admin/api db:migrate",
+    "db:migrate:deploy": "pnpm --filter @life-admin/api db:migrate:deploy",
+    "db:studio": "pnpm --filter @life-admin/api db:studio",
+    "extraction:evaluate": "pnpm --filter @life-admin/api extraction:evaluate --"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.2",
+    "concurrently": "9.2.1",
+    "eslint": "9.39.2",
+    "eslint-config-prettier": "10.1.8",
+    "globals": "16.5.0",
+    "markdownlint-cli2": "0.23.0",
+    "prettier": "3.8.1",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.54.0"
+  }
+}

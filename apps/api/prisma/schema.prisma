@@ -1,0 +1,1570 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+  runtime      = "nodejs"
+  engineType   = "client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum HouseholdRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum DocumentStatus {
+  ACTIVE
+  ARCHIVED
+  TRASHED
+}
+
+enum StoredFileDeletionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum DocumentType {
+  GENERAL
+  INVOICE
+  RECEIPT
+  CONTRACT
+  WARRANTY
+  INSURANCE
+  MANUAL
+  VEHICLE_DOCUMENT
+  PROPERTY_DOCUMENT
+  UTILITY_BILL
+  PERSONAL
+  OTHER
+}
+
+enum ExtractionType {
+  STRUCTURED_DATA
+}
+
+enum ExtractionJobStatus {
+  QUEUED
+  PROCESSING
+  REVIEW_REQUIRED
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum ExtractionFieldStatus {
+  PROPOSED
+  ACCEPTED
+  EDITED
+  REJECTED
+}
+
+enum TaskStatus {
+  OPEN
+  COMPLETED
+  CANCELLED
+  ARCHIVED
+
+  @@map("AgendaTaskStatus")
+}
+
+enum TaskPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+
+  @@map("AgendaTaskPriority")
+}
+
+enum RecurrenceFrequency {
+  NONE
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+enum CalendarEventType {
+  GENERAL
+  WORK_SHIFT
+  APPOINTMENT
+  HOUSEHOLD
+  PERSONAL
+  TRAVEL
+  OTHER
+}
+
+enum CalendarEventStatus {
+  ACTIVE
+  CANCELLED
+}
+
+enum CalendarEventSource {
+  MANUAL
+  TEMPLATE
+  TASK
+}
+
+enum CalendarParticipantRole {
+  ASSIGNEE
+  ATTENDEE
+}
+
+enum SavedPlaceVisibility {
+  PRIVATE
+  HOUSEHOLD
+}
+
+enum PlaceProvider {
+  MAPY
+  MANUAL
+}
+
+enum CalendarRouteMode {
+  CAR_FAST_TRAFFIC
+  CAR_FAST
+  CAR_SHORT
+  FOOT_FAST
+  BICYCLE_ROAD
+  BICYCLE_MOUNTAIN
+}
+
+enum CalendarViewPreference {
+  MONTH
+  WEEK
+  DAY
+  AGENDA
+}
+
+enum TravelOriginMode {
+  AUTO
+  DEFAULT_PLACE
+  PREVIOUS_EVENT
+  CUSTOM_PLACE
+}
+
+enum TravelPlanStatus {
+  NOT_CALCULATED
+  CALCULATING
+  READY
+  STALE
+  FAILED
+  UNAVAILABLE
+}
+
+enum FinancialAccountType {
+  CURRENT
+  SAVINGS
+  CREDIT_CARD
+  CASH
+  OTHER
+}
+
+enum FinancialCategoryKind {
+  EXPENSE
+  INCOME
+  BOTH
+}
+
+enum FinancialTransactionType {
+  EXPENSE
+  INCOME
+  REFUND
+  TRANSFER_OUT
+  TRANSFER_IN
+  ADJUSTMENT
+}
+
+enum FinancialTransactionSource {
+  MANUAL
+  CSV_IMPORT
+  BANK_API
+}
+
+enum FinanceImportSessionStatus {
+  UPLOADED
+  CONFIGURING
+  READY_FOR_REVIEW
+  COMMITTING
+  COMPLETED
+  FAILED
+  CANCELLED
+  EXPIRED
+}
+
+enum FinanceImportRowStatus {
+  VALID
+  INVALID
+  POSSIBLE_DUPLICATE
+  NEEDS_TRANSFER_REVIEW
+  IMPORTED
+  SKIPPED
+}
+
+enum FinanceImportSourceKind {
+  BANK_ACCOUNT
+  CREDIT_CARD
+}
+
+enum FinanceAmountColumnMode {
+  SIGNED_AMOUNT
+  SEPARATE_DEBIT_CREDIT
+  TRANSACTION_TYPE_AND_AMOUNT
+}
+
+enum FinancialCategorizationField {
+  COUNTERPARTY_NAME
+  COUNTERPARTY_ACCOUNT
+  DESCRIPTION
+  VARIABLE_SYMBOL
+}
+
+enum FinancialCategorizationOperator {
+  EQUALS
+  CONTAINS
+  STARTS_WITH
+}
+
+enum FinancialBudgetPeriodType {
+  MONTHLY
+  CUSTOM
+}
+
+enum FinancialBudgetStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+  ARCHIVED
+}
+
+enum YearlyBucketListStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+  ARCHIVED
+}
+
+enum BucketListItemStatus {
+  PLANNED
+  COMPLETED
+  SKIPPED
+}
+
+enum BucketListItemPriority {
+  LOW
+  NORMAL
+  HIGH
+}
+
+enum BucketListItemCategory {
+  TRAVEL
+  EXPERIENCE
+  SPORT
+  RELATIONSHIP
+  CULTURE
+  LEARNING
+  HOME
+  FOOD
+  NATURE
+  PERSONAL
+  OTHER
+}
+
+enum SpendingInsightType {
+  BUDGET_THRESHOLD_REACHED
+  BUDGET_EXCEEDED
+  BUDGET_FORECAST_EXCEEDED
+  CATEGORY_SPENDING_INCREASE
+  MERCHANT_SPENDING_INCREASE
+  FREQUENT_SMALL_PURCHASES
+  UNCATEGORIZED_SPENDING_HIGH
+  NEW_LARGE_EXPENSE
+  POSSIBLE_RECURRING_PAYMENT
+}
+enum SpendingInsightSeverity {
+  INFO
+  WARNING
+  IMPORTANT
+}
+
+enum SpendingInsightStatus {
+  NEW
+  ACKNOWLEDGED
+  DISMISSED
+  RESOLVED
+}
+
+enum RecurringExpenseCandidateStatus {
+  PROPOSED
+  CONFIRMED
+  DISMISSED
+  INACTIVE
+}
+
+enum RecurringExpenseFrequency {
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+  IRREGULAR
+}
+
+enum RecurringExpenseStatus {
+  ACTIVE
+  PAUSED
+  ENDED
+  ARCHIVED
+}
+
+model User {
+  id                             String                             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  googleSubject                  String                             @unique
+  email                          String
+  emailVerified                  Boolean
+  displayName                    String?
+  avatarUrl                      String?
+  status                         UserStatus                         @default(ACTIVE)
+  lastLoginAt                    DateTime?
+  createdAt                      DateTime                           @default(now())
+  updatedAt                      DateTime                           @updatedAt
+  householdMembers               HouseholdMember[]
+  sessions                       Session[]
+  auditLogs                      AuditLog[]
+  createdDocuments               Document[]                         @relation("DocumentCreatedBy")
+  updatedDocuments               Document[]                         @relation("DocumentUpdatedBy")
+  uploadedFiles                  DocumentFile[]                     @relation("DocumentFileUploadedBy")
+  createdFolders                 DocumentFolder[]                   @relation("DocumentFolderCreatedBy")
+  extractionJobs                 ExtractionJob[]                    @relation("ExtractionRequestedBy")
+  reviewedFields                 ExtractionFieldCandidate[]         @relation("ExtractionFieldReviewedBy")
+  trashedDocuments               Document[]                         @relation("DocumentTrashedBy")
+  createdTasks                   Task[]                             @relation("TaskCreatedBy")
+  updatedTasks                   Task[]                             @relation("TaskUpdatedBy")
+  assignedTasks                  Task[]                             @relation("TaskAssignedTo")
+  taskParticipations             TaskParticipant[]                  @relation("TaskParticipantUser")
+  addedTaskParticipants          TaskParticipant[]                  @relation("TaskParticipantAddedBy")
+  taskCompletions                TaskCompletion[]                   @relation("TaskCompletionCompletedBy")
+  createdTaskCategories          TaskCategory[]                     @relation("TaskCategoryCreatedBy")
+  agendaDocumentLinks            TaskDocument[]                     @relation("TaskDocumentCreatedBy")
+  createdCalendarEvents          CalendarEvent[]                    @relation("CalendarEventCreatedBy")
+  updatedCalendarEvents          CalendarEvent[]                    @relation("CalendarEventUpdatedBy")
+  deletedCalendarEvents          CalendarEvent[]                    @relation("CalendarEventDeletedBy")
+  calendarEventParticipations    CalendarEventParticipant[]
+  createdCalendarTemplates       CalendarTemplate[]                 @relation("CalendarTemplateCreatedBy")
+  calendarTemplateParticipations CalendarTemplateParticipant[]
+  createdCalendarBatches         CalendarTemplateApplicationBatch[] @relation("CalendarTemplateBatchCreatedBy")
+  ownedSavedPlaces               SavedPlace[]                       @relation("SavedPlaceOwner")
+  createdSavedPlaces             SavedPlace[]                       @relation("SavedPlaceCreatedBy")
+  calendarPreferences            CalendarUserPreference[]
+  lastWorkShiftPreferenceFor     CalendarUserPreference[]           @relation("LastWorkShiftParticipant")
+  calendarTravelPlans            CalendarEventTravelPlan[]          @relation("TravelPlanTraveler")
+  createdTaskCalendarLinks       TaskCalendarLink[]                 @relation("TaskCalendarLinkCreatedBy")
+  createdFinancialAccounts       FinancialAccount[]                 @relation("FinancialAccountCreatedBy")
+  updatedFinancialAccounts       FinancialAccount[]                 @relation("FinancialAccountUpdatedBy")
+  createdFinancialCategories     FinancialCategory[]                @relation("FinancialCategoryCreatedBy")
+  createdFinancialTransactions   FinancialTransaction[]             @relation("FinancialTransactionCreatedBy")
+  updatedFinancialTransactions   FinancialTransaction[]             @relation("FinancialTransactionUpdatedBy")
+  deletedFinancialTransactions   FinancialTransaction[]             @relation("FinancialTransactionDeletedBy")
+  createdFinancialTransfers      FinancialTransfer[]                @relation("FinancialTransferCreatedBy")
+  financialDocumentLinks         FinancialTransactionDocument[]     @relation("FinancialTransactionDocumentCreatedBy")
+  createdFinanceImportSessions   FinanceImportSession[]              @relation("FinanceImportSessionCreatedBy")
+  createdFinanceImportProfiles   FinanceImportProfile[]              @relation("FinanceImportProfileCreatedBy")
+  createdCategorizationRules     FinancialCategorizationRule[]       @relation("FinancialCategorizationRuleCreatedBy")
+  createdFinancialBudgets        FinancialBudget[]                    @relation("FinancialBudgetCreatedBy")
+  updatedFinancialBudgets        FinancialBudget[]                    @relation("FinancialBudgetUpdatedBy")
+  createdRecurringExpenses       RecurringExpense[]                   @relation("RecurringExpenseCreatedBy")
+  createdBucketLists             YearlyBucketList[]                    @relation("BucketListCreatedBy")
+  updatedBucketLists             YearlyBucketList[]                    @relation("BucketListUpdatedBy")
+  createdBucketListItems         BucketListItem[]                      @relation("BucketListItemCreatedBy")
+  updatedBucketListItems         BucketListItem[]                      @relation("BucketListItemUpdatedBy")
+  completedBucketListItems       BucketListItem[]                      @relation("BucketListItemCompletedBy")
+  skippedBucketListItems         BucketListItem[]                      @relation("BucketListItemSkippedBy")
+  bucketListParticipations       BucketListItemParticipant[]           @relation("BucketListParticipantUser")
+  addedBucketListParticipants    BucketListItemParticipant[]           @relation("BucketListParticipantAddedBy")
+  bucketListDocumentLinks        BucketListItemDocument[]              @relation("BucketListDocumentCreatedBy")
+  bucketListCompletions          BucketListItemCompletion[]            @relation("BucketListCompletionUser")
+
+  @@index([email])
+  @@index([status])
+}
+
+model Household {
+  id                       String                             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                     String
+  createdAt                DateTime                           @default(now())
+  updatedAt                DateTime                           @updatedAt
+  members                  HouseholdMember[]
+  auditLogs                AuditLog[]
+  documents                Document[]
+  documentFolders          DocumentFolder[]
+  extractionJobs           ExtractionJob[]
+  tasks                    Task[]
+  taskCompletions          TaskCompletion[]
+  taskCategories           TaskCategory[]
+  taskCalendarLinks        TaskCalendarLink[]
+  singleHouseholdBootstrap SingleHouseholdBootstrap?
+  calendarEvents           CalendarEvent[]
+  calendarTemplates        CalendarTemplate[]
+  calendarTemplateBatches  CalendarTemplateApplicationBatch[]
+  savedPlaces              SavedPlace[]
+  calendarPreferences      CalendarUserPreference[]
+  calendarTravelPlans      CalendarEventTravelPlan[]
+  financialAccounts        FinancialAccount[]
+  financialCategories      FinancialCategory[]
+  financialTransactions    FinancialTransaction[]
+  financialTransfers       FinancialTransfer[]
+  financeImportSessions    FinanceImportSession[]
+  financeImportProfiles    FinanceImportProfile[]
+  financialCategorizationRules FinancialCategorizationRule[]
+  financialBudgets              FinancialBudget[]
+  spendingInsights              SpendingInsight[]
+  recurringExpenseCandidates    RecurringExpenseCandidate[]
+  recurringExpenses             RecurringExpense[]
+  yearlyBucketLists             YearlyBucketList[]
+  bucketListItems               BucketListItem[]
+  bucketListCompletions         BucketListItemCompletion[]
+}
+
+model SingleHouseholdBootstrap {
+  id          String    @id @default("primary") @db.VarChar(32)
+  householdId String    @unique @db.Uuid
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+}
+
+model HouseholdMember {
+  id                 String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId        String        @db.Uuid
+  userId             String        @db.Uuid
+  role               HouseholdRole
+  calendarColorToken String        @default("violet") @db.VarChar(20)
+  createdAt          DateTime      @default(now())
+  household          Household     @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  user               User          @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([householdId, userId])
+  @@index([userId])
+}
+
+model Session {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String    @db.Uuid
+  tokenHash  String    @unique @db.Char(64)
+  expiresAt  DateTime
+  lastUsedAt DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  userAgent  String?   @db.VarChar(512)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([userId, revokedAt, expiresAt])
+  @@index([expiresAt])
+}
+
+model AuditLog {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId String?    @db.Uuid
+  userId      String?    @db.Uuid
+  action      String     @db.VarChar(100)
+  entityType  String?    @db.VarChar(100)
+  entityId    String?    @db.Uuid
+  metadata    Json?
+  createdAt   DateTime   @default(now())
+  household   Household? @relation(fields: [householdId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([householdId, createdAt])
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+}
+
+model Document {
+  id                    String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId           String          @db.Uuid
+  folderId              String?         @db.Uuid
+  title                 String          @db.VarChar(200)
+  description           String?
+  notes                 String?         @db.Text
+  type                  DocumentType    @default(GENERAL)
+  metadataJson          Json            @default("{}")
+  metadataSchemaVersion Int             @default(1)
+  metadataOriginsJson   Json            @default("{}")
+  status                DocumentStatus  @default(ACTIVE)
+  documentDate          DateTime?       @db.Date
+  createdByUserId       String          @db.Uuid
+  updatedByUserId       String          @db.Uuid
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  archivedAt            DateTime?
+  trashedAt             DateTime?
+  trashedByUserId       String?         @db.Uuid
+  trashedFromFolderId   String?         @db.Uuid
+  household             Household       @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  folder                DocumentFolder? @relation("DocumentCurrentFolder", fields: [folderId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  trashedFromFolder     DocumentFolder? @relation("DocumentTrashedFromFolder", fields: [trashedFromFolderId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  trashedBy             User?           @relation("DocumentTrashedBy", fields: [trashedByUserId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  createdBy             User            @relation("DocumentCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  updatedBy             User            @relation("DocumentUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  file                  DocumentFile?
+  extractionJobs        ExtractionJob[]
+  agendaTaskLinks       TaskDocument[]
+  financialTransactionLinks FinancialTransactionDocument[]
+  bucketListItemLinks   BucketListItemDocument[]
+
+  @@index([householdId, status, createdAt])
+  @@index([householdId, folderId, status])
+  @@index([householdId, type])
+  @@index([householdId, documentDate])
+  @@index([householdId, status, trashedAt])
+  @@index([trashedByUserId])
+  @@index([trashedFromFolderId])
+  @@index([createdAt])
+  @@index([createdByUserId])
+  @@index([updatedByUserId])
+}
+
+model DocumentFile {
+  id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  documentId        String          @unique @db.Uuid
+  storageKey        String          @unique @db.VarChar(500)
+  originalFilename  String          @db.VarChar(200)
+  sanitizedFilename String          @db.VarChar(200)
+  extension         String          @db.VarChar(20)
+  mimeType          String          @db.VarChar(150)
+  detectedMimeType  String          @db.VarChar(150)
+  sizeBytes         Int
+  checksumSha256    String          @db.Char(64)
+  version           Int             @default(1)
+  uploadedByUserId  String          @db.Uuid
+  createdAt         DateTime        @default(now())
+  document          Document        @relation(fields: [documentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  uploadedBy        User            @relation("DocumentFileUploadedBy", fields: [uploadedByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  extractionJobs    ExtractionJob[]
+
+  @@index([uploadedByUserId])
+  @@index([createdAt])
+}
+
+model DocumentFolder {
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId      String           @db.Uuid
+  parentId         String?          @db.Uuid
+  name             String           @db.VarChar(100)
+  normalizedName   String           @db.VarChar(100)
+  createdByUserId  String           @db.Uuid
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  household        Household        @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  parent           DocumentFolder?  @relation("DocumentFolderTree", fields: [parentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  children         DocumentFolder[] @relation("DocumentFolderTree")
+  createdBy        User             @relation("DocumentFolderCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  documents        Document[]       @relation("DocumentCurrentFolder")
+  trashedDocuments Document[]       @relation("DocumentTrashedFromFolder")
+
+  @@unique([householdId, parentId, normalizedName])
+  @@index([householdId, parentId, name])
+  @@index([createdByUserId])
+}
+
+model ExtractionJob {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId       String              @db.Uuid
+  documentId        String              @db.Uuid
+  documentFileId    String              @db.Uuid
+  extractionType    ExtractionType      @default(STRUCTURED_DATA)
+  status            ExtractionJobStatus @default(QUEUED)
+  extractorKey      String              @db.VarChar(100)
+  extractorVersion  String              @db.VarChar(50)
+  schemaVersion     Int
+  requestedByUserId String              @db.Uuid
+  startedAt         DateTime?
+  finishedAt        DateTime?
+  errorCode         String?             @db.VarChar(100)
+  createdAt         DateTime            @default(now())
+  household         Household           @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  document          Document            @relation(fields: [documentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  documentFile      DocumentFile        @relation(fields: [documentFileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  requestedBy       User                @relation("ExtractionRequestedBy", fields: [requestedByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  result            ExtractionResult?
+
+  @@index([householdId, documentId, createdAt])
+  @@index([status, createdAt])
+  @@index([requestedByUserId])
+}
+
+model ExtractionResult {
+  id                 String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  jobId              String                     @unique @db.Uuid
+  rawText            String?                    @db.Text
+  structuredDataJson Json
+  createdAt          DateTime                   @default(now())
+  job                ExtractionJob              @relation(fields: [jobId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  candidates         ExtractionFieldCandidate[]
+}
+
+model ExtractionFieldCandidate {
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  resultId              String                @db.Uuid
+  fieldKey              String                @db.VarChar(100)
+  rawValue              String                @db.Text
+  normalizedValueJson   Json
+  confidence            Decimal               @db.Decimal(5, 4)
+  confidenceReasonsJson Json                  @default("[]")
+  sourcePage            Int?
+  sourceText            String?               @db.Text
+  sourceRegionJson      Json?
+  status                ExtractionFieldStatus @default(PROPOSED)
+  reviewedByUserId      String?               @db.Uuid
+  reviewedAt            DateTime?
+  result                ExtractionResult      @relation(fields: [resultId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  reviewedBy            User?                 @relation("ExtractionFieldReviewedBy", fields: [reviewedByUserId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@unique([resultId, fieldKey])
+  @@index([resultId, status])
+  @@index([reviewedByUserId])
+}
+
+model StoredFileDeletionTask {
+  id            String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  storageKey    String                   @db.VarChar(500)
+  status        StoredFileDeletionStatus @default(PENDING)
+  attempts      Int                      @default(0)
+  lastErrorCode String?                  @db.VarChar(100)
+  createdAt     DateTime                 @default(now())
+  completedAt   DateTime?
+
+  @@index([status, createdAt])
+}
+
+model Task {
+  id                       String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId              String              @db.Uuid
+  categoryId               String?             @db.Uuid
+  title                    String              @db.VarChar(200)
+  description              String?             @db.Text
+  status                   TaskStatus          @default(OPEN)
+  priority                 TaskPriority        @default(NORMAL)
+  assignedToUserId         String?             @db.Uuid
+  estimatedDurationMinutes Int?
+  locationPlaceId          String?             @db.Uuid
+  locationLabel            String?             @db.VarChar(300)
+  locationNotes            String?             @db.VarChar(1000)
+  dueDate                  DateTime?           @db.Date
+  dueTimeMinutes           Int?
+  dueAt                    DateTime?
+  isAllDay                 Boolean             @default(false)
+  timezone                 String              @default("Europe/Prague") @db.VarChar(100)
+  recurrenceFrequency      RecurrenceFrequency @default(NONE)
+  recurrenceInterval       Int                 @default(1)
+  recurrenceDaysOfWeek     Int[]               @default([])
+  recurrenceDayOfMonth     Int?
+  recurrenceMonthOfYear    Int?
+  recurrenceEndsAt         DateTime?
+  nextOccurrenceAt         DateTime?
+  createdByUserId          String              @db.Uuid
+  updatedByUserId          String              @db.Uuid
+  completedAt              DateTime?
+  cancelledAt              DateTime?
+  archivedAt               DateTime?
+  createdAt                DateTime            @default(now())
+  updatedAt                DateTime            @updatedAt
+  household                Household           @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  category                 TaskCategory?       @relation(fields: [categoryId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  assignedTo               User?               @relation("TaskAssignedTo", fields: [assignedToUserId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  createdBy                User                @relation("TaskCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  updatedBy                User                @relation("TaskUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  locationPlace            SavedPlace?         @relation("TaskLocation", fields: [locationPlaceId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  participants             TaskParticipant[]
+  completions              TaskCompletion[]
+  documents                TaskDocument[]
+  calendarLinks            TaskCalendarLink[]
+
+  @@index([householdId, status, dueAt])
+  @@index([householdId, status, dueDate])
+  @@index([householdId, assignedToUserId, status])
+  @@index([householdId, categoryId, status])
+  @@index([householdId, priority, dueAt])
+  @@index([createdByUserId])
+  @@index([updatedByUserId])
+  @@index([locationPlaceId])
+  @@map("AgendaTask")
+}
+
+model TaskParticipant {
+  taskId        String   @db.Uuid
+  userId        String   @db.Uuid
+  addedByUserId String   @db.Uuid
+  createdAt     DateTime @default(now())
+  task          Task     @relation(fields: [taskId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  user          User     @relation("TaskParticipantUser", fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  addedBy       User     @relation("TaskParticipantAddedBy", fields: [addedByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@id([taskId, userId])
+  @@index([userId, taskId])
+  @@index([addedByUserId])
+}
+
+model TaskCompletion {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  taskId            String    @db.Uuid
+  householdId       String    @db.Uuid
+  completedByUserId String    @db.Uuid
+  occurrenceDueDate DateTime? @db.Date
+  occurrenceDueTimeMinutes Int?
+  occurrenceDueAt   DateTime?
+  completedAt       DateTime
+  note              String?   @db.VarChar(5000)
+  createdAt         DateTime  @default(now())
+  task              Task      @relation(fields: [taskId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  household         Household @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  completedBy       User      @relation("TaskCompletionCompletedBy", fields: [completedByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([taskId, completedAt])
+  @@index([householdId, completedAt])
+  @@index([completedByUserId])
+}
+
+model TaskCategory {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId     String    @db.Uuid
+  name            String    @db.VarChar(100)
+  normalizedName  String    @db.VarChar(100)
+  colorToken      String    @db.VarChar(30)
+  createdByUserId String    @db.Uuid
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  household       Household @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdBy       User      @relation("TaskCategoryCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  tasks           Task[]
+
+  @@unique([householdId, normalizedName])
+  @@index([householdId, name])
+  @@index([createdByUserId])
+}
+
+model TaskDocument {
+  taskId          String   @db.Uuid
+  documentId      String   @db.Uuid
+  createdByUserId String   @db.Uuid
+  createdAt       DateTime @default(now())
+  task            Task     @relation(fields: [taskId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  document        Document @relation(fields: [documentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdBy       User     @relation("TaskDocumentCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@id([taskId, documentId])
+  @@index([documentId])
+  @@index([createdByUserId])
+}
+
+model CalendarEvent {
+  id                         String                            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId                String                            @db.Uuid
+  title                      String                            @db.VarChar(200)
+  description                String?                           @db.Text
+  type                       CalendarEventType                 @default(GENERAL)
+  status                     CalendarEventStatus               @default(ACTIVE)
+  startsAt                   DateTime
+  endsAt                     DateTime
+  timezone                   String                            @db.VarChar(100)
+  isAllDay                   Boolean                           @default(false)
+  location                   String?                           @db.VarChar(300)
+  locationPlaceId            String?                           @db.Uuid
+  locationLabel              String?                           @db.VarChar(300)
+  locationNotes              String?                           @db.VarChar(1000)
+  calculateTravel            Boolean                           @default(false)
+  colorToken                 String                            @db.VarChar(30)
+  source                     CalendarEventSource               @default(MANUAL)
+  templateId                 String?                           @db.Uuid
+  templateApplicationBatchId String?                           @db.Uuid
+  createdByUserId            String                            @db.Uuid
+  updatedByUserId            String                            @db.Uuid
+  createdAt                  DateTime                          @default(now())
+  updatedAt                  DateTime                          @updatedAt
+  cancelledAt                DateTime?
+  deletedAt                  DateTime?
+  deletedByUserId            String?                           @db.Uuid
+  household                  Household                         @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  template                   CalendarTemplate?                 @relation(fields: [templateId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  templateApplicationBatch   CalendarTemplateApplicationBatch? @relation(fields: [templateApplicationBatchId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  createdBy                  User                              @relation("CalendarEventCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  updatedBy                  User                              @relation("CalendarEventUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  deletedBy                  User?                             @relation("CalendarEventDeletedBy", fields: [deletedByUserId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  participants               CalendarEventParticipant[]
+  locationPlace              SavedPlace?                       @relation("CalendarEventLocation", fields: [locationPlaceId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  travelPlans                CalendarEventTravelPlan[]         @relation("TravelPlanEvent")
+  dependentTravelPlans       CalendarEventTravelPlan[]         @relation("TravelPlanPreviousEvent")
+  taskLinks                  TaskCalendarLink[]
+
+  @@index([householdId, status, startsAt, endsAt])
+  @@index([householdId, deletedAt, startsAt, endsAt])
+  @@index([householdId, type, startsAt])
+  @@index([templateId])
+  @@index([templateApplicationBatchId])
+  @@index([createdByUserId])
+  @@index([updatedByUserId])
+  @@index([deletedByUserId])
+  @@index([locationPlaceId])
+}
+
+model CalendarEventParticipant {
+  eventId   String                  @db.Uuid
+  userId    String                  @db.Uuid
+  role      CalendarParticipantRole @default(ATTENDEE)
+  createdAt DateTime                @default(now())
+  event     CalendarEvent           @relation(fields: [eventId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  user      User                    @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@id([eventId, userId])
+  @@index([userId, eventId])
+}
+
+model CalendarTemplate {
+  id                  String                             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId         String                             @db.Uuid
+  name                String                             @db.VarChar(100)
+  title               String                             @db.VarChar(200)
+  description         String?                            @db.Text
+  eventType           CalendarEventType
+  startLocalTime      String                             @db.VarChar(5)
+  endLocalTime        String                             @db.VarChar(5)
+  endDayOffset        Int                                @default(0)
+  timezone            String                             @db.VarChar(100)
+  isAllDay            Boolean                            @default(false)
+  defaultLocation     String?                            @db.VarChar(300)
+  locationPlaceId     String?                            @db.Uuid
+  locationLabel       String?                            @db.VarChar(300)
+  calculateTravel     Boolean                            @default(true)
+  routeMode           CalendarRouteMode                  @default(CAR_FAST_TRAFFIC)
+  travelBufferMinutes Int                                @default(10)
+  colorToken          String                             @db.VarChar(30)
+  createdByUserId     String                             @db.Uuid
+  createdAt           DateTime                           @default(now())
+  updatedAt           DateTime                           @updatedAt
+  household           Household                          @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  locationPlace       SavedPlace?                        @relation("CalendarTemplateLocation", fields: [locationPlaceId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  createdBy           User                               @relation("CalendarTemplateCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  participants        CalendarTemplateParticipant[]
+  events              CalendarEvent[]
+  batches             CalendarTemplateApplicationBatch[]
+
+  @@unique([householdId, name])
+  @@index([householdId, eventType, name])
+  @@index([createdByUserId])
+  @@index([locationPlaceId])
+}
+
+model CalendarTemplateParticipant {
+  templateId String                  @db.Uuid
+  userId     String                  @db.Uuid
+  role       CalendarParticipantRole @default(ASSIGNEE)
+  createdAt  DateTime                @default(now())
+  template   CalendarTemplate        @relation(fields: [templateId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  user       User                    @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@id([templateId, userId])
+  @@index([userId, templateId])
+}
+
+model CalendarTemplateApplicationBatch {
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId     String            @db.Uuid
+  templateId      String?           @db.Uuid
+  createdByUserId String            @db.Uuid
+  eventCount      Int
+  createdAt       DateTime          @default(now())
+  revertedAt      DateTime?
+  household       Household         @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  template        CalendarTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  createdBy       User              @relation("CalendarTemplateBatchCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  events          CalendarEvent[]
+
+  @@index([householdId, createdAt])
+  @@index([templateId, createdAt])
+  @@index([createdByUserId])
+}
+
+model SavedPlace {
+  id                     String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId            String                    @db.Uuid
+  ownerUserId            String?                   @db.Uuid
+  visibility             SavedPlaceVisibility      @default(PRIVATE)
+  label                  String                    @db.VarChar(120)
+  formattedAddress       String                    @db.VarChar(300)
+  provider               PlaceProvider
+  placeType              String                    @db.VarChar(80)
+  createdByUserId        String                    @db.Uuid
+  createdAt              DateTime                  @default(now())
+  updatedAt              DateTime                  @updatedAt
+  household              Household                 @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  owner                  User?                     @relation("SavedPlaceOwner", fields: [ownerUserId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  createdBy              User                      @relation("SavedPlaceCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  defaultFor             CalendarUserPreference[]
+  calendarEvents         CalendarEvent[]           @relation("CalendarEventLocation")
+  calendarTemplates      CalendarTemplate[]        @relation("CalendarTemplateLocation")
+  originTravelPlans      CalendarEventTravelPlan[] @relation("TravelPlanOriginPlace")
+  destinationTravelPlans CalendarEventTravelPlan[] @relation("TravelPlanDestinationPlace")
+  tasks                  Task[]                    @relation("TaskLocation")
+  bucketListItems        BucketListItem[]           @relation("BucketListItemLocation")
+
+  @@index([householdId, visibility, label])
+  @@index([ownerUserId, label])
+  @@index([createdByUserId])
+}
+
+model TaskCalendarLink {
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId     String        @db.Uuid
+  taskId          String        @db.Uuid
+  calendarEventId String        @db.Uuid
+  occurrenceDueAt DateTime?
+  createdByUserId String        @db.Uuid
+  createdAt       DateTime      @default(now())
+  removedAt       DateTime?
+  household       Household     @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  task            Task          @relation(fields: [taskId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  calendarEvent   CalendarEvent @relation(fields: [calendarEventId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdBy       User          @relation("TaskCalendarLinkCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([taskId, calendarEventId])
+  @@index([householdId, taskId, removedAt])
+  @@index([calendarEventId, removedAt])
+  @@index([createdByUserId])
+}
+
+model CalendarUserPreference {
+  id                             String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId                    String                 @db.Uuid
+  userId                         String                 @db.Uuid
+  defaultPlaceId                 String?                @db.Uuid
+  defaultRouteMode               CalendarRouteMode      @default(CAR_FAST_TRAFFIC)
+  defaultTravelBufferMinutes     Int                    @default(10)
+  avoidTolls                     Boolean                @default(false)
+  avoidHighways                  Boolean                @default(false)
+  compactCalendarView            CalendarViewPreference @default(AGENDA)
+  mediumCalendarView             CalendarViewPreference @default(MONTH)
+  expandedCalendarView           CalendarViewPreference @default(MONTH)
+  showTravelBlocks               Boolean                @default(true)
+  lastWorkShiftParticipantUserId String?                @db.Uuid
+  createdAt                      DateTime               @default(now())
+  updatedAt                      DateTime               @updatedAt
+  household                      Household              @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  user                           User                   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  defaultPlace                   SavedPlace?            @relation(fields: [defaultPlaceId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  lastWorkShiftParticipant       User?                  @relation("LastWorkShiftParticipant", fields: [lastWorkShiftParticipantUserId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@unique([householdId, userId])
+  @@index([userId])
+  @@index([defaultPlaceId])
+  @@index([lastWorkShiftParticipantUserId])
+}
+
+model CalendarEventTravelPlan {
+  id                  String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId         String            @db.Uuid
+  eventId             String            @db.Uuid
+  travelerUserId      String            @db.Uuid
+  originMode          TravelOriginMode
+  originPlaceId       String?           @db.Uuid
+  previousEventId     String?           @db.Uuid
+  destinationPlaceId  String            @db.Uuid
+  routeMode           CalendarRouteMode
+  avoidTolls          Boolean           @default(false)
+  avoidHighways       Boolean           @default(false)
+  travelBufferMinutes Int               @default(10)
+  status              TravelPlanStatus  @default(NOT_CALCULATED)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  household           Household         @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  event               CalendarEvent     @relation("TravelPlanEvent", fields: [eventId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  traveler            User              @relation("TravelPlanTraveler", fields: [travelerUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  originPlace         SavedPlace?       @relation("TravelPlanOriginPlace", fields: [originPlaceId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  previousEvent       CalendarEvent?    @relation("TravelPlanPreviousEvent", fields: [previousEventId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  destinationPlace    SavedPlace        @relation("TravelPlanDestinationPlace", fields: [destinationPlaceId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([eventId, travelerUserId])
+  @@index([householdId, travelerUserId, status])
+  @@index([previousEventId])
+  @@index([originPlaceId])
+  @@index([destinationPlaceId])
+}
+
+model FinancialAccount {
+  id                  String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId         String               @db.Uuid
+  name                String               @db.VarChar(120)
+  normalizedName      String               @db.VarChar(120)
+  type                FinancialAccountType
+  currencyCode        String               @db.VarChar(3)
+  openingBalanceMinor BigInt
+  openingBalanceDate  DateTime             @db.Date
+  description         String?              @db.VarChar(1000)
+  creditLimitMinor    BigInt?
+  statementDayOfMonth Int?
+  paymentDueDayOfMonth Int?
+  maskedIdentifier    String?              @db.VarChar(20)
+  colorToken          String               @db.VarChar(30)
+  iconKey             String               @db.VarChar(40)
+  createdByUserId     String               @db.Uuid
+  updatedByUserId     String               @db.Uuid
+  archivedAt          DateTime?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  household           Household            @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdBy           User                 @relation("FinancialAccountCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  updatedBy           User                 @relation("FinancialAccountUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  transactions        FinancialTransaction[]
+  outgoingTransfers   FinancialTransfer[]  @relation("FinancialTransferFromAccount")
+  incomingTransfers   FinancialTransfer[]  @relation("FinancialTransferToAccount")
+  importSessions      FinanceImportSession[]
+  importProfiles      FinanceImportProfile[]
+  categorizationRules FinancialCategorizationRule[]
+  importTransferSourceRows FinanceImportRow[]
+  recurringExpenseCandidates RecurringExpenseCandidate[]
+  recurringExpenses          RecurringExpense[]
+
+  @@index([householdId, archivedAt])
+  @@index([createdByUserId])
+  @@index([updatedByUserId])
+}
+
+model FinancialCategory {
+  id              String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId     String                @db.Uuid
+  parentId        String?               @db.Uuid
+  name            String                @db.VarChar(100)
+  normalizedName  String                @db.VarChar(100)
+  kind            FinancialCategoryKind
+  colorToken      String                @db.VarChar(30)
+  iconKey         String                @db.VarChar(40)
+  sortOrder       Int                   @default(0)
+  createdByUserId String                @db.Uuid
+  archivedAt      DateTime?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  household       Household             @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  parent          FinancialCategory?    @relation("FinancialCategoryTree", fields: [parentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  children        FinancialCategory[]   @relation("FinancialCategoryTree")
+  createdBy       User                  @relation("FinancialCategoryCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  transactions    FinancialTransaction[]
+  categorizationRules FinancialCategorizationRule[]
+  importRows      FinanceImportRow[]
+  budgetAllocations FinancialBudgetAllocation[]
+  recurringExpenseCandidates RecurringExpenseCandidate[]
+  recurringExpenses RecurringExpense[]
+
+  @@unique([householdId, parentId, normalizedName])
+  @@index([householdId, parentId])
+  @@index([householdId, archivedAt, kind])
+  @@index([createdByUserId])
+}
+
+model FinancialTransaction {
+  id                  String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId         String                     @db.Uuid
+  accountId           String                     @db.Uuid
+  categoryId          String?                    @db.Uuid
+  type                FinancialTransactionType
+  source              FinancialTransactionSource @default(MANUAL)
+  amountMinor         BigInt
+  currencyCode        String                     @db.VarChar(3)
+  bookedDate          DateTime                   @db.Date
+  transactionDate     DateTime?                  @db.Date
+  externalTransactionId String?                  @db.VarChar(200)
+  fingerprint         String?                    @db.Char(64)
+  merchantNormalizedName String?                 @db.VarChar(200)
+  counterpartyName    String?                    @db.VarChar(200)
+  counterpartyAccount String?                    @db.VarChar(100)
+  description         String?                    @db.VarChar(1000)
+  variableSymbol      String?                    @db.VarChar(20)
+  constantSymbol      String?                    @db.VarChar(20)
+  specificSymbol      String?                    @db.VarChar(20)
+  note                String?                    @db.VarChar(10000)
+  transferId          String?                    @db.Uuid
+  importSessionId     String?                    @db.Uuid
+  importRowId         String?                    @unique @db.Uuid
+  createdByUserId     String                     @db.Uuid
+  updatedByUserId     String                     @db.Uuid
+  deletedAt           DateTime?
+  deletedByUserId     String?                    @db.Uuid
+  createdAt           DateTime                   @default(now())
+  updatedAt           DateTime                   @updatedAt
+  household           Household                  @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  account             FinancialAccount           @relation(fields: [accountId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  category            FinancialCategory?         @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  transfer            FinancialTransfer?         @relation("FinancialTransferEntries", fields: [transferId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  importSession       FinanceImportSession?       @relation(fields: [importSessionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  importRow           FinanceImportRow?           @relation("FinanceImportCreatedTransaction", fields: [importRowId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  duplicateImportRows FinanceImportRow[]           @relation("FinanceImportDuplicate")
+  createdBy           User                       @relation("FinancialTransactionCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  updatedBy           User                       @relation("FinancialTransactionUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  deletedBy           User?                      @relation("FinancialTransactionDeletedBy", fields: [deletedByUserId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  documents           FinancialTransactionDocument[]
+
+  @@index([householdId, bookedDate])
+  @@index([accountId, bookedDate])
+  @@index([categoryId, bookedDate])
+  @@index([transferId])
+  @@index([importSessionId])
+  @@index([accountId, fingerprint])
+  @@unique([accountId, source, externalTransactionId])
+  @@index([deletedAt])
+  @@index([householdId, deletedAt, bookedDate])
+  @@index([createdByUserId])
+  @@index([updatedByUserId])
+  @@index([deletedByUserId])
+}
+
+model FinancialTransfer {
+  id                    String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId           String                 @db.Uuid
+  fromAccountId         String                 @db.Uuid
+  toAccountId           String                 @db.Uuid
+  outgoingTransactionId String?                @unique @db.Uuid
+  incomingTransactionId String?                @unique @db.Uuid
+  amountMinor           BigInt
+  currencyCode          String                 @db.VarChar(3)
+  bookedDate            DateTime               @db.Date
+  note                  String?                @db.VarChar(10000)
+  createdByUserId       String                 @db.Uuid
+  deletedAt             DateTime?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  household             Household              @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  fromAccount           FinancialAccount       @relation("FinancialTransferFromAccount", fields: [fromAccountId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  toAccount             FinancialAccount       @relation("FinancialTransferToAccount", fields: [toAccountId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdBy             User                   @relation("FinancialTransferCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  transactions          FinancialTransaction[] @relation("FinancialTransferEntries")
+
+  @@index([householdId, bookedDate])
+  @@index([fromAccountId, bookedDate])
+  @@index([toAccountId, bookedDate])
+  @@index([createdByUserId])
+  @@index([deletedAt])
+}
+
+model FinancialTransactionDocument {
+  transactionId   String   @db.Uuid
+  documentId      String   @db.Uuid
+  createdByUserId String   @db.Uuid
+  createdAt       DateTime @default(now())
+  transaction     FinancialTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  document        Document             @relation(fields: [documentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdBy       User                 @relation("FinancialTransactionDocumentCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@id([transactionId, documentId])
+  @@index([documentId])
+  @@index([createdByUserId])
+}
+
+model FinanceImportProfile {
+  id                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId           String                  @db.Uuid
+  accountId             String?                 @db.Uuid
+  name                  String                  @db.VarChar(120)
+  sourceKind            FinanceImportSourceKind
+  encoding              String                  @db.VarChar(30)
+  delimiter             String                  @db.VarChar(4)
+  quoteCharacter        String                  @db.VarChar(1)
+  hasHeader             Boolean
+  headerRowNumber       Int
+  skipRowsBefore        Int
+  dateFormat            String                  @db.VarChar(30)
+  decimalSeparator      String                  @db.VarChar(1)
+  thousandSeparator     String                  @db.VarChar(4)
+  amountColumnMode      FinanceAmountColumnMode
+  columnMappingJson     Json
+  invertAmountSign      Boolean                 @default(false)
+  defaultCurrencyCode   String?                 @db.VarChar(3)
+  createdByUserId       String                  @db.Uuid
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  household             Household               @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  account               FinancialAccount?       @relation(fields: [accountId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  createdBy             User                    @relation("FinanceImportProfileCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  sessions              FinanceImportSession[]
+
+  @@unique([householdId, name])
+  @@index([householdId, sourceKind])
+  @@index([accountId])
+  @@index([createdByUserId])
+}
+
+model FinanceImportSession {
+  id                    String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId           String                     @db.Uuid
+  accountId             String                     @db.Uuid
+  profileId             String?                    @db.Uuid
+  sourceKind            FinanceImportSourceKind
+  status                FinanceImportSessionStatus @default(UPLOADED)
+  originalFilename      String                     @db.VarChar(200)
+  temporaryStorageKey   String?                    @db.VarChar(500)
+  fileChecksumSha256    String                     @db.Char(64)
+  fileSizeBytes         Int
+  detectedEncoding      String?                    @db.VarChar(30)
+  detectedDelimiter     String?                    @db.VarChar(4)
+  detectedHeaderRow     Int?
+  encoding              String?                    @db.VarChar(30)
+  delimiter             String?                    @db.VarChar(4)
+  quoteCharacter        String?                    @db.VarChar(1)
+  hasHeader             Boolean?
+  headerRowNumber       Int?
+  skipRowsBefore        Int?
+  dateFormat            String?                    @db.VarChar(30)
+  decimalSeparator      String?                    @db.VarChar(1)
+  thousandSeparator     String?                    @db.VarChar(4)
+  amountColumnMode      FinanceAmountColumnMode?
+  columnMappingJson     Json?
+  invertAmountSign      Boolean                    @default(false)
+  defaultCurrencyCode   String?                    @db.VarChar(3)
+  totalRowCount         Int                        @default(0)
+  validRowCount         Int                        @default(0)
+  invalidRowCount       Int                        @default(0)
+  duplicateRowCount     Int                        @default(0)
+  ignoredRowCount       Int                        @default(0)
+  importedRowCount      Int                        @default(0)
+  createdByUserId       String                     @db.Uuid
+  createdAt             DateTime                   @default(now())
+  updatedAt             DateTime                   @updatedAt
+  expiresAt             DateTime
+  committedAt           DateTime?
+  cancelledAt           DateTime?
+  household             Household                  @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  account               FinancialAccount           @relation(fields: [accountId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  profile               FinanceImportProfile?      @relation(fields: [profileId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  createdBy             User                       @relation("FinanceImportSessionCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  rows                  FinanceImportRow[]
+  transactions          FinancialTransaction[]
+
+  @@index([householdId, createdAt])
+  @@index([householdId, accountId, status])
+  @@index([accountId, fileChecksumSha256, status])
+  @@index([expiresAt, status])
+  @@index([profileId])
+  @@index([createdByUserId])
+}
+
+model FinanceImportRow {
+  id                    String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  importSessionId       String                   @db.Uuid
+  rowNumber             Int
+  status                FinanceImportRowStatus
+  externalTransactionId String?                  @db.VarChar(200)
+  bookedDate            DateTime?                @db.Date
+  transactionDate       DateTime?                @db.Date
+  amountMinor           BigInt?
+  currencyCode          String?                  @db.VarChar(3)
+  transactionType       FinancialTransactionType?
+  counterpartyName      String?                  @db.VarChar(200)
+  counterpartyAccount   String?                  @db.VarChar(100)
+  description           String?                  @db.VarChar(1000)
+  variableSymbol        String?                  @db.VarChar(20)
+  constantSymbol        String?                  @db.VarChar(20)
+  specificSymbol        String?                  @db.VarChar(20)
+  merchantNormalizedName String?                 @db.VarChar(200)
+  categoryId            String?                  @db.Uuid
+  fingerprint           String?                  @db.Char(64)
+  duplicateTransactionId String?                 @db.Uuid
+  transferSourceAccountId String?                 @db.Uuid
+  matchingTransactionId   String?                 @db.Uuid
+  validationErrorsJson  Json                     @default("[]")
+  userIncluded          Boolean                  @default(true)
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+  importSession         FinanceImportSession     @relation(fields: [importSessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  category              FinancialCategory?       @relation(fields: [categoryId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  duplicateTransaction  FinancialTransaction?    @relation("FinanceImportDuplicate", fields: [duplicateTransactionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  transferSourceAccount FinancialAccount?         @relation(fields: [transferSourceAccountId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  transaction           FinancialTransaction?    @relation("FinanceImportCreatedTransaction")
+
+  @@unique([importSessionId, rowNumber])
+  @@index([importSessionId, status, rowNumber])
+  @@index([categoryId])
+  @@index([fingerprint])
+  @@index([duplicateTransactionId])
+  @@index([transferSourceAccountId])
+}
+
+model FinancialCategorizationRule {
+  id                        String                            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId               String                            @db.Uuid
+  name                      String                            @db.VarChar(120)
+  priority                  Int                               @default(0)
+  enabled                   Boolean                           @default(true)
+  field                     FinancialCategorizationField
+  operator                  FinancialCategorizationOperator
+  comparisonValue           String                            @db.VarChar(300)
+  normalizedComparisonValue String                            @db.VarChar(300)
+  categoryId                String                            @db.Uuid
+  accountId                 String?                           @db.Uuid
+  transactionType           FinancialTransactionType?
+  createdByUserId           String                            @db.Uuid
+  createdAt                 DateTime                          @default(now())
+  updatedAt                 DateTime                          @updatedAt
+  household                 Household                         @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  category                  FinancialCategory                 @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  account                   FinancialAccount?                 @relation(fields: [accountId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  createdBy                 User                              @relation("FinancialCategorizationRuleCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([householdId, enabled, priority])
+  @@index([categoryId])
+  @@index([accountId])
+  @@index([createdByUserId])
+}
+
+model FinancialBudget {
+  id              String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId     String                    @db.Uuid
+  name            String                    @db.VarChar(120)
+  currencyCode    String                    @db.VarChar(3)
+  periodType      FinancialBudgetPeriodType
+  periodStart     DateTime                  @db.Date
+  periodEnd       DateTime                  @db.Date
+  totalLimitMinor BigInt?
+  status          FinancialBudgetStatus     @default(DRAFT)
+  createdByUserId String                    @db.Uuid
+  updatedByUserId String                    @db.Uuid
+  archivedAt      DateTime?
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  household       Household                 @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdBy       User                      @relation("FinancialBudgetCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  updatedBy       User                      @relation("FinancialBudgetUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  allocations     FinancialBudgetAllocation[]
+
+  @@index([householdId, periodStart, periodEnd])
+  @@index([householdId, currencyCode, status, periodStart])
+  @@index([createdByUserId])
+  @@index([updatedByUserId])
+}
+
+model FinancialBudgetAllocation {
+  id                      String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  budgetId                String            @db.Uuid
+  categoryId              String            @db.Uuid
+  limitMinor              BigInt
+  warningThresholdPercent Int               @default(80)
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+  budget                  FinancialBudget   @relation(fields: [budgetId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  category                FinancialCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([budgetId, categoryId])
+  @@index([categoryId])
+}
+
+model SpendingInsight {
+  id              String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId     String                   @db.Uuid
+  type            SpendingInsightType
+  currencyCode    String                   @db.VarChar(3)
+  periodStart     DateTime                 @db.Date
+  periodEnd       DateTime                 @db.Date
+  severity        SpendingInsightSeverity
+  status          SpendingInsightStatus    @default(NEW)
+  title           String                   @db.VarChar(180)
+  explanation     String                   @db.VarChar(1000)
+  evidenceJson    Json
+  evidenceHash    String                   @db.Char(64)
+  firstDetectedAt DateTime                 @default(now())
+  lastDetectedAt  DateTime                 @default(now())
+  acknowledgedAt  DateTime?
+  dismissedAt     DateTime?
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+  household       Household                @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([householdId, evidenceHash])
+  @@index([householdId, status, periodEnd])
+  @@index([householdId, currencyCode, periodStart, periodEnd])
+  @@index([evidenceHash])
+}
+
+model RecurringExpenseCandidate {
+  id                       String                           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId              String                           @db.Uuid
+  accountId                String                           @db.Uuid
+  merchantNormalizedName   String                           @db.VarChar(200)
+  categoryId               String?                          @db.Uuid
+  currencyCode             String                           @db.VarChar(3)
+  typicalAmountMinor       BigInt
+  amountTolerancePercent   Int                              @default(15)
+  detectedFrequency        RecurringExpenseFrequency
+  nextExpectedDate         DateTime?                        @db.Date
+  confidenceScore          Int
+  evidenceTransactionCount Int
+  status                   RecurringExpenseCandidateStatus  @default(PROPOSED)
+  firstObservedDate        DateTime                         @db.Date
+  lastObservedDate         DateTime                         @db.Date
+  createdAt                DateTime                         @default(now())
+  updatedAt                DateTime                         @updatedAt
+  household                Household                        @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  account                  FinancialAccount                 @relation(fields: [accountId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  category                 FinancialCategory?               @relation(fields: [categoryId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  recurringExpense         RecurringExpense?
+
+  @@unique([householdId, accountId, merchantNormalizedName, currencyCode])
+  @@index([householdId, status])
+  @@index([householdId, merchantNormalizedName, currencyCode])
+  @@index([categoryId])
+}
+
+model RecurringExpense {
+  id                     String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId            String                    @db.Uuid
+  candidateId            String?                   @unique @db.Uuid
+  name                   String                    @db.VarChar(160)
+  merchantNormalizedName String                    @db.VarChar(200)
+  categoryId             String?                   @db.Uuid
+  accountId              String?                   @db.Uuid
+  currencyCode           String                    @db.VarChar(3)
+  expectedAmountMinor    BigInt
+  amountTolerancePercent Int                       @default(15)
+  frequency              RecurringExpenseFrequency
+  nextExpectedDate       DateTime?                 @db.Date
+  status                 RecurringExpenseStatus    @default(ACTIVE)
+  createdByUserId        String                    @db.Uuid
+  createdAt              DateTime                  @default(now())
+  updatedAt              DateTime                  @updatedAt
+  archivedAt             DateTime?
+  household              Household                 @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  candidate              RecurringExpenseCandidate? @relation(fields: [candidateId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  category               FinancialCategory?        @relation(fields: [categoryId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  account                FinancialAccount?         @relation(fields: [accountId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  createdBy              User                      @relation("RecurringExpenseCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([householdId, status, nextExpectedDate])
+  @@index([householdId, merchantNormalizedName, currencyCode])
+  @@index([categoryId])
+  @@index([accountId])
+  @@index([createdByUserId])
+}
+
+model YearlyBucketList {
+  id              String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId     String                 @db.Uuid
+  year            Int
+  title           String                 @db.VarChar(160)
+  description     String?                @db.VarChar(1000)
+  status          YearlyBucketListStatus @default(ACTIVE)
+  createdByUserId String                 @db.Uuid
+  updatedByUserId String                 @db.Uuid
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  closedAt        DateTime?
+  archivedAt      DateTime?
+  household       Household              @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdBy       User                   @relation("BucketListCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  updatedBy       User                   @relation("BucketListUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  items           BucketListItem[]
+
+  @@unique([householdId, year])
+  @@index([householdId, status, year])
+  @@index([createdByUserId])
+  @@index([updatedByUserId])
+}
+
+model BucketListItem {
+  id                  String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId         String                 @db.Uuid
+  bucketListId        String                 @db.Uuid
+  title               String                 @db.VarChar(200)
+  description         String?                @db.VarChar(2000)
+  category            BucketListItemCategory @default(OTHER)
+  priority            BucketListItemPriority @default(NORMAL)
+  status              BucketListItemStatus   @default(PLANNED)
+  targetDate          DateTime?               @db.Date
+  locationPlaceId     String?                 @db.Uuid
+  locationLabel       String?                 @db.VarChar(300)
+  locationNotes       String?                 @db.VarChar(1000)
+  notes               String?                 @db.VarChar(10000)
+  sortOrder           Int                    @default(0)
+  carriedFromItemId   String?                @unique @db.Uuid
+  createdByUserId     String                 @db.Uuid
+  updatedByUserId     String                 @db.Uuid
+  completedByUserId   String?                @db.Uuid
+  completedAt         DateTime?
+  skippedByUserId     String?                @db.Uuid
+  skippedAt           DateTime?
+  skippedReason       String?                @db.VarChar(1000)
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+  household           Household              @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  bucketList          YearlyBucketList       @relation(fields: [bucketListId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  locationPlace       SavedPlace?            @relation("BucketListItemLocation", fields: [locationPlaceId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  createdBy           User                   @relation("BucketListItemCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  updatedBy           User                   @relation("BucketListItemUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  completedBy         User?                  @relation("BucketListItemCompletedBy", fields: [completedByUserId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  skippedBy           User?                  @relation("BucketListItemSkippedBy", fields: [skippedByUserId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  carriedFromItem     BucketListItem?        @relation("BucketListItemRollover", fields: [carriedFromItemId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  carriedToItem       BucketListItem?        @relation("BucketListItemRollover")
+  participants        BucketListItemParticipant[]
+  documents           BucketListItemDocument[]
+  completions         BucketListItemCompletion[]
+
+  @@index([householdId, bucketListId, status, sortOrder])
+  @@index([householdId, category, status])
+  @@index([householdId, priority, status])
+  @@index([householdId, targetDate])
+  @@index([locationPlaceId])
+  @@index([createdByUserId])
+  @@index([updatedByUserId])
+  @@index([completedByUserId])
+  @@index([skippedByUserId])
+}
+
+model BucketListItemParticipant {
+  bucketListItemId String         @db.Uuid
+  userId           String         @db.Uuid
+  addedByUserId    String         @db.Uuid
+  createdAt        DateTime       @default(now())
+  bucketListItem   BucketListItem @relation(fields: [bucketListItemId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  user             User           @relation("BucketListParticipantUser", fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  addedBy          User           @relation("BucketListParticipantAddedBy", fields: [addedByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@id([bucketListItemId, userId])
+  @@index([userId, bucketListItemId])
+  @@index([addedByUserId])
+}
+
+model BucketListItemDocument {
+  bucketListItemId String         @db.Uuid
+  documentId       String         @db.Uuid
+  createdByUserId  String         @db.Uuid
+  createdAt        DateTime       @default(now())
+  bucketListItem   BucketListItem @relation(fields: [bucketListItemId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  document         Document       @relation(fields: [documentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdBy        User           @relation("BucketListDocumentCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@id([bucketListItemId, documentId])
+  @@index([documentId])
+  @@index([createdByUserId])
+}
+
+model BucketListItemCompletion {
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bucketListItemId String         @db.Uuid
+  householdId      String         @db.Uuid
+  completedByUserId String        @db.Uuid
+  completedAt      DateTime
+  note             String?        @db.VarChar(5000)
+  createdAt        DateTime       @default(now())
+  bucketListItem   BucketListItem @relation(fields: [bucketListItemId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  household        Household      @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  completedBy      User           @relation("BucketListCompletionUser", fields: [completedByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([bucketListItemId, completedAt])
+  @@index([householdId, completedAt])
+  @@index([completedByUserId])
+}

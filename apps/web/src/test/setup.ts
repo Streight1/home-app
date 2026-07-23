@@ -1,0 +1,24 @@
+import '@testing-library/jest-dom/vitest';
+import { cleanup } from '@testing-library/react';
+import { afterEach } from 'vitest';
+
+if (typeof window.matchMedia !== 'function') {
+  window.matchMedia = (query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: () => undefined,
+    removeListener: () => undefined,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    dispatchEvent: () => false,
+  });
+}
+
+afterEach(() => {
+  cleanup();
+  document.cookie = 'homeapp_csrf=; Max-Age=0; path=/';
+  document.querySelector('#google-identity-services')?.remove();
+  delete window.google;
+  window.localStorage.clear();
+});
