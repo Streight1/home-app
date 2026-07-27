@@ -1,23 +1,40 @@
 import { Injectable } from '@nestjs/common';
-import { getZonedParts } from '../../../../common/time/zoned-date.js';
 import type {
   CalendarEventRecord,
   CalendarTemplateRecord,
 } from '../../domain/calendar.types.js';
+import { CalendarEventVisualService } from './calendar-event-visual.service.js';
 
 @Injectable()
 export class CalendarResponseMapper {
+  public constructor(
+    private readonly visualService: CalendarEventVisualService = new CalendarEventVisualService(),
+  ) {}
+
   public event(event: CalendarEventRecord) {
-    const start = getZonedParts(event.startsAt, event.timezone);
-    const end = getZonedParts(event.endsAt, event.timezone);
+    const visual = this.visualService.resolve(event);
+    const spansMidnight = event.isAllDay
+      ? Boolean(
+          event.allDayStartDate &&
+          event.allDayEndDateExclusive &&
+          new Date(event.allDayEndDateExclusive).getTime() -
+            new Date(event.allDayStartDate).getTime() >
+            24 * 60 * 60_000,
+        )
+      : event.startsAt?.toISOString().slice(0, 10) !==
+        event.endsAt?.toISOString().slice(0, 10);
+
     return {
       id: event.id,
       title: event.title,
       description: event.description,
       type: event.type,
       status: event.status,
-      startsAt: event.startsAt.toISOString(),
-      endsAt: event.endsAt.toISOString(),
+      startsAt: event.startsAt?.toISOString() ?? null,
+      endsAt: event.endsAt?.toISOString() ?? null,
+      allDayStartDate: event.allDayStartDate,
+      allDayEndDateExclusive: event.allDayEndDateExclusive,
+      desiredArrivalAt: event.desiredArrivalAt?.toISOString() ?? null,
       timezone: event.timezone,
       isAllDay: event.isAllDay,
       location: event.location,
@@ -32,18 +49,8 @@ export class CalendarResponseMapper {
       updatedAt: event.updatedAt.toISOString(),
       participants: event.participants,
       taskLink: event.taskLink,
-      visual:
-        event.participants.length > 1
-          ? { colorToken: 'shared', isShared: true }
-          : {
-              colorToken:
-                event.participants[0]?.user.calendarColorToken ?? 'neutral',
-              isShared: false,
-            },
-      spansMidnight:
-        start.year !== end.year ||
-        start.month !== end.month ||
-        start.day !== end.day,
+      visual,
+      spansMidnight,
       permissions: { canEdit: true, canCancel: true, canDelete: true },
     };
   }

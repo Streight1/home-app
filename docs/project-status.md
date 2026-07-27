@@ -15,8 +15,10 @@ Samostatné Úkoly nyní poskytují jednorázové a opakované úkoly, více ú�
 délku, místo, tři explicitní stavy termínu, přístupný date picker, kategorie,
 historii dokončení, dokumentové vazby a dashboard s explicitním API kontraktem.
 Kalendář je oddělený modul pro události, přesné směnové presety,
-participant-specific barvy, timezone/DST šablony, read-only task feed a skutečný
-day/week time-grid. Scheduling navrhuje společné sloty a vytváří `TASK` event
+centralizované event/participant/shared barvy, explicitní all-day DATE model,
+kompaktní měsíční cestu, selection/bulk operace, timezone/DST šablony,
+read-only task feed a skutečný day/week time-grid. Scheduling navrhuje společné
+sloty a vytváří `TASK` event
 výhradně po explicitním potvrzení.
 Samostatný location/travel modul přidává skutečný default-place autocomplete,
 volitelné Mapy.com Suggest/Geocoding/Route, AUTO počátek po účastnících,
@@ -32,10 +34,14 @@ insighty, evidencí opakovaných plateb a kompaktním dashboard widgetem.
 Sdílený roční Bucket list je samostatný modul pro společná přání, více
 účastníků, cílové datum a místo, dokumentové vazby, dokončovací historii,
 progress, dashboard a explicitní rollover do dalšího roku.
-Projekt má také reprodukovatelný single-VPS staging: multi-stage Caddy/Nest
-image, interní PostgreSQL, explicitní migraci, preflight, rotované container
-logy a kontrolované backup/restore skripty. Skutečná doména, certifikát a Google
-production login vyžadují cílový VPS a uživatelské credentials.
+Projekt má také plně kontejnerový single-VPS staging. CI po úspěšných kontrolách
+připravuje verzované API a gateway image pro GHCR, deployment používá named
+volumes, one-shot inicializaci oprávnění a automatickou `migrate deploy` bránu.
+Veřejná konfigurace webu vzniká až při startu gateway a tajemství lze předat
+přes Compose secret soubory. Běžný start i staging aktualizace používají
+`docker compose up -d`; záloha, obnova a nedestruktivní převod starých bind
+mountů mají samostatné kontejnerové postupy. Skutečná doména, certifikát, běh
+GitHub Actions a Google production login vyžadují cílové externí prostředí.
 
 ## Implementováno
 
@@ -89,8 +95,9 @@ production login vyžadují cílový VPS a uživatelské credentials.
   bezpečným dashboard quick complete.
 - Samostatné Calendar event/template/feed API, transakční bulk apply, batch
   rollback, čtyři přesné směnové presety, noční směna jako jeden event,
-  participant color/shared model, soft-delete všech zdrojů a dnešní dashboard
-  widget. Task-linked delete zachovává Task a odstraňuje aktivní link.
+  explicitní event color precedence, all-day DATE hranice, selection/bulk
+  update/delete, soft-delete všech zdrojů a dnešní dashboard widget.
+  Task-linked delete zachovává Task a odstraňuje aktivní link.
 - Vertikální 24hodinový day/week time-grid s all-day sekcí, current-time
   indikátorem, intervalovým overlap layoutem, travel bloky a vizuálními segmenty
   jediné noční/vícedenní entity; dlouhý event surface vyplňuje celou společně
@@ -168,10 +175,11 @@ production login vyžadují cílový VPS a uživatelské credentials.
 - **Vytěžování:** layout-aware PDF text layer, fakturové line items a review
   fungují; OCR obrázků a durable queue nejsou nakonfigurované. Supplier profily
   pokrývají jen explicitně rozpoznané, verzované layouty.
-- **Produkční provoz:** single-VPS Compose, Caddy HTTPS/reverse proxy,
-  neprivilegované API, explicitní migrace a ruční/schedulovatelný backup/restore
-  jsou implementované; centralizovaná observabilita, CI/CD a off-site backup
-  transport zůstávají provozní úkol.
+- **Produkční provoz:** one-command single-VPS Compose, GHCR workflow, Caddy
+  HTTPS/reverse proxy, neprivilegované API, automatická one-shot migrace,
+  named volumes a kontejnerový backup/restore jsou implementované. Skutečné
+  publikování workflow, centralizovaná observabilita a off-site transport záloh
+  zůstávají provozní úkol.
 - **Mapy.com:** kód a mockované provider kontrakty jsou hotové; skutečný
   development provider smoke vyžaduje vlastní klíč a v tomto workspace zatím
   nebyl proveden.
@@ -185,7 +193,7 @@ production login vyžadují cílový VPS a uživatelské credentials.
 - Výběr aktivní domácnosti uživatelem.
 - Google Calendar, Gmail, Drive nebo jiné Google API integrace.
 - Automaticky nainstalovaný backup scheduler a off-site replikace.
-- CI/CD a centralizovaná observabilita.
+- Centralizovaná observabilita a automatický off-site transport záloh.
 
 ## Známá omezení
 
@@ -221,24 +229,25 @@ production login vyžadují cílový VPS a uživatelské credentials.
   konfigurace.
 - Vizuální baselines jsou vytvořené pro připnutý Playwright Chromium na tomto
   Linux prostředí; cross-browser nebo cloudové vizuální porovnání není zapojené.
-- Workspace obsahuje prázdnou read-only `.git` složku, kterou Git nepovažuje za
-  repozitář, takže zde nelze získat platný `git status` ani vytvořit commit.
+- Mutable `staging` image usnadňuje aktualizaci, ale pro reprodukovatelný
+  release je nutné použít release nebo commit-SHA tag; image rollback není
+  databázový rollback.
 
 ## Poslední ověření
 
 - `pnpm db:generate` — prošlo s Prisma 7.8.0.
 - `pnpm db:migrate:deploy` — prošlo proti zachované lokální PostgreSQL
-  databázi; všech 17 nedestruktivních migrací včetně
-  `20260723120000_yearly_bucket_list` je aplikováno bez resetu.
-- `pnpm env:check` a `pnpm architecture:check` — prošly pro 260 produkčních
+  databázi; všech 18 nedestruktivních migrací včetně
+  `20260727120000_calendar_colors_all_day_bulk` je aplikováno bez resetu.
+- `pnpm env:check` a `pnpm architecture:check` — prošly pro 266 produkčních
   TSX souborů, 46 centralizovaných environment proměnných a produkční
-  deployment kontrakt.
-- `pnpm docs:check` — 0 lint chyb, 58 Markdown a 58 povinných dokumentů.
+  i registry deployment kontrakt.
+- `pnpm docs:check` — 0 lint chyb, 62 Markdown a 60 povinných dokumentů.
 - `pnpm lint` — prošlo bez varování; `pnpm typecheck` prošlo pro API i web.
-- `pnpm test` — API 361/361 a web 181/181 testů prošlo.
-- `pnpm storybook:test` — 77/77 Chromium story testů prošlo.
+- `pnpm test` — API 372/372 a web 193/193 testů prošlo.
+- `pnpm storybook:test` — 81/81 Chromium story testů prošlo.
 - `pnpm build` — NestJS i Vite build prošly; `pnpm storybook:build` prošel.
-- `pnpm test:visual` — 78/78 baseline screenshot testů prošlo včetně ročního
+- `pnpm test:visual` — 89/89 baseline screenshot testů prošlo včetně ročního
   Bucket listu a jeho dashboardu na mobilu, tabletu a desktopu i finančního
   ledgeru, CSV importního review, kategorií a trendu v light/dark režimu,
   rozpočtových stavů, dialogu, zjištění, opakovaných plateb a dashboard widgetu,
@@ -246,16 +255,30 @@ production login vyžadují cílový VPS a uživatelské credentials.
   768px geometrie 720minutové směny, shodné výšky surface a click targetu,
   day/week překryvů, travel bloku s oddělenou rezervou, měsíčního template
   pickeru, task-linked delete dialogu, scheduling diagnostiky, date-only
-  formuláře, duration presetů a dashboardového error/empty rozlišení na 390,
-  768, 1280 a 1440 px v light/dark režimu.
-- `pnpm test:accessibility` — 59/59 axe, keyboard date-picker, focus, reflow,
-  touch-target a reduced-motion testů prošlo.
+  formuláře, duration presetů, barevného výběrového režimu kalendáře,
+  all-day/custom-origin formuláře, bulk dialogů a dashboardového error/empty
+  rozlišení na 390, 768, 1280 a 1440 px v light/dark režimu.
+- `pnpm test:accessibility` — 63/63 axe, keyboard date-picker, focus, reflow,
+  touch-target a reduced-motion testů prošlo; společný `pnpm test:e2e` prošel
+  152/152 Playwright scénářů.
 - `pnpm format:check` a celý `pnpm check` prošly.
-- `docker compose -f compose.prod.yaml config`, multi-stage gateway/API/migrate
-  build a izolovaný produkční Compose smoke prošly nad dočasnými daty v `/tmp`:
-  všech 17 migrací se aplikovalo, DB/API byly healthy, `/`, `/login` a `/app`
-  vrátily 200, anonymní `/api/v1/auth/me` 401 a gateway odmítla
-  `/uploads/*` i `/internal/*` odpovědí 404. API ani DB neměly host port.
+- `deployment/compose.yaml` i restore override prošly `docker compose config`.
+  Lokální GHCR-compatible API/gateway image se sestavily; API běží jako UID
+  10001 a oba image neobsahují source/test fixtures ani development server.
+- Izolovaný one-command Compose smoke nad prázdnými named volumes prošel:
+  `volumes-init` a `migrate` skončily 0, všech 17 migrací se aplikovalo, DB/API
+  byly healthy a PostgreSQL host i local auth používají SCRAM. `/`, `/login` a
+  `/app` vrátily 200, anonymní `/api/v1/auth/me` 401 a gateway odmítla
+  `/uploads/*` i `/internal/*` odpovědí 404.
+- Opakovaný `docker compose up -d` skončil s `No pending migrations`; DB i
+  upload marker přežily `compose down` bez `-v`. Změna veřejného staging labelu
+  aktualizovala `runtime-config.js` při shodném image digestu. Maintenance
+  backup vytvořil dump/archive/manifest/checksumy a izolovaný restore vrátil DB
+  i upload marker. Úmyslný migration exit 42 zabránil startu API.
+- Workflow YAML prošlo Prettier parserem a projektovou kontrolou oprávnění,
+  připnutých SHA, tagů a publish brány. Externí `actionlint` image nebyl spuštěn,
+  protože bezpečnostní sandbox odmítl předání souboru třetímu image. Skutečné
+  publikování do GHCR nebylo bez GitHub Actions credentials provedeno.
 - Skutečný Nest/Vite dev smoke ověřil start obou aplikací, korektní propagaci
   `SIGINT`, web 200, chráněné `auth/me`, Bucket list, Tasks, Scheduling a
   Finance API 401 bez session, readiness 401 bez interního tokenu a readiness
@@ -272,9 +295,9 @@ production login vyžadují cílový VPS a uživatelské credentials.
 - Browser smoke nebyl reálný Google login ani end-to-end databázový Tasks
   scénář přihlášeného uživatele. Reálný Google účet v tomto prostředí testován
   nebyl.
-- `git status --short` stále nelze získat: workspace má neplatnou read-only
-  `.git` složku. Runtime adresáře byly kontrolovány samostatně a testovací
-  soubory byly vytvářené pouze v `/tmp`.
+- `git status --short` byl před závěrečným reportem dostupný; změny neobsahují
+  runtime data ani secret soubory. Kontejnerové lifecycle testy používají pouze
+  izolované dočasné volumes a soubory v `/tmp`.
 
 ## Doporučený následující krok
 

@@ -1,4 +1,4 @@
-import { useMemo, useState, type SyntheticEvent } from 'react';
+import { useState, type SyntheticEvent } from 'react';
 import { Button } from '../../../../components/ui/Button/Button.js';
 import { InlineAlert } from '../../../../components/ui/InlineAlert/InlineAlert.js';
 import { Input } from '../../../../components/ui/Input/Input.js';
@@ -10,20 +10,21 @@ import type {
   CalendarEvent,
   CalendarEventInput,
   CalendarEventType,
+  CalendarVisualColorToken,
   TravelPlan,
   TravelPlanInput,
 } from '../../types/calendar.types.js';
+import { addDays, fromIsoDate, localIsoDate } from '../../lib/calendarDate.js';
+import { CalendarEventColorPicker } from './CalendarEventColorPicker.js';
 import { EventLocationFields } from './EventLocationFields.js';
-import { EventTravelFields } from './EventTravelFields.js';
 import { EventParticipantSelector } from './EventParticipantSelector.js';
+import {
+  EventScheduleFields,
+  useCalendarEventSchedule,
+} from './EventScheduleFields.js';
+import { EventTravelFields } from './EventTravelFields.js';
 import { WorkShiftPresetPicker } from './WorkShiftPresetPicker.js';
 import type { WorkShiftPreset } from './workShiftPresets.js';
-
-function localDateTime(value: string | Date): string {
-  const date = typeof value === 'string' ? new Date(value) : value;
-  const offset = date.getTimezoneOffset() * 60_000;
-  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
-}
 
 const typeLabels: Record<CalendarEventType, string> = {
   GENERAL: 'Obecná událost',
@@ -33,6 +34,10 @@ const typeLabels: Record<CalendarEventType, string> = {
   PERSONAL: 'Osobní',
   TRAVEL: 'Cesta',
   OTHER: 'Ostatní',
+};
+const localDateTime = (date: Date) => {
+  const offset = date.getTimezoneOffset() * 60_000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
 };
 
 export function CalendarEventForm({
@@ -58,26 +63,12 @@ export function CalendarEventForm({
   onSubmit: (input: CalendarEventInput) => void;
   onCancel: () => void;
 }) {
-  const defaultStart = useMemo(() => {
-    if (initial) return localDateTime(initial.startsAt);
-    const date = initialDate ? new Date(`${initialDate}T09:00:00`) : new Date();
-    date.setMinutes(0, 0, 0);
-    return localDateTime(date);
-  }, [initial, initialDate]);
-  const defaultEnd = useMemo(() => {
-    if (initial) return localDateTime(initial.endsAt);
-    return localDateTime(
-      new Date(new Date(defaultStart).getTime() + 60 * 60_000),
-    );
-  }, [defaultStart, initial]);
   const [title, setTitle] = useState(initial?.title ?? '');
   const [description, setDescription] = useState(initial?.description ?? '');
   const [type, setType] = useState<CalendarEventType>(
     initial?.type ?? 'GENERAL',
   );
-  const [startsAt, setStartsAt] = useState(defaultStart);
-  const [endsAt, setEndsAt] = useState(defaultEnd);
-  const [isAllDay, setIsAllDay] = useState(initial?.isAllDay ?? false);
+  const schedule = useCalendarEventSchedule(initial, initialDate);
   const [place, setPlace] = useState<EventPlaceValue>({
     placeId: initial?.locationPlaceId ?? null,
     label: initial?.locationLabel ?? initial?.location ?? '',
@@ -91,12 +82,8 @@ export function CalendarEventForm({
       ? {
           travelerUserId: initialTravelPlan.travelerUserId,
           originMode: initialTravelPlan.originMode,
-          ...(initialTravelPlan.originPlaceId !== undefined
-            ? { originPlaceId: initialTravelPlan.originPlaceId }
-            : {}),
-          ...(initialTravelPlan.previousEventId !== undefined
-            ? { previousEventId: initialTravelPlan.previousEventId }
-            : {}),
+          originPlaceId: initialTravelPlan.originPlaceId ?? null,
+          previousEventId: initialTravelPlan.previousEventId ?? null,
           routeMode: initialTravelPlan.routeMode,
           avoidTolls: initialTravelPlan.avoidTolls,
           avoidHighways: initialTravelPlan.avoidHighways,
@@ -109,7 +96,7 @@ export function CalendarEventForm({
   );
   const [colorToken, setColorToken] = useState<
     CalendarEventInput['colorToken']
-  >(initial?.colorToken ?? 'primary');
+  >(initial?.colorToken ?? null);
   const [participantIds, setParticipantIds] = useState(
     initial?.participants.map(({ user }) => user.id) ?? [currentUserId],
   );
@@ -122,28 +109,43 @@ export function CalendarEventForm({
           ? current.filter((id) => id !== userId)
           : [...current, userId],
     );
-  const preset = (value: WorkShiftPreset) => {
-    const start = new Date(startsAt);
-    const [startHour, startMinute] = value.start.split(':').map(Number);
-    start.setHours(startHour ?? 0, startMinute ?? 0, 0, 0);
+  const applyPreset = (value: WorkShiftPreset) => {
+    const start = new Date(schedule.start);
+    const [startHour = 0, startMinute = 0] = value.start.split(':').map(Number);
+    start.setHours(startHour, startMinute, 0, 0);
     const end = new Date(start);
-    const [endHour, endMinute] = value.end.split(':').map(Number);
-    end.setHours(endHour ?? 0, endMinute ?? 0, 0, 0);
-    if (value.endDayOffset) end.setDate(end.getDate() + value.endDayOffset);
-    setStartsAt(localDateTime(start));
-    setEndsAt(localDateTime(end));
+    const [endHour = 0, endMinute = 0] = value.end.split(':').map(Number);
+    end.setHours(endHour, endMinute, 0, 0);
+    end.setDate(end.getDate() + value.endDayOffset);
+    schedule.setTimedRange(localDateTime(start), localDateTime(end));
   };
+  const automaticColor: CalendarVisualColorToken =
+    participantIds.length > 1
+      ? 'shared'
+      : (members.find(({ id }) => id === participantIds[0])
+          ?.calendarColorToken ?? 'neutral');
   const submit = (event: SyntheticEvent<HTMLFormElement, SubmitEvent>) => {
     event.preventDefault();
+    const allDayEndExclusive = localIsoDate(
+      addDays(fromIsoDate(schedule.allDayEnd), 1),
+    );
     onSubmit({
       title: title.trim(),
       description: description.trim() || null,
       type,
-      startsAt: new Date(startsAt).toISOString(),
-      endsAt: new Date(endsAt).toISOString(),
+      startsAt: schedule.isAllDay
+        ? null
+        : new Date(schedule.start).toISOString(),
+      endsAt: schedule.isAllDay ? null : new Date(schedule.end).toISOString(),
+      allDayStartDate: schedule.isAllDay ? schedule.allDayStart : null,
+      allDayEndDateExclusive: schedule.isAllDay ? allDayEndExclusive : null,
+      desiredArrivalAt:
+        schedule.isAllDay && schedule.desiredArrival
+          ? new Date(schedule.desiredArrival).toISOString()
+          : null,
       timezone:
         Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Prague',
-      isAllDay,
+      isAllDay: schedule.isAllDay,
       location: place.label.trim() || null,
       locationPlaceId: place.placeId,
       locationLabel: place.label.trim() || null,
@@ -182,34 +184,7 @@ export function CalendarEventForm({
         onPlaceChange={setPlace}
         onNotesChange={setLocationNotes}
       />
-      <fieldset className="grid gap-4 sm:grid-cols-2">
-        <legend className="mb-3 text-section-title font-semibold sm:col-span-2">
-          Datum a čas
-        </legend>
-        <Input
-          label="Začátek"
-          type="datetime-local"
-          required
-          value={startsAt}
-          onChange={(event) => setStartsAt(event.target.value)}
-        />
-        <Input
-          label="Konec"
-          type="datetime-local"
-          required
-          value={endsAt}
-          onChange={(event) => setEndsAt(event.target.value)}
-        />
-        <label className="flex min-h-11 items-center gap-3 text-body-sm font-medium">
-          <input
-            type="checkbox"
-            checked={isAllDay}
-            onChange={(event) => setIsAllDay(event.target.checked)}
-            className="size-5 accent-primary"
-          />
-          Celý den
-        </label>
-      </fieldset>
+      <EventScheduleFields value={schedule} />
       <fieldset className="grid gap-4 sm:grid-cols-2">
         <legend className="mb-3 text-section-title font-semibold sm:col-span-2">
           Typ a barva
@@ -221,6 +196,7 @@ export function CalendarEventForm({
             const next = event.target.value as CalendarEventType;
             setType(next);
             if (next === 'WORK_SHIFT') {
+              schedule.setIsAllDay(false);
               const preferred =
                 defaultWorkShiftParticipantId &&
                 members.some(({ id }) => id === defaultWorkShiftParticipantId)
@@ -236,25 +212,14 @@ export function CalendarEventForm({
             </option>
           ))}
         </Select>
-        <Select
-          label="Barva"
-          value={colorToken}
-          onChange={(event) =>
-            setColorToken(
-              event.target.value as CalendarEventInput['colorToken'],
-            )
-          }
-        >
-          <option value="primary">Fialová</option>
-          <option value="blue">Modrá</option>
-          <option value="cyan">Tyrkysová</option>
-          <option value="success">Zelená</option>
-          <option value="warning">Oranžová</option>
-          <option value="danger">Červená</option>
-        </Select>
         {type === 'WORK_SHIFT' ? (
-          <WorkShiftPresetPicker onSelect={preset} />
+          <WorkShiftPresetPicker onSelect={applyPreset} />
         ) : null}
+        <CalendarEventColorPicker
+          value={colorToken}
+          fallback={automaticColor}
+          onChange={setColorToken}
+        />
       </fieldset>
       <EventParticipantSelector
         type={type}
@@ -265,7 +230,11 @@ export function CalendarEventForm({
       <EventTravelFields
         {...(initial ? { eventId: initial.id } : {})}
         members={members.filter((member) => participantIds.includes(member.id))}
-        startsAt={startsAt}
+        startsAt={schedule.start}
+        isAllDay={schedule.isAllDay}
+        allDayStartDate={schedule.allDayStart}
+        desiredArrivalAt={schedule.desiredArrival}
+        onDesiredArrivalAtChange={schedule.setDesiredArrival}
         destinationPlaceId={place.placeId}
         calculateTravel={calculateTravel}
         value={travelPlan}

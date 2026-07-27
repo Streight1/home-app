@@ -61,11 +61,14 @@ Single-VPS staging používá jeden HTTPS origin pro statický frontend i
 `/api/v1`. Caddy je jediný veřejný listener; API má `TRUST_PROXY=true`, ale
 CORS a Origin stále přijímají jen přesný `WEB_ORIGIN`. Proxy režim není
 autorizace. Production session cookie je `Secure`, health token zůstává jen v
-API container environment a `/internal/*` se přes gateway neproxyuje.
+API secret mountu a `/internal/*` se přes gateway neproxyuje. Registry
+deployment čte interní token přes `INTERNAL_HEALTH_TOKEN_FILE`; gateway ani
+browser jej nedostanou.
 
-Frontend image dostává Google Web Client ID, ne Client Secret. Authorized
-JavaScript origins musí obsahovat produkční HTTPS origin. Popup/callback flow
-nepotřebuje backend redirect URI a nevytváří deployment auth bypass.
+Gateway při startu vloží veřejný Google Web Client ID do validovaného runtime
+configu, ne Client Secret. Authorized JavaScript origins musí obsahovat
+produkční HTTPS origin. Popup/callback flow nepotřebuje backend redirect URI a
+nevytváří deployment auth bypass.
 
 ## Deny-by-default API
 

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { resolveSecretEnvironment } from './secret-file-resolver.js';
 
 const booleanFromString = z
   .enum(['true', 'false'])
@@ -153,7 +154,7 @@ export function normalizeAllowedEmails(value: string): string[] {
 export function validateEnvironment(
   input: Record<string, unknown>,
 ): AppEnvironment {
-  const result = appConfigSchema.safeParse(input);
+  const result = appConfigSchema.safeParse(resolveSecretEnvironment(input));
   if (!result.success)
     throw new Error(
       `Neplatná konfigurace prostředí: ${z.prettifyError(result.error)}`,

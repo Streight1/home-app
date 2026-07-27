@@ -74,6 +74,32 @@ export class CalendarTemplateValidationService {
     template: CalendarTemplateRecord,
     date: string,
   ): { event: CalendarEventWriteInput; usedEarlierOffset: boolean } {
+    if (template.isAllDay) {
+      return {
+        event: {
+          title: template.title,
+          description: template.description,
+          type: template.eventType,
+          startsAt: null,
+          endsAt: null,
+          allDayStartDate: new Date(`${date}T00:00:00Z`),
+          allDayEndDateExclusive: new Date(
+            `${addIsoDateDays(date, Math.max(1, template.endDayOffset + 1))}T00:00:00Z`,
+          ),
+          desiredArrivalAt: null,
+          timezone: template.timezone,
+          isAllDay: true,
+          location: template.defaultLocation,
+          locationPlaceId: template.locationPlaceId,
+          locationLabel: template.locationLabel ?? template.defaultLocation,
+          locationNotes: null,
+          calculateTravel: template.calculateTravel,
+          colorToken: template.colorToken,
+          participants: template.participants,
+        },
+        usedEarlierOffset: false,
+      };
+    }
     const startCandidates = localDateTimeCandidates(
       date,
       template.startLocalTime,
@@ -100,8 +126,11 @@ export class CalendarTemplateValidationService {
         type: template.eventType,
         startsAt,
         endsAt,
+        allDayStartDate: null,
+        allDayEndDateExclusive: null,
+        desiredArrivalAt: null,
         timezone: template.timezone,
-        isAllDay: template.isAllDay,
+        isAllDay: false,
         location: template.defaultLocation,
         locationPlaceId: template.locationPlaceId,
         locationLabel: template.locationLabel ?? template.defaultLocation,

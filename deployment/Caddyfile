@@ -40,6 +40,12 @@
 		}
 	}
 
+	handle /runtime-config.js {
+		root * /run/homeapp
+		header Cache-Control "no-store, max-age=0"
+		file_server
+	}
+
 	@assets path /assets/*
 	handle @assets {
 		root * /srv

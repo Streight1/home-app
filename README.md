@@ -82,14 +82,26 @@ popisuje [Google OAuth runbook](docs/runbooks/google-oauth.md).
 
 ## VPS staging
 
-Internetově dostupný staging používá `compose.prod.yaml`: Caddy je jediná
-veřejná služba na 80/443, obsluhuje statický React build a proxyuje `/api/*` do
-interního NestJS. API ani PostgreSQL nemají host port, uploady jsou mountované
-pouze do API a migrace běží jednorázově před aktualizací aplikace.
+Hlavní internetový staging používá hotové GHCR image a
+`deployment/compose.yaml`. Caddy je jediná veřejná služba na 80/443, API a
+PostgreSQL nemají host port, runtime data jsou v named volumes a migrace jsou
+one-shot podmínka startu API. Veřejnou browser konfiguraci generuje gateway při
+startu, takže změna domény, Google Client ID, staging labelu nebo limitů
+nevyžaduje rebuild image.
 
-První nasazení, produkční environment, Google origin, firewall, zálohy a
-obnovu popisuje [VPS deployment runbook](docs/runbooks/vps-deployment.md).
-Lokální `compose.yaml` zůstává vývojový a není tímto postupem nahrazen.
+Po jednorázové přípravě `deployment/.env`, secret souborů a případného GHCR
+loginu je první start i staging aktualizace:
+
+```bash
+cd deployment
+docker compose up -d
+```
+
+Postup popisuje [one-command runbook](docs/runbooks/one-command-deployment.md),
+registry [GHCR runbook](docs/runbooks/container-registry.md) a hardening
+[VPS deployment runbook](docs/runbooks/vps-deployment.md).
+`compose.prod.yaml` zůstává bezpečně zachovaná legacy cesta pro migraci
+existujícího VPS; lokální `compose.yaml` zůstává vývojový.
 
 Browserové URL jsou záměrně pouze `http://localhost:5173/login` a
 `http://localhost:5173/app`. Obrazovky a entity uvnitř workspace nejsou veřejně

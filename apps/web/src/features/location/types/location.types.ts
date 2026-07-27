@@ -38,5 +38,6 @@ export interface CalendarPreferences {
   mediumCalendarView: CalendarViewPreference;
   expandedCalendarView: CalendarViewPreference;
   showTravelBlocks: boolean;
+  showTravelBlocksInMonth: boolean;
   lastWorkShiftParticipantUserId: string | null;
 }

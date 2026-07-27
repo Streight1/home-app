@@ -185,6 +185,18 @@ const eventItemSource = await readFile(
   'utf8',
 );
 if (
+  /\b(?:bg-(?:surface|primary|violet|blue|cyan|green|amber|orange|rose|pink)|backgroundColor)\b/.test(
+    eventItemSource,
+  )
+)
+  errors.push(
+    'CalendarEventItem nesmí přepisovat centralizovaný event visual model hardcoded pozadím.',
+  );
+if (!eventItemSource.includes('calendarVisualClasses[visual.colorToken]'))
+  errors.push(
+    'CalendarEventItem musí aplikovat celý sémantický visual model události.',
+  );
+if (
   !eventBlockSource.includes('getSegmentHeightPx') ||
   /MINUTE_HEIGHT_PX|HOUR_HEIGHT_PX|endMinute\s*-\s*segment\.startMinute/.test(
     eventBlockSource,
@@ -888,7 +900,43 @@ for (const file of [
     errors.push(
       `${path} implementuje timezone/DST výpočet v React komponentě.`,
     );
+  if (
+    path.endsWith('.tsx') &&
+    /(?:colorToken\s*[:=][^\n;]*email|calendarVisualClasses\s*\[[^\]]*email|colorClasses\s*\[[^\]]*email)/i.test(
+      source,
+    )
+  )
+    errors.push(`${path} odvozuje kalendářní barvu z e-mailu.`);
+  if (
+    path.includes('/components/') &&
+    /departureAt\s*[:=][\s\S]{0,100}(?:getTime\(\)|durationSeconds|buffer)/.test(
+      source,
+    )
+  )
+    errors.push(`${path} počítá departureAt v React komponentě.`);
 }
+
+const calendarEventFormPath = join(
+  calendarWebDirectory,
+  'components/forms/CalendarEventForm.tsx',
+);
+const calendarEventFormLines = await readLines(calendarEventFormPath);
+if (calendarEventFormLines.length > 300)
+  errors.push(
+    `CalendarEventForm.tsx má ${calendarEventFormLines.length} řádků; limit je 300.`,
+  );
+const calendarRepositorySource = await readFile(
+  join(calendarDirectory, 'infrastructure/prisma-calendar-event.repository.ts'),
+  'utf8',
+);
+if (
+  !/bulkDelete[\s\S]*taskCalendarLink\.updateMany[\s\S]*removedAt/.test(
+    calendarRepositorySource,
+  )
+)
+  errors.push(
+    'Hromadné mazání kalendáře musí zachovat Task a uzavřít TaskCalendarLink.',
+  );
 
 for (const file of [
   ...(await collectFiles(join(webSource, 'features/dashboard'), '.ts')),
@@ -1191,9 +1239,12 @@ for (const file of apiFiles) {
   const isLocalDevelopmentTool = path.startsWith(
     'apps/api/src/modules/document-extraction/tools/',
   );
+  const isConfigurationSecretResolver =
+    path === 'apps/api/src/config/secret-file-resolver.ts';
   if (
     !isStorageInfrastructure &&
     !isLocalDevelopmentTool &&
+    !isConfigurationSecretResolver &&
     /from\s+['"](?:node:fs|fs(?:\/promises)?)/.test(source)
   )
     errors.push(`${path} provádí filesystem operace mimo StoragePort.`);
@@ -1381,6 +1432,18 @@ if (
   /TRAVEL_BLOCK|travelBlock/.test(calendarEventModelBody)
 )
   errors.push('Odvozený travel block nesmí být uložen jako CalendarEvent.');
+if (
+  calendarEventModelBody &&
+  (!/startsAt\s+DateTime\?/.test(calendarEventModelBody) ||
+    !/endsAt\s+DateTime\?/.test(calendarEventModelBody) ||
+    !/allDayStartDate\s+DateTime\?\s+@db\.Date/.test(calendarEventModelBody) ||
+    !/allDayEndDateExclusive\s+DateTime\?\s+@db\.Date/.test(
+      calendarEventModelBody,
+    ))
+)
+  errors.push(
+    'CalendarEvent musí reprezentovat all-day události explicitními DATE hranicemi, ne falešnou půlnocí.',
+  );
 if (
   /\bVITE_MAPY_API_KEY\s*=/.test(
     await readFile(join(root, '.env.example'), 'utf8'),

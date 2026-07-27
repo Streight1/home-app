@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { PrismaService } from '../../infrastructure/database/prisma.service.js';
 import { HouseholdAccessService } from '../households/household-access.service.js';
+import { getCalendarEventBounds } from './domain/calendar-event-schedule.js';
 
 export interface CalendarAvailabilityEvent {
   id: string;
@@ -44,14 +45,32 @@ export class CalendarAvailabilityFacade {
           status: 'ACTIVE',
           deletedAt: null,
           participants: { some: { userId: { in: input.participantIds } } },
-          startsAt: { lt: new Date(input.to.getTime() + 24 * 60 * 60_000) },
-          endsAt: { gt: new Date(input.from.getTime() - 24 * 60 * 60_000) },
+          OR: [
+            {
+              isAllDay: false,
+              startsAt: {
+                lt: new Date(input.to.getTime() + 24 * 60 * 60_000),
+              },
+              endsAt: {
+                gt: new Date(input.from.getTime() - 24 * 60 * 60_000),
+              },
+            },
+            {
+              isAllDay: true,
+              allDayStartDate: { lte: input.to },
+              allDayEndDateExclusive: { gt: input.from },
+            },
+          ],
         },
         select: {
           id: true,
           title: true,
           startsAt: true,
           endsAt: true,
+          isAllDay: true,
+          allDayStartDate: true,
+          allDayEndDateExclusive: true,
+          timezone: true,
           locationPlaceId: true,
           updatedAt: true,
           participants: { select: { userId: true } },
@@ -82,14 +101,24 @@ export class CalendarAvailabilityFacade {
               (participant) => participant.userId === participantId,
             ),
           )
-          .map((event) => ({
-            id: event.id,
-            title: event.title,
-            startsAt: event.startsAt,
-            endsAt: event.endsAt,
-            locationPlaceId: event.locationPlaceId,
-            updatedAt: event.updatedAt,
-          })),
+          .map((event) => {
+            const bounds = getCalendarEventBounds({
+              ...event,
+              allDayStartDate:
+                event.allDayStartDate?.toISOString().slice(0, 10) ?? null,
+              allDayEndDateExclusive:
+                event.allDayEndDateExclusive?.toISOString().slice(0, 10) ??
+                null,
+            });
+            return {
+              id: event.id,
+              title: event.title,
+              startsAt: bounds.start,
+              endsAt: bounds.end,
+              locationPlaceId: event.locationPlaceId,
+              updatedAt: event.updatedAt,
+            };
+          }),
       })),
       version: createHash('sha256')
         .update(

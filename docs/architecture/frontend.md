@@ -149,6 +149,12 @@ kliknutí vede na detail cílové události. Jeho positioner používá serverov
 bloku. Template manager používá lokalizovaný pondělím začínající month grid a
 adaptivní delete dialog rozlišuje task-linked zdroj. Barvu a shared model přebírá ze
 serverového calendar response, nikoli z e-mailu nebo klientského hashe.
+`CalendarEventItem` mapuje serverový visual token na statický sémantický class
+registr a barví celý surface. `EventScheduleFields` odděluje timed a all-day
+hodnoty, uchovává ručně změněný konec a `EventTravelFields` pro all-day vyžádá
+desired arrival pouze pro routing. Toolbar nabízí Den/Týden/Měsíc přímo.
+Selection state zůstává jen v instanci CalendarPage; bulk dialogy používají
+explicitní operace a žádné event ID nezapisují do URL.
 
 Scheduling Dialog drží parametry a nejvýše pět serverových kandidátů. Ruší
 zastaralý suggest request, automaticky nevybírá slot a před potvrzením nic

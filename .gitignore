@@ -9,6 +9,7 @@ test-results/
 .env
 .env.*
 !/.env.example
+!/deployment/.env.example
 .DS_Store
 *.log
 apps/api/src/generated/prisma/

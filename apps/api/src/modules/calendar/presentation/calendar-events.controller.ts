@@ -22,6 +22,14 @@ import { UpdateCalendarEventService } from '../application/events/update-calenda
 import { CalendarFeedQueryDto } from './dto/calendar-feed-query.dto.js';
 import { CreateCalendarEventDto } from './dto/create-calendar-event.dto.js';
 import { UpdateCalendarEventDto } from './dto/update-calendar-event.dto.js';
+import {
+  BulkDeleteCalendarEventsDto,
+  BulkUpdateCalendarEventsDto,
+  CalendarBulkSelectionDto,
+} from './dto/bulk-calendar-events.dto.js';
+import { PreviewBulkCalendarEventsService } from '../application/events/preview-bulk-calendar-events.service.js';
+import { BulkUpdateCalendarEventsService } from '../application/events/bulk-update-calendar-events.service.js';
+import { BulkDeleteCalendarEventsService } from '../application/events/bulk-delete-calendar-events.service.js';
 
 @Controller('calendar/events')
 export class CalendarEventsController {
@@ -32,6 +40,9 @@ export class CalendarEventsController {
     private readonly listEvents: ListCalendarEventsService,
     private readonly cancelEvent: CancelCalendarEventService,
     private readonly deleteEvent: DeleteCalendarEventService,
+    private readonly previewBulk: PreviewBulkCalendarEventsService,
+    private readonly updateBulk: BulkUpdateCalendarEventsService,
+    private readonly deleteBulk: BulkDeleteCalendarEventsService,
   ) {}
   @Post()
   public create(
@@ -46,6 +57,27 @@ export class CalendarEventsController {
     @Query() query: CalendarFeedQueryDto,
   ) {
     return this.listEvents.execute(principal.userId, query.from, query.to);
+  }
+  @Post('bulk-preview')
+  public bulkPreview(
+    @CurrentUser() principal: SessionPrincipal,
+    @Body() input: CalendarBulkSelectionDto,
+  ) {
+    return this.previewBulk.execute(principal.userId, input.eventIds);
+  }
+  @Patch('bulk-update')
+  public bulkUpdate(
+    @CurrentUser() principal: SessionPrincipal,
+    @Body() input: BulkUpdateCalendarEventsDto,
+  ) {
+    return this.updateBulk.execute(principal.userId, input);
+  }
+  @Post('bulk-delete')
+  public bulkDelete(
+    @CurrentUser() principal: SessionPrincipal,
+    @Body() input: BulkDeleteCalendarEventsDto,
+  ) {
+    return this.deleteBulk.execute(principal.userId, input.eventIds);
   }
   @Get(':eventId')
   public detail(

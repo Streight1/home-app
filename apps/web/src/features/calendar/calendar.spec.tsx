@@ -9,10 +9,13 @@ import type { WorkspaceNavigationValue } from '../../app/workspace-navigation/wo
 import { webEnvironment } from '../../lib/config/environment.js';
 import { deleteCalendarEvent } from './api/calendarApi.js';
 import { CalendarEventItem } from './components/calendar/CalendarEventItem.js';
+import { MonthCalendar } from './components/calendar/MonthCalendar.js';
 import { WeekCalendar } from './components/calendar/WeekCalendar.js';
+import { CalendarBulkDeleteDialog } from './components/bulk/CalendarBulkDeleteDialog.js';
 import { CalendarTemplateManagerDialog } from './components/templates/CalendarTemplateManagerDialog.js';
 import { CalendarEventDeleteDialog } from './components/dialogs/CalendarEventDeleteDialog.js';
 import { CalendarEventForm } from './components/forms/CalendarEventForm.js';
+import { CalendarEventColorPicker } from './components/forms/CalendarEventColorPicker.js';
 import { EventTravelFields } from './components/forms/EventTravelFields.js';
 import { EventParticipantSelector } from './components/forms/EventParticipantSelector.js';
 import { CalendarPage } from './pages/CalendarPage.js';
@@ -23,9 +26,16 @@ import {
 } from './lib/calendarMonth.js';
 import type {
   CalendarFeedItem,
+  CalendarEventInput,
+  CalendarColorToken,
   CalendarTemplate,
   TravelPlanInput,
 } from './types/calendar.types.js';
+
+function ColorPickerHarness() {
+  const [value, setValue] = useState<CalendarColorToken | null>(null);
+  return <CalendarEventColorPicker value={value} onChange={setValue} />;
+}
 
 function TravelFieldsHarness() {
   const [value, setValue] = useState<TravelPlanInput | null>(null);
@@ -206,6 +216,7 @@ function mockApi(
         mediumCalendarView: 'MONTH',
         expandedCalendarView: 'MONTH',
         showTravelBlocks: true,
+        showTravelBlocksInMonth: false,
       });
     if (url.includes('/locations/places')) return response({ items: [] });
     if (url.includes('/travel-origin-candidates'))
@@ -282,7 +293,10 @@ describe('shared calendar frontend', () => {
     expect(
       await screen.findByRole('region', { name: 'Měsíční kalendář' }),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText('Zobrazení')).toHaveValue('month');
+    expect(screen.getByRole('button', { name: 'Měsíc' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
     expect(
       screen.queryByRole('dialog', { name: 'Šablony událostí a směn' }),
     ).not.toBeInTheDocument();
@@ -305,6 +319,50 @@ describe('shared calendar frontend', () => {
     wrapper(<CalendarEventItem item={eventItem} />);
     expect(screen.getByText(/\(\+1 den\)/)).toBeInTheDocument();
     expect(screen.getAllByText('Noční směna')).toHaveLength(1);
+  });
+
+  it('uses the event visual token across the complete event surface', () => {
+    const colored = {
+      ...eventItem,
+      visual: {
+        colorToken: 'rose' as const,
+        isShared: false,
+        kind: 'WORK_SHIFT' as const,
+      },
+    };
+    const { container } = wrapper(<CalendarEventItem item={colored} />);
+    expect(
+      container.querySelector('[data-calendar-event-surface]'),
+    ).toHaveClass(
+      'bg-calendar-rose-surface',
+      'border-calendar-rose-border',
+      'text-calendar-rose-foreground',
+    );
+  });
+
+  it('changes the form preview through the accessible color radio group', async () => {
+    const { container } = wrapper(<ColorPickerHarness />);
+    await userEvent.click(screen.getByRole('radio', { name: 'Modrá' }));
+    expect(container.querySelector('[aria-live="polite"]')).toHaveClass(
+      'bg-calendar-blue-surface',
+    );
+  });
+
+  it('keeps travel compact in the month view by default', () => {
+    wrapper(
+      <MonthCalendar
+        date={new Date(2026, 6, 15)}
+        selectedDate={new Date(2026, 6, 15)}
+        items={[eventItem, travelItem]}
+        onSelectDate={() => undefined}
+      />,
+    );
+    expect(screen.getAllByText('🚗 cesta přibližně 35 min')).toHaveLength(1);
+    expect(
+      screen.queryByRole('button', {
+        name: 'Cesta na Noční směna, přibližně 35 minut, Jana',
+      }),
+    ).not.toBeInTheDocument();
   });
 
   it('renders one overnight entity as two weekly visual segments', () => {
@@ -452,6 +510,7 @@ describe('shared calendar frontend', () => {
   });
 
   it('offers day and overnight shift presets in the shared event form', async () => {
+    const onSubmit = vi.fn();
     wrapper(
       <CalendarEventForm
         members={[
@@ -466,7 +525,7 @@ describe('shared calendar frontend', () => {
         currentUserId="20000000-0000-4000-8000-000000000002"
         loading={false}
         error={null}
-        onSubmit={() => undefined}
+        onSubmit={onSubmit}
         onCancel={() => undefined}
       />,
     );
@@ -481,19 +540,136 @@ describe('shared calendar frontend', () => {
     await userEvent.click(
       screen.getByRole('button', { name: 'Noční 20:00–08:00' }),
     );
-    expect(screen.getByLabelText<HTMLInputElement>('Začátek').value).toMatch(
-      /T20:00$/,
+    expect(screen.getByLabelText<HTMLInputElement>('Čas začátku').value).toBe(
+      '20:00',
     );
-    expect(screen.getByLabelText<HTMLInputElement>('Konec').value).toMatch(
-      /T08:00$/,
+    expect(screen.getByLabelText<HTMLInputElement>('Čas konce').value).toBe(
+      '08:00',
     );
-    const start = new Date(
-      screen.getByLabelText<HTMLInputElement>('Začátek').value,
+    await userEvent.type(screen.getByLabelText('Název'), 'Noční služba');
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Uložit událost' }),
     );
-    const end = new Date(
-      screen.getByLabelText<HTMLInputElement>('Konec').value,
-    );
+    expect(onSubmit).toHaveBeenCalledOnce();
+    const input = onSubmit.mock.calls[0]?.[0] as {
+      startsAt: string;
+      endsAt: string;
+    };
+    const start = new Date(input.startsAt);
+    const end = new Date(input.endsAt);
     expect(end.getTime() - start.getTime()).toBe(12 * 60 * 60_000);
+  });
+
+  it('submits an all-day event with exclusive date boundaries and no time', async () => {
+    const onSubmit = vi.fn<(input: CalendarEventInput) => void>();
+    wrapper(
+      <CalendarEventForm
+        initialDate="2026-08-10"
+        members={[
+          {
+            id: '20000000-0000-4000-8000-000000000002',
+            email: 'jana@example.test',
+            displayName: 'Jana',
+            avatarUrl: null,
+            role: 'MEMBER',
+            calendarColorToken: 'rose',
+          },
+        ]}
+        currentUserId="20000000-0000-4000-8000-000000000002"
+        loading={false}
+        error={null}
+        onSubmit={onSubmit}
+        onCancel={() => undefined}
+      />,
+    );
+    await userEvent.type(screen.getByLabelText('Název'), 'Výročí');
+    await userEvent.click(screen.getByLabelText('Celý den'));
+    expect(screen.queryByLabelText('Čas začátku')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Čas konce')).not.toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Uložit událost' }),
+    );
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        isAllDay: true,
+        startsAt: null,
+        endsAt: null,
+        allDayStartDate: '2026-08-10',
+        allDayEndDateExclusive: '2026-08-11',
+      }),
+    );
+  });
+
+  it('shows desired arrival fields for all-day travel without requiring them', () => {
+    wrapper(
+      <EventTravelFields
+        members={[
+          {
+            id: '20000000-0000-4000-8000-000000000002',
+            email: 'jana@example.test',
+            displayName: 'Jana',
+            avatarUrl: null,
+            role: 'MEMBER',
+            calendarColorToken: 'rose',
+          },
+        ]}
+        startsAt="2026-08-10T09:00"
+        isAllDay
+        allDayStartDate="2026-08-10"
+        destinationPlaceId="60000000-0000-4000-8000-000000000006"
+        calculateTravel
+        value={{
+          travelerUserId: '20000000-0000-4000-8000-000000000002',
+          originMode: 'AUTO',
+          routeMode: 'CAR_FAST_TRAFFIC',
+          avoidTolls: false,
+          avoidHighways: false,
+          travelBufferMinutes: 10,
+        }}
+        onCalculateTravelChange={() => undefined}
+        onChange={() => undefined}
+      />,
+    );
+    expect(screen.getByLabelText('Kdy chcete na místo dorazit?')).toHaveValue(
+      '',
+    );
+    expect(
+      screen.getByText('Pro výpočet cesty zadejte, kdy chcete dorazit.'),
+    ).toBeInTheDocument();
+  });
+
+  it('requires the explicit SMAZAT confirmation for bulk delete', async () => {
+    vi.mocked(fetch).mockImplementation((input) => {
+      const url =
+        typeof input === 'string'
+          ? input
+          : input instanceof URL
+            ? input.href
+            : input.url;
+      if (url.includes('/calendar/events/bulk-preview'))
+        return response({
+          eventCount: 1,
+          taskEventCount: 1,
+          templateEventCount: 0,
+        });
+      return response({});
+    });
+    wrapper(
+      <CalendarBulkDeleteDialog
+        open
+        eventIds={[eventItem.id]}
+        onOpenChange={() => undefined}
+        onDeleted={() => undefined}
+      />,
+    );
+    const submit = screen.getByRole('button', { name: 'Smazat vybrané' });
+    expect(submit).toBeDisabled();
+    await screen.findByText('1', { selector: 'dd' });
+    await userEvent.type(
+      screen.getByLabelText('Pro potvrzení napište SMAZAT'),
+      'SMAZAT',
+    );
+    expect(submit).toBeEnabled();
   });
 
   it('lets a normal event select several members and a shift exactly one', () => {

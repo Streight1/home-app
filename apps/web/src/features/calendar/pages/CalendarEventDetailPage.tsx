@@ -144,6 +144,8 @@ export function CalendarEventDetailPage({ eventId }: { eventId: string }) {
                 {formatCalendarInterval({
                   startsAt: item.startsAt,
                   endsAt: item.endsAt,
+                  allDayStartDate: item.allDayStartDate,
+                  allDayEndDateExclusive: item.allDayEndDateExclusive,
                   timezone: item.timezone,
                   isAllDay: item.isAllDay,
                 })}

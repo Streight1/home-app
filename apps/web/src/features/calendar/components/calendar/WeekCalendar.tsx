@@ -5,10 +5,16 @@ export function WeekCalendar({
   date,
   items,
   onSelectDate,
+  selectionMode,
+  selectedIds,
+  onSelectEvent,
 }: {
   date: Date;
   items: CalendarFeedItem[];
   onSelectDate: (date: Date) => void;
+  selectionMode?: boolean | undefined;
+  selectedIds?: ReadonlySet<string> | undefined;
+  onSelectEvent?: ((eventId: string) => void) | undefined;
 }) {
   return (
     <CalendarTimeGrid
@@ -16,6 +22,9 @@ export function WeekCalendar({
       items={items}
       mode="week"
       onSelectDate={onSelectDate}
+      selectionMode={selectionMode}
+      selectedIds={selectedIds}
+      onSelectEvent={onSelectEvent}
     />
   );
 }

@@ -11,9 +11,15 @@ import {
 export function DayColumn({
   day,
   items,
+  selectionMode = false,
+  selectedIds,
+  onSelectEvent,
 }: {
   day: Date;
   items: CalendarFeedItem[];
+  selectionMode?: boolean | undefined;
+  selectedIds?: ReadonlySet<string> | undefined;
+  onSelectEvent?: ((eventId: string) => void) | undefined;
 }) {
   const segments = layoutOverlappingEvents(
     items.flatMap((item) => getEventVisualSegments(item, day)),
@@ -31,7 +37,16 @@ export function DayColumn({
     >
       <TimeGridLines />
       {segments.map((segment) => (
-        <CalendarEventBlock key={segment.key} segment={segment} />
+        <CalendarEventBlock
+          key={segment.key}
+          segment={segment}
+          selectionMode={selectionMode}
+          selected={
+            segment.item.sourceType === 'CALENDAR_EVENT' &&
+            Boolean(selectedIds?.has(segment.item.id))
+          }
+          onSelect={onSelectEvent}
+        />
       ))}
       <CurrentTimeIndicator day={day} />
     </div>

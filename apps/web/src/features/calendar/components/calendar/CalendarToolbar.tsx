@@ -3,6 +3,8 @@ import {
   ChevronLeft,
   ChevronRight,
   LayoutTemplate,
+  CheckSquare2,
+  X,
 } from 'lucide-react';
 import { Button } from '../../../../components/ui/Button/Button.js';
 import { IconButton } from '../../../../components/ui/IconButton/IconButton.js';
@@ -20,6 +22,8 @@ export function CalendarToolbar({
   onNext,
   onCreate,
   onTemplates,
+  selectionMode = false,
+  onSelectionModeChange = () => undefined,
 }: {
   date: Date;
   view: CalendarViewMode;
@@ -30,6 +34,8 @@ export function CalendarToolbar({
   onNext: () => void;
   onCreate: () => void;
   onTemplates: () => void;
+  selectionMode?: boolean | undefined;
+  onSelectionModeChange?: ((active: boolean) => void) | undefined;
 }) {
   return (
     <header className="grid gap-4">
@@ -48,6 +54,18 @@ export function CalendarToolbar({
             <Button variant="secondary" onClick={onTemplates}>
               <LayoutTemplate className="size-4" aria-hidden="true" />
               Šablony
+            </Button>
+            <Button
+              variant="secondary"
+              aria-pressed={selectionMode}
+              onClick={() => onSelectionModeChange(!selectionMode)}
+            >
+              {selectionMode ? (
+                <X className="size-4" aria-hidden="true" />
+              ) : (
+                <CheckSquare2 className="size-4" aria-hidden="true" />
+              )}
+              {selectionMode ? 'Ukončit výběr' : 'Vybrat'}
             </Button>
             <Button variant="primary" onClick={onCreate}>
               <CalendarPlus className="size-4" aria-hidden="true" />
@@ -79,21 +97,42 @@ export function CalendarToolbar({
             {calendarPeriodLabel(date, view)}
           </h2>
         </div>
-        <Select
-          label="Zobrazení"
-          value={view}
-          onChange={(event) =>
-            onViewChange(event.target.value as CalendarViewMode)
-          }
-          className="min-w-36"
-        >
-          <option value="month">Měsíc</option>
-          <option value="week">Týden</option>
-          <option value="day" className="max-md:hidden">
-            Den
-          </option>
-          <option value="agenda">Seznam</option>
-        </Select>
+        <div className="flex min-w-0 flex-wrap items-end gap-2">
+          <div
+            className="grid grid-cols-3 rounded-md border border-border bg-surface-subtle p-1"
+            aria-label="Zobrazení kalendáře"
+          >
+            {(
+              [
+                ['day', 'Den'],
+                ['week', 'Týden'],
+                ['month', 'Měsíc'],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={view === value}
+                onClick={() => onViewChange(value)}
+                className={`min-h-11 rounded-sm px-3 text-body-sm font-medium focus-visible:outline-2 focus-visible:outline-focus ${view === value ? 'bg-selected text-text shadow-sm' : 'text-text-muted hover:bg-surface-hover'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <Select
+            label="Další zobrazení"
+            value={view === 'agenda' ? 'agenda' : ''}
+            onChange={(event) => {
+              if (event.target.value)
+                onViewChange(event.target.value as CalendarViewMode);
+            }}
+            className="min-w-32"
+          >
+            <option value="">—</option>
+            <option value="agenda">Seznam</option>
+          </Select>
+        </div>
       </div>
     </header>
   );

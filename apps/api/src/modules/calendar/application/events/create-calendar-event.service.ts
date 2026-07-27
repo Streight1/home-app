@@ -11,6 +11,7 @@ import { EventLocationValidationService } from './event-location-validation.serv
 import { CalendarTravelPlanService } from '../travel/calendar-travel-plan.service.js';
 import { calendarInvalidInput } from '../../domain/calendar.errors.js';
 import { CalendarPreferencesService } from '../../../location/application/preferences/calendar-preferences.service.js';
+import { getCalendarTravelTarget } from '../../domain/calendar-event-schedule.js';
 
 @Injectable()
 export class CreateCalendarEventService {
@@ -56,7 +57,12 @@ export class CreateCalendarEventService {
         event.participants[0].user.id,
       );
     const response = this.responses.event(event);
-    if (!input.travelPlan && (!input.calculateTravel || !event.locationPlaceId))
+    if (
+      !input.travelPlan &&
+      (!input.calculateTravel ||
+        !event.locationPlaceId ||
+        !getCalendarTravelTarget(event))
+    )
       return response;
     try {
       let travelPlans = await this.travel.configureAutoForEvent(userId, event);

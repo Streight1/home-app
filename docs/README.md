@@ -90,6 +90,10 @@ chování má vždy přednost před zastaralým textem; při rozporu dokument op
   attribution, smoke test a provider chyby.
 - [VPS staging deployment](runbooks/vps-deployment.md) — DNS, firewall, Caddy,
   první start, aktualizace, logy, záloha, obnova a provozní chyby.
+- [One-command deployment](runbooks/one-command-deployment.md) — start a
+  aktualizace hotových image, runtime config, named volumes a maintenance.
+- [Container registry](runbooks/container-registry.md) — GHCR image, tagy,
+  GitHub Actions publishing a veřejný/privátní přístup.
 
 ## Architektonická rozhodnutí
 

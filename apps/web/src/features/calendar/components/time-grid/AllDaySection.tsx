@@ -5,9 +5,15 @@ import { CalendarEventItem } from '../calendar/CalendarEventItem.js';
 export function AllDaySection({
   days,
   items,
+  selectionMode = false,
+  selectedIds,
+  onSelectEvent,
 }: {
   days: Date[];
   items: CalendarFeedItem[];
+  selectionMode?: boolean | undefined;
+  selectedIds?: ReadonlySet<string> | undefined;
+  onSelectEvent?: ((eventId: string) => void) | undefined;
 }) {
   return (
     <div
@@ -34,6 +40,12 @@ export function AllDaySection({
                 key={`${item.sourceType}-${item.id}`}
                 item={item}
                 compact
+                selectionMode={selectionMode}
+                selected={
+                  item.sourceType === 'CALENDAR_EVENT' &&
+                  Boolean(selectedIds?.has(item.id))
+                }
+                onSelect={onSelectEvent}
               />
             ))}
           </div>

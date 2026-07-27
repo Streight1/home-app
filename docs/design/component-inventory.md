@@ -98,6 +98,11 @@ diagnostiku a calendar vazbu. Radio group nemá automatický výběr, neověřen
 travel slot vyžaduje checkbox potvrzení a confirm je oddělený od suggest
 requestu. `CalendarEventDeleteDialog` je adaptivní potvrzení a pro zdroj `TASK`
 vysvětluje zachování původního úkolu.
+`CalendarEventColorPicker` je radio group s live preview, `EventScheduleFields`
+odděluje all-day data a časy a `CalendarSelectionToolbar`,
+`CalendarBulkEditDialog` a `CalendarBulkDeleteDialog` obsluhují lokální
+selection režim. Měsíční pohled zobrazuje cestu kompaktně, den/týden používá
+plný `CalendarTravelBlock`.
 Strukturované místo skládá `PlaceAutocomplete`, `PlaceSuggestionList`,
 `SelectedPlaceSummary`, `DefaultPlaceAutocomplete` a společná
 `MapyAttribution`; odhad zobrazuje `TravelEstimatePreviewList` nebo

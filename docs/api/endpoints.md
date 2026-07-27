@@ -164,6 +164,11 @@ ani provider key. První verze plánuje jen neopakované úkoly.
 - `DELETE /api/v1/calendar/events/:eventId` — idempotentní soft-delete události;
   u zdroje `TASK` zachová Task, označí `TaskCalendarLink.removedAt` a dovolí
   nové naplánování;
+- `POST /api/v1/calendar/events/bulk-preview` — dopad nejvýše 200 událostí;
+- `PATCH /api/v1/calendar/events/bulk-update` — atomicky změní jen explicitně
+  označená pole;
+- `POST /api/v1/calendar/events/bulk-delete` — po potvrzení `SMAZAT` atomicky
+  soft-delete celý výběr, zachová Tasks/Templates a uzavře task linky;
 - `GET /api/v1/calendar/feed` — agregace ručních eventů a read-only Task termínů;
 - `GET /api/v1/calendar/dashboard` — dnešní/probíhající bezpečný model;
 - `POST /api/v1/calendar/travel-estimate` — transientní, rate-limited odhad pro
@@ -190,7 +195,8 @@ ani provider key. První verze plánuje jen neopakované úkoly.
 
 Všechny cesty jsou autentizované. `VIEWER` čte; `MEMBER`, `ADMIN` a `OWNER`
 mutují. Server ověřuje aktivní účastníky stejné household, IANA timezone,
-`endsAt > startsAt`, povolený color token a u WORK_SHIFT právě jednoho člena.
+u časované události `endsAt > startsAt`, u celodenní události exkluzivní DATE
+hranice, povolený color token a u WORK_SHIFT právě jednoho člena.
 Jarní neexistující template čas odmítne; podzimní dvojznačný čas volí dřívější
 offset. Feed nic nekopíruje do databáze a veřejné DTO neobsahuje Prisma entity.
 Nová událost má `calculateTravel=true`; bez routovatelného cíle se pouze uloží

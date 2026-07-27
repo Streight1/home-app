@@ -5,6 +5,50 @@ automaticky nainstalovaný backup scheduler ani off-site transport. Před prací
 ověř cílové prostředí a u důležitých dat nejprve nacvič obnovu na oddělené
 instanci.
 
+## Named-volume deployment
+
+Hlavní registry deployment vytvoří zálohu uvnitř maintenance kontejneru:
+
+```bash
+cd deployment
+docker compose --profile maintenance run --rm backup
+```
+
+Služba používá `pg_dump` přes Docker síť, uploads mountuje read-only a zapisuje
+do `homeapp_backups`. Každá složka obsahuje custom-format `database.dump`,
+`uploads.tar.gz`, `manifest.txt` s verzí/časem/počtem uploadů a `SHA256SUMS`.
+Aktivní PostgreSQL volume není do backup služby připojený.
+
+Export na hostitele:
+
+```bash
+mkdir -p backup-export
+docker run --rm \
+  -v homeapp_backups:/from:ro \
+  -v "$PWD/backup-export:/to" \
+  alpine:3.22.2 cp -a /from/. /to/
+```
+
+Obnova používá write-enabled override pouze pro explicitní maintenance běh:
+
+```bash
+docker compose stop gateway api
+BACKUP_ID=20260724T020000Z RESTORE_CONFIRM=OBNOVIT \
+  docker compose \
+  -f compose.yaml \
+  -f restore.compose.yaml \
+  --profile maintenance \
+  run --rm backup /maintenance/restore.sh
+docker compose rm -f migrate
+docker compose up -d
+```
+
+Restore ověří checksumy a bezpečné cesty archivu, odmítne aktivní DB klienty,
+vytvoří pre-restore bezpečnostní dump/archive, obnoví DB a uploads a porovná
+počet souborů s manifestem. Před provozní obnovou proveď stejný scénář nad
+izolovanými názvy volumes. Záloha pouze ve volume stejného VPS není off-site
+ochrana.
+
 ## VPS skripty
 
 `scripts/backup-vps.sh` krátce zastaví API zápisy, vytvoří custom-format
@@ -18,6 +62,9 @@ checksumy i cesty archivu, vytvoří novou bezpečnostní zálohu, zastaví
 gateway/API, obnoví celý dump a uploads, aplikuje aktuální migrace a teprve
 potom znovu spustí aplikaci. Oba skripty podporují `--dry-run`. Úplný postup je
 ve [VPS deployment runbooku](vps-deployment.md).
+
+Tyto hostitelské skripty jsou legacy bind-mount cesta. Nový named-volume stack
+je nepotřebuje pro běžný start ani aktualizaci.
 
 ## Co tvoří jednu zálohu
 

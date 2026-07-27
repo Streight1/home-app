@@ -81,7 +81,7 @@ export function CalendarTemplateForm({
       calculateTravel,
       routeMode,
       travelBufferMinutes,
-      colorToken: eventType === 'WORK_SHIFT' ? 'blue' : 'primary',
+      colorToken: eventType === 'WORK_SHIFT' ? 'blue' : 'violet',
       participantIds,
     });
   };

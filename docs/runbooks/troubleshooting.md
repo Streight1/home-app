@@ -6,9 +6,38 @@ spouštět opakovaně.
 
 Pro staging chyby DNS, Caddy ACME, portů 80/443, production cookies, migrace,
 upload oprávnění a plného disku použij
-[VPS deployment runbook](vps-deployment.md). Nejprve spusť
-`./scripts/vps-preflight.sh --dry-run`; nevypisuje environment hodnoty a
-nemění runtime adresáře.
+[VPS deployment runbook](vps-deployment.md). Hlavní named-volume stack
+diagnostikuj přes `cd deployment`, `docker compose config --quiet`,
+`docker compose ps` a service logy. `./scripts/vps-preflight.sh --dry-run` je
+jen pro zachovanou legacy bind-mount cestu.
+
+## Registry image nelze stáhnout
+
+Ověř `APP_IMAGE_TAG`, přístup balíčku a `docker login ghcr.io`. Privátní image
+vyžaduje read-only `read:packages` token deployment uživatele. Token nepatří do
+Compose, `.env` ani logu. Mutable `staging` používá `pull_policy: always`;
+release nebo SHA tag může použít `APP_PULL_POLICY=missing`.
+
+## API se po migraci nespustilo
+
+```bash
+cd deployment
+docker compose ps
+docker compose logs migrate
+docker compose logs db
+docker compose up -d
+```
+
+API záměrně čeká na `service_completed_successfully`. Oprav DB/secret/image a
+opakuj `up -d`; neodstraňuj migrate guard, nepoužívej reset ani `down -v`.
+
+## Produkční browser hlásí neplatnou konfiguraci
+
+Ověř veřejné hodnoty v `deployment/.env` a odpověď
+`/runtime-config.js`. Soubor musí obsahovat pouze API URL, Google Client ID,
+environment label, upload limity a název CSRF cookie. Po opravě spusť
+`docker compose up -d --force-recreate gateway`. Nepřidávej do runtime configu
+database URL, hesla, Mapy klíč nebo interní token.
 
 ## PostgreSQL není ready
 

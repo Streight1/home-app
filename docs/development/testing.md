@@ -40,7 +40,11 @@ ověřuje Month default, mobilní seznam, day/week time-grid pozice, intervalov�
 překryvy, noční segmenty, travel block, template picker, Tasks public navigation
 a quick complete. Geometrický regression test měří 08:00–20:00 jako 720 minut
 a 768 px při 64 px/h a současně kontroluje plnou výšku surface/focus wrapperu i
-overlap sloupec. Workspace testy
+overlap sloupec. Calendar regresní sada navíc ověřuje centralizovaný event
+visual model a plné podbarvení, all-day DATE hranice bez falešné půlnoci,
+desired arrival, kompaktní month travel, segmented view, selection, potvrzení
+`SMAZAT`, bulk limit, VIEWER zákaz a transakční task-link lifecycle. Workspace
+testy
 ověřují namespacovaný bezpečný stav, stálou
 `/app`, invalid fallback a logout cleanup. Single-household testy pokrývají
 owner/member bootstrap a převzetí bez resetu.
@@ -99,16 +103,18 @@ CSRF, disabled user, household izolaci a zákaz statických uploadů.
 a11y vynucuje WCAG. Stories pokrývají foundations, používané UI, ThemeSelector,
 login, tři shell režimy, Bucket list a empty dashboard light/dark. Fixtures jsou
 deterministické a mimo produkční kód. Calendar stories navíc pokrývají měsíc,
-týden s vícedenní/noční směnou a event Dialog/full-screen variantu.
+týden s vícedenní/noční směnou, výběrový režim, all-day formulář a bulk
+edit/delete dialogy.
 
 ### Vizuální testy
 
-`pnpm test:visual` porovnává 78 deterministických PNG baseline. Povinné
+`pnpm test:visual` porovnává 89 deterministických PNG baseline. Povinné
 kombinace dashboardu jsou 390×844 dark, 390×844 light, 768×1024 dark,
 1280×800 light a 1440×900 dark.
 
 Další scénáře pokrývají login dark/light na telefonu a desktopu, fixture
-dashboard, Agendu, kalendář včetně desktopového týdne, event create dialog,
+dashboard, Úkoly, kalendář včetně desktopového týdne, barevný výběrový režim,
+all-day a custom-origin formulář, bulk edit/delete, event create dialog,
 otevřené user menu, mobilní Více, ThemeSelector, dialog a sheet.
 Stabilizují se fonty, locale, timezone, motion a caret. Storybook authenticated
 dashboard je deterministický UI mock, nikoli důkaz reálného Google loginu.
@@ -146,10 +152,14 @@ pnpm architecture:check
 pnpm docs:check
 pnpm storybook:test
 pnpm storybook:build
+pnpm test:e2e
 pnpm test:visual
 pnpm test:accessibility
 pnpm check
 ```
+
+`pnpm test:e2e` spouští společně všechny Playwright vizuální a accessibility
+scénáře. Jemnější příkazy zůstávají dostupné pro cílenou diagnostiku.
 
 `pnpm check` kombinuje architekturu, environment, dokumentaci, lint, strict
 typecheck, unit/HTTP testy, Storybook test/build, produkční build, screenshoty,

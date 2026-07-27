@@ -34,4 +34,5 @@ interface GoogleAccountsId {
 
 interface Window {
   google?: { accounts: { id: GoogleAccountsId } };
+  __HOMEAPP_CONFIG__?: unknown;
 }

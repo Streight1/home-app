@@ -775,8 +775,11 @@ model CalendarEvent {
   description                String?                           @db.Text
   type                       CalendarEventType                 @default(GENERAL)
   status                     CalendarEventStatus               @default(ACTIVE)
-  startsAt                   DateTime
-  endsAt                     DateTime
+  startsAt                   DateTime?
+  endsAt                     DateTime?
+  allDayStartDate            DateTime?                         @db.Date
+  allDayEndDateExclusive     DateTime?                         @db.Date
+  desiredArrivalAt           DateTime?
   timezone                   String                            @db.VarChar(100)
   isAllDay                   Boolean                           @default(false)
   location                   String?                           @db.VarChar(300)
@@ -784,7 +787,7 @@ model CalendarEvent {
   locationLabel              String?                           @db.VarChar(300)
   locationNotes              String?                           @db.VarChar(1000)
   calculateTravel            Boolean                           @default(false)
-  colorToken                 String                            @db.VarChar(30)
+  colorToken                 String?                           @db.VarChar(30)
   source                     CalendarEventSource               @default(MANUAL)
   templateId                 String?                           @db.Uuid
   templateApplicationBatchId String?                           @db.Uuid
@@ -808,6 +811,7 @@ model CalendarEvent {
   taskLinks                  TaskCalendarLink[]
 
   @@index([householdId, status, startsAt, endsAt])
+  @@index([householdId, status, allDayStartDate, allDayEndDateExclusive])
   @@index([householdId, deletedAt, startsAt, endsAt])
   @@index([householdId, type, startsAt])
   @@index([templateId])
@@ -956,6 +960,7 @@ model CalendarUserPreference {
   mediumCalendarView             CalendarViewPreference @default(MONTH)
   expandedCalendarView           CalendarViewPreference @default(MONTH)
   showTravelBlocks               Boolean                @default(true)
+  showTravelBlocksInMonth        Boolean                @default(false)
   lastWorkShiftParticipantUserId String?                @db.Uuid
   createdAt                      DateTime               @default(now())
   updatedAt                      DateTime               @updatedAt

@@ -78,6 +78,8 @@ const requiredDocuments = [
   'docs/runbooks/troubleshooting.md',
   'docs/runbooks/mapy-api.md',
   'docs/runbooks/vps-deployment.md',
+  'docs/runbooks/one-command-deployment.md',
+  'docs/runbooks/container-registry.md',
 ];
 
 const featureTemplateHeadings = [

@@ -108,6 +108,17 @@ export function CalendarPreferencesPanel() {
         />
         Zobrazovat cestovní bloky v kalendáři
       </label>
+      <label className="flex min-h-11 items-center gap-3 text-body-sm">
+        <input
+          type="checkbox"
+          className="size-5 accent-primary"
+          checked={value.showTravelBlocksInMonth}
+          onChange={(event) =>
+            patch({ showTravelBlocksInMonth: event.target.checked })
+          }
+        />
+        Zobrazovat cestovní bloky v měsíčním pohledu
+      </label>
       <Button className="w-fit" disabled={!update.isPending}>
         {' '}
         {update.isPending

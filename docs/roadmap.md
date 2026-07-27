@@ -17,8 +17,9 @@ schválen k implementaci.
   dokumentových vazeb, výchozího Vše a dashboard quick complete. Starý název
   Agenda již není zdrojem pravdy.
 - Shared Calendar je dokončený v rozsahu ručních událostí, čtyř směnových
-  presetů, participant color/shared modelu, cílových šablon, bulk apply/rollback,
-  task feedu, skutečného day/week time-gridu, overlap layoutu, travel bloků a
+  presetů, event/participant/shared barev, explicitních all-day DATE hranic,
+  cílových šablon, selection/bulk update/delete, bulk apply/rollback, task
+  feedu, skutečného day/week time-gridu, overlap layoutu, travel bloků a
   dnešního widgetu; sdílená geometrie pokrývá dlouhé i přes-půlnoční eventy.
 - Smart Task Scheduling je dokončený pro neopakované úkoly: společná
   dostupnost, participant-specific cesty, podepsané návrhy, revalidace,
@@ -44,9 +45,11 @@ schválen k implementaci.
 - Sdílený roční Bucket list je dokončený pro household/year seznam, položky,
   více účastníků, místo, dokumenty, lifecycle, progress, dashboard a explicitní
   rollover bez kopírování dokončovací historie.
-- Single-VPS staging je připravený přes Caddy, interní API/PostgreSQL,
-  persistentní bind mounty, explicitní migrace a bezpečné backup/restore
-  skripty.
+- Single-VPS staging používá hotové GHCR image, named volumes, idempotentní init
+  service, automatickou one-shot migraci, runtime public config a Compose
+  secrets. Běžný start i aktualizace jsou `docker compose up -d`; bezpečný
+  převod starých bind mountů a kontejnerový backup/restore mají samostatné
+  postupy.
 - Udržovat bezpečný základ, HomeApp Aurora, vizuální baselines, testy
   a dokumentaci v souladu se skutečným kódem.
 - Udržovat shodu system/light/dark komponent a WCAG 2.2 AA při každé UI změně.
@@ -61,8 +64,9 @@ schválen k implementaci.
   současný read-only members panel a root konfigurace jsou záměrné.
 - Přímé bankovní API a automatické párování faktur až jako
   samostatné finance iterace s provider portem a explicitní privacy policy.
-- Off-site backup transport, monitoring/alerting a CI/CD až jako samostatná
-  provozní iterace po prvním staging deployi.
+- Off-site backup transport a monitoring/alerting až jako samostatná provozní
+  iterace po prvním staging deployi. GHCR workflow je připravené, ale jeho
+  skutečný běh a registry visibility je nutné ověřit v GitHub repozitáři.
 
 ## Later
 

@@ -8,7 +8,14 @@ export type CalendarFeedItem =
       status: 'ACTIVE' | 'CANCELLED';
       eventType: string;
       colorToken: string;
-      visual: { colorToken: string; isShared: boolean };
+      visual: {
+        colorToken: string;
+        backgroundToken: string;
+        borderToken: string;
+        foregroundToken: string;
+        isShared: boolean;
+        kind: 'EVENT' | 'WORK_SHIFT' | 'TASK';
+      };
       isAllDay: boolean;
       participants: {
         id: string;

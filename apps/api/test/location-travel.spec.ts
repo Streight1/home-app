@@ -84,6 +84,9 @@ function event(
     status: 'ACTIVE',
     startsAt: new Date('2026-07-16T10:00:00.000Z'),
     endsAt: new Date('2026-07-16T11:00:00.000Z'),
+    allDayStartDate: null,
+    allDayEndDateExclusive: null,
+    desiredArrivalAt: null,
     timezone: 'Europe/Prague',
     isAllDay: false,
     location: null,
@@ -91,7 +94,7 @@ function event(
     locationLabel: 'Cíl',
     locationNotes: null,
     calculateTravel: true,
-    colorToken: 'primary',
+    colorToken: 'violet',
     source: 'MANUAL',
     templateId: null,
     templateApplicationBatchId: null,
@@ -128,6 +131,7 @@ const preference = (
   mediumCalendarView: 'MONTH',
   expandedCalendarView: 'WEEK',
   showTravelBlocks: true,
+  showTravelBlocksInMonth: false,
   lastWorkShiftParticipantUserId: null,
   ...patch,
 });
@@ -667,13 +671,13 @@ describe('route estimate and travel plan', () => {
   it('does not alter the event start or end while calculating travel', async () => {
     const { service, target } = travelService();
     const before = {
-      start: target.startsAt.toISOString(),
-      end: target.endsAt.toISOString(),
+      start: target.startsAt?.toISOString(),
+      end: target.endsAt?.toISOString(),
     };
     await service.configure(userId, eventId, travelerUserId, travelInput);
     expect({
-      start: target.startsAt.toISOString(),
-      end: target.endsAt.toISOString(),
+      start: target.startsAt?.toISOString(),
+      end: target.endsAt?.toISOString(),
     }).toEqual(before);
   });
 

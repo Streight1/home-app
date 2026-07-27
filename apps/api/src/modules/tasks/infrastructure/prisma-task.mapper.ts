@@ -80,13 +80,15 @@ export function toTaskRecord(task: PrismaTask): TaskRecord {
       : null,
     recurrenceDaysOfWeek: task.recurrenceDaysOfWeek,
     documentIds: task.documents.map((link) => link.documentId),
-    calendarSchedule: task.calendarLinks[0]
-      ? {
-          eventId: task.calendarLinks[0].calendarEvent.id,
-          startsAt: task.calendarLinks[0].calendarEvent.startsAt,
-          endsAt: task.calendarLinks[0].calendarEvent.endsAt,
-        }
-      : null,
+    calendarSchedule:
+      task.calendarLinks[0]?.calendarEvent.startsAt &&
+      task.calendarLinks[0].calendarEvent.endsAt
+        ? {
+            eventId: task.calendarLinks[0].calendarEvent.id,
+            startsAt: task.calendarLinks[0].calendarEvent.startsAt,
+            endsAt: task.calendarLinks[0].calendarEvent.endsAt,
+          }
+        : null,
     completions: task.completions.map((completion) => ({
       ...completion,
       occurrenceDueDate: isoDateFromDb(completion.occurrenceDueDate),

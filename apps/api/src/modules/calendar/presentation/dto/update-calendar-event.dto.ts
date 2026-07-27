@@ -3,6 +3,7 @@ import {
   ArrayUnique,
   IsArray,
   IsBoolean,
+  IsDateString,
   IsIn,
   IsISO8601,
   IsOptional,
@@ -34,10 +35,19 @@ export class UpdateCalendarEventDto {
   public type?: (typeof calendarEventTypes)[number];
   @IsOptional()
   @IsISO8601({ strict: true })
-  public startsAt?: string;
+  public startsAt?: string | null;
   @IsOptional()
   @IsISO8601({ strict: true })
-  public endsAt?: string;
+  public endsAt?: string | null;
+  @IsOptional()
+  @IsDateString()
+  public allDayStartDate?: string | null;
+  @IsOptional()
+  @IsDateString()
+  public allDayEndDateExclusive?: string | null;
+  @IsOptional()
+  @IsISO8601({ strict: true })
+  public desiredArrivalAt?: string | null;
   @IsOptional()
   @IsString()
   @MaxLength(100)
@@ -65,7 +75,7 @@ export class UpdateCalendarEventDto {
   public calculateTravel?: boolean;
   @IsOptional()
   @IsIn(calendarColorTokens)
-  public colorToken?: (typeof calendarColorTokens)[number];
+  public colorToken?: (typeof calendarColorTokens)[number] | null;
   @IsOptional()
   @IsArray()
   @ArrayUnique()

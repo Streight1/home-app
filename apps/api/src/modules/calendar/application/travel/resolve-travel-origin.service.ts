@@ -10,6 +10,7 @@ import type {
 } from '../../../location/domain/location.types.js';
 import { calendarInvalidInput } from '../../domain/calendar.errors.js';
 import type { CalendarEventRecord } from '../../domain/calendar.types.js';
+import { getCalendarEventBounds } from '../../domain/calendar-event-schedule.js';
 import {
   CALENDAR_EVENT_REPOSITORY,
   type CalendarEventRepository,
@@ -34,7 +35,7 @@ export class ResolveTravelOriginService {
     userId: string;
     householdId: string;
     travelerUserId: string;
-    target: Pick<CalendarEventRecord, 'id' | 'startsAt' | 'participants'>;
+    target: Pick<CalendarEventRecord, 'id' | 'participants' | 'startsAt'>;
     originMode: TravelOriginMode;
     originPlaceId: string | null;
     previousEventId: string | null;
@@ -43,6 +44,11 @@ export class ResolveTravelOriginService {
     previousEvent: CalendarEventRecord | null;
     source: 'DEFAULT_PLACE' | 'PREVIOUS_EVENT' | 'CUSTOM_PLACE';
   }> {
+    const targetAt = input.target.startsAt;
+    if (!targetAt)
+      throw calendarInvalidInput(
+        'Pro výpočet cesty chybí konkrétní čas příjezdu.',
+      );
     if (input.originMode === 'AUTO') {
       const previous = await this.autoPrevious(input);
       if (previous) {
@@ -83,7 +89,7 @@ export class ResolveTravelOriginService {
     if (
       !previous ||
       previous.status === 'CANCELLED' ||
-      previous.endsAt > input.target.startsAt ||
+      getCalendarEventBounds(previous).end > targetAt ||
       !previous.participants.some(
         ({ user }) => user.id === input.travelerUserId,
       ) ||
@@ -126,29 +132,36 @@ export class ResolveTravelOriginService {
   private async autoPrevious(input: {
     householdId: string;
     travelerUserId: string;
-    target: Pick<CalendarEventRecord, 'id' | 'startsAt' | 'participants'>;
+    target: Pick<CalendarEventRecord, 'id' | 'participants' | 'startsAt'>;
   }) {
-    const from = new Date(input.target.startsAt.getTime() - 8 * 60 * 60_000);
+    const targetAt = input.target.startsAt;
+    if (!targetAt) return null;
+    const from = new Date(targetAt.getTime() - 8 * 60 * 60_000);
     const candidates = await this.events.list(
       input.householdId,
       from,
-      input.target.startsAt,
+      targetAt,
     );
     return (
       candidates
+        .map((event) => ({
+          event,
+          bounds: getCalendarEventBounds(event),
+        }))
         .filter(
-          (event) =>
+          ({ event, bounds }) =>
             event.id !== input.target.id &&
             event.status === 'ACTIVE' &&
-            event.endsAt <= input.target.startsAt &&
+            bounds.end <= targetAt &&
             event.locationPlaceId !== null &&
             event.participants.some(
               ({ user }) => user.id === input.travelerUserId,
             ),
         )
         .sort(
-          (left, right) => right.endsAt.getTime() - left.endsAt.getTime(),
-        )[0] ?? null
+          (left, right) =>
+            right.bounds.end.getTime() - left.bounds.end.getTime(),
+        )[0]?.event ?? null
     );
   }
   private async requiredPlace(

@@ -127,6 +127,10 @@ Calendar repository používá soft-delete pro `MANUAL`, `TEMPLATE` i `TASK`
 události. Task-linked odstranění v jedné transakci nastaví
 `TaskCalendarLink.removedAt`, zneplatní travel plány a zachová Task. Feed,
 availability a konfliktní dotazy odstraněné řádky filtrují.
+`CalendarEventVisualService` vytváří bezpečný visual response bez klientského
+parsování barev. All-day schedule validator odděluje DATE hranice od časovaných
+instantů. Bulk preview/update/delete use cases ověřují celý household-scoped
+výběr před jedinou repository transakcí; neúplný výběr neprovede nic.
 
 `FinanceModule` odděluje pět HTTP controllerů, catalog/ledger/transfer/reporting
 aplikační služby, čistá money a ledger pravidla a čtyři Prisma repository

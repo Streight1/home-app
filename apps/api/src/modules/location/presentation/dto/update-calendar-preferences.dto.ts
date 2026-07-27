@@ -34,6 +34,7 @@ export class UpdateCalendarPreferencesDto {
   @IsIn(calendarViewPreferences)
   public expandedCalendarView?: (typeof calendarViewPreferences)[number];
   @IsOptional() @IsBoolean() public showTravelBlocks?: boolean;
+  @IsOptional() @IsBoolean() public showTravelBlocksInMonth?: boolean;
   @IsOptional()
   @IsUUID('4')
   public lastWorkShiftParticipantUserId?: string | null;

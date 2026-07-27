@@ -23,11 +23,17 @@ export function CalendarTimeGrid({
   items,
   mode,
   onSelectDate,
+  selectionMode = false,
+  selectedIds,
+  onSelectEvent,
 }: {
   date: Date;
   items: CalendarFeedItem[];
   mode: 'day' | 'week';
-  onSelectDate?: (date: Date) => void;
+  onSelectDate?: ((date: Date) => void) | undefined;
+  selectionMode?: boolean | undefined;
+  selectedIds?: ReadonlySet<string> | undefined;
+  onSelectEvent?: ((eventId: string) => void) | undefined;
 }) {
   const viewport = useRef<HTMLDivElement>(null);
   const days = useMemo(() => {
@@ -76,11 +82,24 @@ export function CalendarTimeGrid({
               </button>
             ))}
           </div>
-          <AllDaySection days={days} items={items} />
+          <AllDaySection
+            days={days}
+            items={items}
+            selectionMode={selectionMode}
+            selectedIds={selectedIds}
+            onSelectEvent={onSelectEvent}
+          />
           <div className="grid" style={{ gridTemplateColumns: columns }}>
             <TimeGutter />
             {days.map((day) => (
-              <DayColumn key={day.toISOString()} day={day} items={items} />
+              <DayColumn
+                key={day.toISOString()}
+                day={day}
+                items={items}
+                selectionMode={selectionMode}
+                selectedIds={selectedIds}
+                onSelectEvent={onSelectEvent}
+              />
             ))}
           </div>
         </div>

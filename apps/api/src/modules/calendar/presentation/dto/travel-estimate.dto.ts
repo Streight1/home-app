@@ -17,7 +17,10 @@ import { routeModes } from '../../../location/domain/location.types.js';
 
 export class TravelEstimateDto {
   @IsOptional() @IsUUID('4') public eventId?: string;
-  @IsISO8601({ strict: true }) public startsAt!: string;
+  @IsOptional() @IsISO8601({ strict: true }) public startsAt?: string;
+  @IsOptional()
+  @IsISO8601({ strict: true })
+  public desiredArrivalAt?: string;
   @IsArray()
   @ArrayMinSize(1)
   @ArrayMaxSize(50)

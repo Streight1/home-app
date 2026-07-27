@@ -19,11 +19,15 @@ import {
   recalculateEventTravelPlan,
   getPreviousEventCandidates,
   previewTravelEstimate,
+  previewBulkCalendarEvents,
+  updateBulkCalendarEvents,
+  deleteBulkCalendarEvents,
 } from '../api/calendarApi.js';
 import type {
   CalendarDashboard,
   CalendarEventInput,
   CalendarTemplateInput,
+  CalendarBulkUpdateInput,
   TravelPlanInput,
 } from '../types/calendar.types.js';
 
@@ -122,6 +126,18 @@ export function useCalendarMutations() {
     }),
     deleteEvent: useMutation({
       mutationFn: deleteCalendarEvent,
+      onSuccess: refreshAfterDelete,
+    }),
+    previewBulk: useMutation({
+      mutationFn: previewBulkCalendarEvents,
+    }),
+    updateBulk: useMutation({
+      mutationFn: (input: CalendarBulkUpdateInput) =>
+        updateBulkCalendarEvents(input),
+      onSuccess: refresh,
+    }),
+    deleteBulk: useMutation({
+      mutationFn: deleteBulkCalendarEvents,
       onSuccess: refreshAfterDelete,
     }),
     createTemplate: useMutation({

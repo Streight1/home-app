@@ -24,7 +24,7 @@ obě domény propojuje explicitní `TaskCalendarLink`.
 - připojit dokumenty přes veřejné rozhraní Documents modulu;
 - otevřít bezpečné plánování, zobrazit propojenou událost, přeplánovat nebo
   odebrat pouze kalendářovou vazbu; smazání task-linked události vždy zachová
-  původní úkol a znovu zpřístupní plánování.
+  původní úkol a znovu zpřístupní plánování, včetně hromadného calendar delete.
 
 ## Uživatelské rozhraní
 

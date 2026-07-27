@@ -578,8 +578,8 @@ for (const viewport of [
     });
     expect(geometry).toEqual({
       positionerHeight: 768,
-      positionerInnerHeight: 766,
-      surfaceHeight: 766,
+      positionerInnerHeight: 768,
+      surfaceHeight: 768,
       buttonHeight: 766,
     });
     const travel = page.locator(
@@ -647,6 +647,134 @@ for (const viewport of [
     );
   });
 }
+
+for (const viewport of [
+  { name: 'mobile-dark', width: 390, height: 844 },
+  { name: 'tablet-dark', width: 768, height: 1024 },
+  { name: 'desktop-light', width: 1280, height: 800 },
+  { name: 'desktop-wide-dark', width: 1440, height: 900 },
+] as const) {
+  test(`výběrový režim barevného kalendáře · ${viewport.name}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    await openStory(page, 'screens-calendar--selection-mode');
+    await expect(page.getByText('Vybráno: 2 z 4')).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: /Zrušit výběr: Kontrola domácnosti/ }),
+    ).toBeAttached();
+    if (viewport.width >= 768)
+      await expect(
+        page.getByText('cesta přibližně 35 min', { exact: false }),
+      ).toHaveCount(1);
+    await expectNoHorizontalOverflow(page);
+    await expect(page).toHaveScreenshot(
+      `calendar-selection-${viewport.name}.png`,
+    );
+  });
+}
+
+for (const viewport of [
+  { name: 'mobile-dark', width: 390, height: 844 },
+  { name: 'desktop-dark', width: 1280, height: 800 },
+] as const) {
+  test(`formulář celodenní události · ${viewport.name}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await openStory(page, 'screens-calendar--all-day-dialog');
+    const dialog = page.getByRole('dialog', {
+      name: 'Upravit celodenní událost',
+    });
+    await expect(dialog.getByLabel('Celý den')).toBeChecked();
+    await expect(dialog.getByLabel('Čas začátku')).toHaveCount(0);
+    await expect(dialog.getByLabel('Čas konce')).toHaveCount(0);
+    await dialog
+      .getByLabel('Kdy chcete na místo dorazit?')
+      .scrollIntoViewIfNeeded();
+    await expect(
+      dialog.getByLabel('Kdy chcete na místo dorazit?'),
+    ).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+    await expect(page).toHaveScreenshot(
+      `calendar-all-day-form-${viewport.name}.png`,
+    );
+  });
+}
+
+for (const viewport of [
+  { name: 'mobile-dark', width: 390, height: 844 },
+  { name: 'desktop-dark', width: 1280, height: 800 },
+] as const) {
+  test(`color picker události · ${viewport.name}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await openStory(page, 'screens-calendar--create-dialog');
+    const dialog = page.getByRole('dialog', { name: 'Nová událost' });
+    const cyan = dialog.getByRole('radio', { name: 'Tyrkysová' });
+    await cyan.scrollIntoViewIfNeeded();
+    await cyan.check();
+    await expect(cyan).toBeChecked();
+    await expect(dialog.getByText('Náhled podbarvení události')).toHaveClass(
+      /bg-calendar-cyan-surface/,
+    );
+    await expectNoHorizontalOverflow(page);
+    await expect(page).toHaveScreenshot(
+      `calendar-color-picker-${viewport.name}.png`,
+    );
+  });
+}
+
+test('custom origin používá autocomplete', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await installLocationApiMock(page);
+  await openStory(page, 'screens-calendar--edit-travel-dialog');
+  const dialog = page.getByRole('dialog', { name: 'Upravit událost' });
+  const origin = dialog.getByLabel('Počátek cesty');
+  await origin.scrollIntoViewIfNeeded();
+  await origin.selectOption('CUSTOM_PLACE');
+  await expect(dialog.getByLabel('Jiné místo odjezdu')).toBeVisible();
+  await dialog.getByLabel('Jiné místo odjezdu').fill('Městská');
+  await expect(
+    page.getByRole('option', { name: /Městská knihovna/ }),
+  ).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+  await expect(page).toHaveScreenshot('calendar-custom-origin-mobile.png');
+});
+
+test('hromadná úprava kalendáře', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await openStory(page, 'screens-calendar--bulk-edit-dialog');
+  await expect(
+    page.getByRole('dialog', { name: 'Upravit 2 vybraných událostí' }),
+  ).toBeVisible();
+  await expect(page.getByLabel('Barva')).toHaveValue('UNCHANGED');
+  await expectNoHorizontalOverflow(page);
+  await expect(page).toHaveScreenshot('calendar-bulk-edit-desktop.png');
+});
+
+test('hromadné smazání kalendáře', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.route('**/api/v1/calendar/events/bulk-preview', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        eventCount: 2,
+        taskEventCount: 1,
+        templateEventCount: 1,
+      }),
+    }),
+  );
+  await openStory(page, 'screens-calendar--bulk-delete-dialog');
+  const dialog = page.getByRole('dialog', {
+    name: 'Smazat vybrané události?',
+  });
+  await expect(dialog.getByText('Původní úkoly i šablony')).toBeVisible();
+  await dialog.getByLabel('Pro potvrzení napište SMAZAT').fill('SMAZAT');
+  await expect(
+    dialog.getByRole('button', { name: 'Smazat vybrané' }),
+  ).toBeEnabled();
+  await expectNoHorizontalOverflow(page);
+  await expect(page).toHaveScreenshot('calendar-bulk-delete-mobile.png');
+});
 
 for (const viewport of [
   { name: 'mobile-dark', width: 390, height: 844 },

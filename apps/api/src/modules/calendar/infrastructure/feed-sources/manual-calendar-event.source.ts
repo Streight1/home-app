@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { CalendarTravelPlanService } from '../../application/travel/calendar-travel-plan.service.js';
+import { CalendarEventVisualService } from '../../application/mappers/calendar-event-visual.service.js';
 import {
   CALENDAR_EVENT_REPOSITORY,
   type CalendarEventRepository,
@@ -15,6 +16,7 @@ export class ManualCalendarEventSource implements CalendarFeedSourcePort {
     @Inject(CALENDAR_EVENT_REPOSITORY)
     private readonly events: CalendarEventRepository,
     private readonly travel: CalendarTravelPlanService,
+    private readonly visuals: CalendarEventVisualService = new CalendarEventVisualService(),
   ) {}
 
   public async list(input: Parameters<CalendarFeedSourcePort['list']>[0]) {
@@ -23,47 +25,49 @@ export class ManualCalendarEventSource implements CalendarFeedSourcePort {
       input.from,
       input.to,
     );
-    const eventItems = events.map(
-      (event): CalendarFeedItem => ({
-        sourceType: 'CALENDAR_EVENT',
-        id: event.id,
-        title: event.title,
-        start: event.startsAt.toISOString(),
-        end: event.endsAt.toISOString(),
-        status: event.status,
-        eventType: event.type,
-        colorToken:
-          event.participants.length > 1
-            ? 'shared'
-            : (event.participants[0]?.user.calendarColorToken ?? 'neutral'),
-        visual: {
-          colorToken:
-            event.participants.length > 1
-              ? 'shared'
-              : (event.participants[0]?.user.calendarColorToken ?? 'neutral'),
-          isShared: event.participants.length > 1,
+    const eventItems = events.flatMap((event): CalendarFeedItem[] => {
+      const start = event.isAllDay
+        ? event.allDayStartDate
+        : event.startsAt?.toISOString();
+      const end = event.isAllDay
+        ? event.allDayEndDateExclusive
+        : event.endsAt?.toISOString();
+      if (!start || !end) return [];
+      const visual = this.visuals.resolve(event);
+      return [
+        {
+          sourceType: 'CALENDAR_EVENT',
+          id: event.id,
+          title: event.title,
+          start,
+          end,
+          status: event.status,
+          eventType: event.type,
+          colorToken: visual.colorToken,
+          visual,
+          isAllDay: event.isAllDay,
+          participants: event.participants.map(({ user }) => ({
+            id: user.id,
+            displayName: user.displayName,
+            avatarUrl: user.avatarUrl,
+            calendarColorToken: user.calendarColorToken,
+          })),
+          locationLabel: event.locationLabel ?? event.location,
+          taskLink: event.taskLink
+            ? {
+                ...event.taskLink,
+                canComplete:
+                  input.canMutate && event.taskLink.status === 'OPEN',
+              }
+            : null,
+          navigationTarget: {
+            area: 'calendar',
+            screen: 'detail',
+            eventId: event.id,
+          },
         },
-        isAllDay: event.isAllDay,
-        participants: event.participants.map(({ user }) => ({
-          id: user.id,
-          displayName: user.displayName,
-          avatarUrl: user.avatarUrl,
-          calendarColorToken: user.calendarColorToken,
-        })),
-        locationLabel: event.locationLabel ?? event.location,
-        taskLink: event.taskLink
-          ? {
-              ...event.taskLink,
-              canComplete: input.canMutate && event.taskLink.status === 'OPEN',
-            }
-          : null,
-        navigationTarget: {
-          area: 'calendar',
-          screen: 'detail',
-          eventId: event.id,
-        },
-      }),
-    );
+      ];
+    });
     const travelItems = (
       await Promise.all(
         events
@@ -99,7 +103,10 @@ export class ManualCalendarEventSource implements CalendarFeedSourcePort {
                   eventTitle: event.title,
                   start: plan.departureAt,
                   end: arrivalAt.toISOString(),
-                  eventStartsAt: event.startsAt.toISOString(),
+                  eventStartsAt:
+                    event.desiredArrivalAt?.toISOString() ??
+                    event.startsAt?.toISOString() ??
+                    plan.departureAt,
                   status: plan.status,
                   routeMode: plan.routeMode,
                   durationSeconds: plan.durationSeconds,

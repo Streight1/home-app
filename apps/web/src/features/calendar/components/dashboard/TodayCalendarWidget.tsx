@@ -85,10 +85,12 @@ export function TodayCalendarWidget({
                 <span className="text-caption text-text-muted">
                   {item.isAllDay
                     ? 'Celý den'
-                    : new Date(item.startsAt).toLocaleTimeString('cs-CZ', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+                    : item.startsAt
+                      ? new Date(item.startsAt).toLocaleTimeString('cs-CZ', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })
+                      : 'Čas není dostupný'}
                   {item.spansMidnight ? ' · pokračuje přes půlnoc' : ''}
                   {item.isOngoing ? ' · právě probíhá' : ''}
                 </span>

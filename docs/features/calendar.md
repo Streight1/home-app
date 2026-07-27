@@ -3,8 +3,9 @@
 ## Stav
 
 Implementováno jako samostatný household feature modul. Podporuje ruční
-události, pracovní směny, vícedenní události, účastníky, šablony, transakční
-hromadné použití, bezpečný feed termínů úkolů, skutečný day/week time-grid a
+události, pracovní směny, explicitní celodenní a vícedenní události, účastníky,
+šablony, výběrový režim, transakční hromadné úpravy/smazání, bezpečný feed
+termínů úkolů, skutečný day/week time-grid a
 dnešní dashboardový widget. Události lze plně editovat, mohou mít strukturovaný cíl a
 samostatný průběžně počítaný odhad cesty každého účastníka.
 
@@ -30,6 +31,10 @@ přes `TaskCalendarLink` jako skutečný event se zdrojem `TASK`.
 - explicitně potvrzený task slot, otevření zdrojového úkolu a bezpečné odebrání
   pouze calendar vazby;
 - dnešní a právě probíhající události na dashboardu.
+- celodenní událost bez povinného času a volitelný požadovaný čas příjezdu pro
+  výpočet cesty;
+- hromadně změnit barvu, typ, účastníky, cíl nebo cestovní konfiguraci a
+  atomicky soft-delete nejvýše 200 vybraných událostí;
 - ověřené i ruční místo události, AUTO/výchozí/vlastní/předchozí počátek,
   bezpečnostní rezervu a automatický náhled odhadu ještě před uložením;
 - samostatně zapamatovaný pohled pro telefon, tablet a desktop.
@@ -53,6 +58,20 @@ serverem validovaný `calendarColorToken` účastníka; společná událost pou�
 `shared` akcent a avatar/iniciály všech členů. Barva vždy doplňuje jméno nebo
 avatar a nikdy nenese význam sama.
 
+Události používají centralizovaný `visual` model. Explicitní event color má
+přednost před barvou jednoho účastníka, následuje `shared` pro více účastníků a
+`neutral` fallback. Celý surface, border, hover, focus a selected stav používá
+odpovídající Aurora token. Přímá tlačítka Den/Týden/Měsíc nahrazují časté
+otevírání selectu; Seznam zůstává sekundární volbou. Měsíc ve výchozím stavu
+ukazuje cestu jen jako kompaktní řádek pod cílovou událostí. Plné časové travel
+bloky zůstávají v dni/týdnu a lze je volitelně zapnout i v měsíci.
+
+Akce `Vybrat` přepne klikání eventů do selection režimu. Toolbar umí vybrat vše
+v aktuálním zobrazení, výslovně měnit jen označená pole a potvrzeně smazat celý
+batch textem `SMAZAT`. Task preview a travel bloky nejsou samostatně
+vybíratelné. Po použití šablony lze jedním krokem vybrat právě eventy daného
+vložení.
+
 Geometrie day/week pohledu je společná: `time-grid.layout.ts` převádí minuty od
 půlnoci na pixely jednou konstantou a poskytuje top, délku, výšku, denní
 segmentaci i interval-partitioning. Positioning wrapper a vnitřní event surface
@@ -72,8 +91,9 @@ vysvětlující text.
 
 ## API
 
-Autentizované controllery poskytují CRUD událostí, feed, dashboard, CRUD šablon,
-single/bulk apply a batch revert. Přesné cesty jsou v
+Autentizované controllery poskytují CRUD událostí, feed, dashboard, bulk
+preview/update/delete, CRUD šablon, single/bulk apply a batch revert. Přesné
+cesty jsou v
 [katalogu endpointů](../api/endpoints.md). Feed kombinuje
 `ManualCalendarEventSource` a `TaskCalendarSource`; nevytváří kopie tasků.
 Aktivně naplánovaný task se v read-only feed source vynechá, takže se vedle
@@ -85,8 +105,12 @@ location/routing portech.
 
 ## Datový model
 
-`CalendarEvent` nese UTC instanty `startsAt`/`endsAt`, původní IANA timezone,
-typ, stav, zdroj (`MANUAL`, `TEMPLATE` nebo `TASK`), color token a volitelné
+Časovaná `CalendarEvent` nese UTC instanty `startsAt`/`endsAt`. Celodenní
+událost místo nich používá PostgreSQL `DATE` hranice `allDayStartDate` a
+`allDayEndDateExclusive`; jednodenní 10. srpna tedy končí exkluzivně 11. srpna.
+Volitelné `desiredArrivalAt` určuje výpočet cesty, jinak se pro all-day event
+trasa nepočítá. Model dále drží IANA timezone, typ, stav, zdroj
+(`MANUAL`, `TEMPLATE` nebo `TASK`), nullable explicitní color token a volitelné
 odkazy na template/batch. `deletedAt` a `deletedByUserId` tvoří bezpečný
 soft-delete; `CANCELLED` je nadále odlišný historický stav. Běžné query, feed,
 availability i konflikty odstraněné události filtrují.
@@ -102,7 +126,8 @@ přeskočí, aniž by ji obnovil.
 persistuje pouze konfiguraci účastníka a stav, nikoli dobu, vzdálenost,
 geometrii nebo odpověď poskytovatele. `departureAt` se na serveru počítá znovu
 ze začátku eventu, aktuálního odhadu a rezervy. `CalendarUserPreference` drží
-tři nezávislé volby zobrazení, cestovní defaulty a posledního účastníka směny.
+tři nezávislé volby zobrazení, cestovní defaulty, měsíční preferenci plných
+travel bloků a posledního účastníka směny.
 
 ## Autentizace a oprávnění
 
@@ -128,6 +153,10 @@ výchozí místo. U společné události se pravidlo provede pro každého zvlá
 Změna relevantního vstupu označí konfigurace `STALE` a čas eventu se
 automaticky neposouvá. Cyklus, self-link a nevhodný previous event se odmítají.
 Selhání Mapy zachová událost a vrátí bezpečný `FAILED`/`UNAVAILABLE` stav.
+Bulk mutace má limit 200 a je all-or-nothing: jediný cizí/neplatný event
+zneplatní celý request. Nepoužité pole má operaci `UNCHANGED`, takže prázdný
+formulář nikdy hodnotu nesmaže. Bulk delete zachová Task i Template, uzavře
+aktivní `TaskCalendarLink` a odstraní odvozené travel plány.
 
 ## Testy
 
@@ -148,6 +177,10 @@ automatický preview, účastníky, směnové presety, atribuci a view cache.
 Regresní testy navíc kontrolují přesnou geometrii 08:00–20:00, obě půldenní
 směny, noční segmenty, zachování výšky při overlap layoutu a shodnou plnou
 výšku positioning wrapperu, surface a focusovatelného tlačítka.
+Nové testy pokrývají color precedence a celý podbarvený surface, all-day DATE
+hranice bez půlnoci, desired arrival, kompaktní měsíční cestu, segmented view
+controls, selection, `SMAZAT`, 200eventový limit, VIEWER zákaz a atomické
+odpojení task-linked batch.
 
 ## Známá omezení
 
@@ -157,6 +190,8 @@ výšku positioning wrapperu, surface a focusovatelného tlačítka.
   potvrzení;
 - běžné překryvy se neblokují; varování je pouze pro WORK_SHIFT stejného člena;
 - změna eventu vytvořeného batchem jej odpojí od automatického rollbacku.
+- hromadná editace záměrně nemění název, datum ani čas; tyto hodnoty vyžadují
+  individuální editaci;
 - soft-delete zatím nemá uživatelský koš ani obnovu; odstraněná událost zůstává
   pouze auditovatelným databázovým záznamem;
 - není veřejná doprava, route mapa, live poloha ani turn-by-turn navigace;

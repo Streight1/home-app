@@ -138,6 +138,10 @@ Tento soubor obsahuje závazná pravidla pro lidské i AI vývojové agenty.
 - Jediným lokálním konfiguračním souborem je kořenový `.env` vytvořený z
   `.env.example`. Nevytvářej ani nedokumentuj další `.env` v `apps/api` nebo
   `apps/web`.
+- Samostatný registry deployment je jediná výjimka: používá
+  `deployment/.env` z `deployment/.env.example` a neveřejné soubory v
+  `deployment/secrets/`. Tento soubor je provozní konfigurace Compose balíčku,
+  nikoli druhý aplikační `.env`.
 - Compose, NestJS, Prisma i Vite musí číst kořenový zdroj. Odvozené hodnoty
   používej přes `${VAR}` a nezaváděj duplicitní porty, URL nebo Client ID.
 - Do Vite konfigurace patří pouze veřejné hodnoty. Hesla, databázová URL,
@@ -154,19 +158,26 @@ Tento soubor obsahuje závazná pravidla pro lidské i AI vývojové agenty.
 
 - Lokální `compose.yaml` a staging `compose.prod.yaml` mají odlišné účely;
   vývojovou konfiguraci nemaž ani nepoužívej jako veřejný deployment.
+  `compose.prod.yaml` je zachovaná legacy cesta; hlavní one-command deployment
+  je `deployment/compose.yaml` nad hotovými GHCR image bez `build:` sekcí.
 - Ve staging/production smí host porty 80/443 publikovat pouze Caddy gateway.
   API ani PostgreSQL nesmějí mít host port a gateway nesmí mountovat uploads.
 - Frontend se v production obsluhuje pouze jako statický build, API bez watch
   režimu pod neprivilegovaným uživatelem a Prisma migrace jednorázově přes
   `migrate deploy` před aktualizací API.
-- Do image ani build argumentů nevkládej tajemství. Frontend smí dostat jen
-  veřejné `VITE_*` hodnoty; interní health token nesmí být v gateway.
-- Deploy standardně před migrací vytvoří logical PostgreSQL + uploads zálohu.
-  Nepoužívej `down -v`, netaruj aktivní PGDATA a obnovu vždy nejprve ověř přes
-  `--dry-run` a checksumy.
+- Do image ani build argumentů nevkládej tajemství. Produkční frontend čte
+  pouze validovaný allowlist z `window.__HOMEAPP_CONFIG__`; secret soubory
+  používají `*_FILE`, nejsou v gateway a mají přednost před env fallbackem.
+- Registry deployment používá named volumes, idempotentní `volumes-init`,
+  healthy DB, one-shot `migrate` a start API jen po úspěšné migraci. Běžný
+  start i staging update musí zůstat `docker compose up -d`.
+- Před rizikovou migrací vytvoř logical PostgreSQL + uploads zálohu.
+  Nepoužívej `down -v`, netaruj aktivní PGDATA a obnovu vždy ověř checksumy.
+  Přechod z bind mountů nesmí smazat původní data.
 - Změna deploymentu musí projít `pnpm deployment:check`,
-  `docker compose -f compose.prod.yaml config` a pokud je Docker dostupný také
-  buildem produkčních image a izolovaným smoke testem.
+  konfigurací legacy i `deployment/compose.yaml`, workflow lintem a pokud je
+  Docker dostupný také buildem produkčních image, čistým named-volume startem,
+  opakovaným `up`, persistence a izolovaným backup/restore smoke testem.
 
 ## Testy a dokončení
 

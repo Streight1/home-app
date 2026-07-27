@@ -3,6 +3,7 @@ import {
   ArrayUnique,
   IsArray,
   IsBoolean,
+  IsDateString,
   IsIn,
   IsISO8601,
   IsOptional,
@@ -10,6 +11,7 @@ import {
   IsUUID,
   MaxLength,
   MinLength,
+  ValidateIf,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ValidateNested } from 'class-validator';
@@ -33,11 +35,25 @@ export class CreateCalendarEventDto {
   @IsIn(calendarEventTypes)
   public type!: (typeof calendarEventTypes)[number];
 
+  @ValidateIf((value: CreateCalendarEventDto) => !value.isAllDay)
   @IsISO8601({ strict: true })
-  public startsAt!: string;
+  public startsAt?: string | null;
 
+  @ValidateIf((value: CreateCalendarEventDto) => !value.isAllDay)
   @IsISO8601({ strict: true })
-  public endsAt!: string;
+  public endsAt?: string | null;
+
+  @ValidateIf((value: CreateCalendarEventDto) => value.isAllDay)
+  @IsDateString()
+  public allDayStartDate?: string | null;
+
+  @ValidateIf((value: CreateCalendarEventDto) => value.isAllDay)
+  @IsDateString()
+  public allDayEndDateExclusive?: string | null;
+
+  @IsOptional()
+  @IsISO8601({ strict: true })
+  public desiredArrivalAt?: string | null;
 
   @IsString()
   @MaxLength(100)
@@ -69,8 +85,9 @@ export class CreateCalendarEventDto {
   @IsBoolean()
   public calculateTravel = true;
 
+  @IsOptional()
   @IsIn(calendarColorTokens)
-  public colorToken!: (typeof calendarColorTokens)[number];
+  public colorToken?: (typeof calendarColorTokens)[number] | null;
 
   @IsArray()
   @ArrayUnique()

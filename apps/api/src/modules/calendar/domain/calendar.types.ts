@@ -12,12 +12,14 @@ export const calendarEventTypes = [
 export type CalendarEventType = (typeof calendarEventTypes)[number];
 
 export const calendarColorTokens = [
-  'primary',
+  'violet',
   'blue',
   'cyan',
-  'success',
-  'warning',
-  'danger',
+  'green',
+  'amber',
+  'orange',
+  'rose',
+  'pink',
 ] as const;
 export type CalendarColorToken = (typeof calendarColorTokens)[number];
 export const calendarMemberColorTokens = [
@@ -35,6 +37,20 @@ export type CalendarMemberColorToken =
 export type CalendarParticipantRole = 'ASSIGNEE' | 'ATTENDEE';
 export type CalendarEventStatus = 'ACTIVE' | 'CANCELLED';
 export type CalendarEventSource = 'MANUAL' | 'TEMPLATE' | 'TASK';
+export type CalendarVisualColorToken =
+  | CalendarColorToken
+  | 'neutral'
+  | 'shared';
+export type CalendarVisualKind = 'EVENT' | 'WORK_SHIFT' | 'TASK';
+
+export interface CalendarEventVisual {
+  colorToken: CalendarVisualColorToken;
+  backgroundToken: `calendar-${CalendarVisualColorToken}-surface`;
+  borderToken: `calendar-${CalendarVisualColorToken}-border`;
+  foregroundToken: `calendar-${CalendarVisualColorToken}-foreground`;
+  isShared: boolean;
+  kind: CalendarVisualKind;
+}
 
 export interface CalendarPersonSummary {
   id: string;
@@ -56,8 +72,11 @@ export interface CalendarEventRecord {
   description: string | null;
   type: CalendarEventType;
   status: CalendarEventStatus;
-  startsAt: Date;
-  endsAt: Date;
+  startsAt: Date | null;
+  endsAt: Date | null;
+  allDayStartDate: string | null;
+  allDayEndDateExclusive: string | null;
+  desiredArrivalAt: Date | null;
   timezone: string;
   isAllDay: boolean;
   location: string | null;
@@ -65,7 +84,7 @@ export interface CalendarEventRecord {
   locationLabel: string | null;
   locationNotes: string | null;
   calculateTravel: boolean;
-  colorToken: CalendarColorToken;
+  colorToken: CalendarColorToken | null;
   source: CalendarEventSource;
   templateId: string | null;
   templateApplicationBatchId: string | null;
@@ -82,8 +101,11 @@ export interface CalendarEventWriteInput {
   title: string;
   description: string | null;
   type: CalendarEventType;
-  startsAt: Date;
-  endsAt: Date;
+  startsAt: Date | null;
+  endsAt: Date | null;
+  allDayStartDate: Date | null;
+  allDayEndDateExclusive: Date | null;
+  desiredArrivalAt: Date | null;
   timezone: string;
   isAllDay: boolean;
   location: string | null;
@@ -91,7 +113,7 @@ export interface CalendarEventWriteInput {
   locationLabel: string | null;
   locationNotes: string | null;
   calculateTravel: boolean;
-  colorToken: CalendarColorToken;
+  colorToken: CalendarColorToken | null;
   participants: { userId: string; role: CalendarParticipantRole }[];
 }
 

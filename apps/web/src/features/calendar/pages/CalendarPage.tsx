@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useWorkspaceNavigation } from '../../../app/workspace-navigation/useWorkspaceNavigation.js';
 import { InlineAlert } from '../../../components/ui/InlineAlert/InlineAlert.js';
 import { LoadingScreen } from '../../../components/ui/LoadingScreen/LoadingScreen.js';
@@ -13,18 +13,49 @@ import { useCalendarFeed } from '../hooks/useCalendar.js';
 import { feedRange, localIsoDate, shiftPeriod } from '../lib/calendarDate.js';
 import type { CalendarViewMode } from '../types/calendar.types.js';
 import { useRememberedCalendarView } from '../../location/hooks/useRememberedCalendarView.js';
-
+import { useCalendarPreferences } from '../../location/hooks/useCalendarPreferences.js';
+import { useHouseholdMembers } from '../../household/household.public.js';
+import { CalendarSelectionToolbar } from '../components/bulk/CalendarSelectionToolbar.js';
+import { CalendarBulkEditDialog } from '../components/bulk/CalendarBulkEditDialog.js';
+import { CalendarBulkDeleteDialog } from '../components/bulk/CalendarBulkDeleteDialog.js';
 export function CalendarPage({ role }: { role: HouseholdRole }) {
   const workspace = useWorkspaceNavigation();
   const rememberedView = useRememberedCalendarView();
+  const preferences = useCalendarPreferences();
+  const members = useHouseholdMembers();
   const view: CalendarViewMode = rememberedView.view;
   const [date, setDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkEditOpen, setBulkEditOpen] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const range = feedRange(date, view);
   const feed = useCalendarFeed(range.from, range.to);
   const items = feed.data?.items ?? [];
-  const canMutate = role !== 'VIEWER';
+  const selectableIds = useMemo(
+    () =>
+      items
+        .filter(({ sourceType }) => sourceType === 'CALENDAR_EVENT')
+        .map(({ id }) => id),
+    [items],
+  );
+  const visibleItems =
+    view !== 'month' && preferences.data?.showTravelBlocks === false
+      ? items.filter(({ sourceType }) => sourceType !== 'TRAVEL_BLOCK')
+      : items;
+  const toggleSelection = (eventId: string) =>
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(eventId)) next.delete(eventId);
+      else next.add(eventId);
+      return next;
+    });
+  const exitSelection = () => {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+  };
   const selectDate = (next: Date) => {
     setSelectedDate(next);
     setDate(next);
@@ -34,7 +65,7 @@ export function CalendarPage({ role }: { role: HouseholdRole }) {
       <CalendarToolbar
         date={date}
         view={view}
-        canMutate={canMutate}
+        canMutate={role !== 'VIEWER'}
         onViewChange={rememberedView.select}
         onToday={() => {
           const today = new Date();
@@ -50,7 +81,23 @@ export function CalendarPage({ role }: { role: HouseholdRole }) {
           })
         }
         onTemplates={() => setTemplatesOpen(true)}
+        selectionMode={selectionMode}
+        onSelectionModeChange={(active) => {
+          setSelectionMode(active);
+          if (!active) setSelectedIds(new Set());
+        }}
       />
+      {selectionMode ? (
+        <CalendarSelectionToolbar
+          selectedCount={selectedIds.size}
+          selectableCount={selectableIds.length}
+          onSelectAll={() => setSelectedIds(new Set(selectableIds))}
+          onClear={() => setSelectedIds(new Set())}
+          onEdit={() => setBulkEditOpen(true)}
+          onDelete={() => setBulkDeleteOpen(true)}
+          onExit={exitSelection}
+        />
+      ) : null}
       {feed.isLoading ? <LoadingScreen message="Načítáme kalendář…" /> : null}
       {feed.isError ? (
         <InlineAlert variant="danger">{feed.error.message}</InlineAlert>
@@ -68,6 +115,12 @@ export function CalendarPage({ role }: { role: HouseholdRole }) {
             selectedDate={selectedDate}
             items={items}
             onSelectDate={selectDate}
+            showTravelBlocks={
+              preferences.data?.showTravelBlocksInMonth ?? false
+            }
+            selectionMode={selectionMode}
+            selectedIds={selectedIds}
+            onSelectEvent={toggleSelection}
           />
           <section className="md:hidden">
             <h2 className="mb-3 text-section-title font-semibold">
@@ -77,29 +130,69 @@ export function CalendarPage({ role }: { role: HouseholdRole }) {
                 month: 'long',
               })}
             </h2>
-            <CalendarAgendaList items={items} date={selectedDate} />
+            <CalendarAgendaList
+              items={visibleItems}
+              date={selectedDate}
+              selectionMode={selectionMode}
+              selectedIds={selectedIds}
+              onSelectEvent={toggleSelection}
+            />
           </section>
         </>
       ) : null}
       {view === 'week' ? (
         <WeekCalendar
           date={date}
-          items={items}
+          items={visibleItems}
           onSelectDate={(next) => {
             setSelectedDate(next);
             setDate(next);
           }}
+          selectionMode={selectionMode}
+          selectedIds={selectedIds}
+          onSelectEvent={toggleSelection}
         />
       ) : null}
       {view === 'day' ? (
-        <CalendarTimeGrid date={date} items={items} mode="day" />
+        <CalendarTimeGrid
+          date={date}
+          items={visibleItems}
+          mode="day"
+          selectionMode={selectionMode}
+          selectedIds={selectedIds}
+          onSelectEvent={toggleSelection}
+        />
       ) : null}
       {view === 'agenda' ? (
-        <CalendarAgendaList items={items} date={date} filterDate={false} />
+        <CalendarAgendaList
+          items={visibleItems}
+          date={date}
+          filterDate={false}
+          selectionMode={selectionMode}
+          selectedIds={selectedIds}
+          onSelectEvent={toggleSelection}
+        />
       ) : null}
       <CalendarTemplateManagerDialog
         open={templatesOpen}
         onOpenChange={setTemplatesOpen}
+        onSelectAppliedEvents={(eventIds) => {
+          setSelectionMode(true);
+          setSelectedIds(new Set(eventIds));
+        }}
+      />
+      <CalendarBulkEditDialog
+        open={bulkEditOpen}
+        eventIds={[...selectedIds]}
+        members={members.data ?? []}
+        onOpenChange={setBulkEditOpen}
+        onUpdated={exitSelection}
+      />
+      <CalendarBulkDeleteDialog
+        open={bulkDeleteOpen}
+        eventIds={[...selectedIds]}
+        onOpenChange={setBulkDeleteOpen}
+        onDeleted={exitSelection}
       />
     </div>
   );

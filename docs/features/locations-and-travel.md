@@ -11,8 +11,10 @@ označený jako nedostupný.
 
 Feature převádí volný text místa na bezpečný strukturovaný cíl a pro konkrétního
 účastníka umí připravit orientační dobu cesty, vzdálenost a doporučený odjezd.
-`startsAt` a `endsAt` události nikdy nemění. Text v UI vždy používá výraz
-„Odhad cesty“, protože nejde o garantovaný příjezd.
+`startsAt` a `endsAt` časované události nikdy nemění. U celodenní události
+počítá cestu pouze z uživatelem zadaného `desiredArrivalAt`; bez něj event
+zůstane uložitelný a routing se nespustí. Text v UI vždy používá výraz „Odhad
+cesty“, protože nejde o garantovaný příjezd.
 
 ## Uživatelské scénáře
 
@@ -40,6 +42,9 @@ ale není prezentován jako routovatelný. `MapyAttribution` je u návrhů a hot
 skládá místo, poznámky a konfiguraci cesty; editace používá desktop Dialog a
 mobilní full-screen variantu. Read-only `CalendarTravelBlock` se odlišuje
 přerušovaným borderem a ikonou a otevře cílovou událost, nemá vlastní editaci.
+Volba `Jiné místo` používá stejný `PlaceAutocomplete`; pouhý volný text zůstává
+neroutovatelný. V měsíci je cesta výchozím způsobem jen kompaktní informace pod
+událostí, zatímco den/týden zachovává plný časově umístěný blok.
 
 ## API
 
@@ -59,7 +64,8 @@ requestu; persistentní route cache se nepoužívá.
 provider ID ani souřadnice; routování potvrzeného místa jej znovu vyřeší přes
 `GeocodingProviderPort`. `CalendarUserPreference` je unikátní pro household a
 user a drží default place, route/buffer/avoid volby, travel block, posledního
-účastníka směny a tři layoutové view preference. `CalendarEventTravelPlan` je
+účastníka směny, tři layoutové view preference a samostatné zobrazení plných
+travel bloků v měsíci. `CalendarEventTravelPlan` je
 unikátní pro event a traveler a drží pouze origin, route/buffer konfiguraci a
 stav. Route response, duration, distance, geometrie a provider timestamp
 nejsou persistované.

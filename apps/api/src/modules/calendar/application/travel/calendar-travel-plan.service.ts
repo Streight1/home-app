@@ -24,6 +24,7 @@ import type { CalendarEventTravelPlanRecord } from '../../domain/travel/travel-p
 import type { UpsertTravelPlanDto } from '../../presentation/dto/upsert-travel-plan.dto.js';
 import { ResolveTravelOriginService } from './resolve-travel-origin.service.js';
 import { mapTravelPlanResponse } from './travel-plan-response.mapper.js';
+import { getCalendarTravelTarget } from '../../domain/calendar-event-schedule.js';
 
 @Injectable()
 export class CalendarTravelPlanService {
@@ -159,11 +160,16 @@ export class CalendarTravelPlanService {
     plan: CalendarEventTravelPlanRecord,
   ) {
     try {
+      const targetAt = getCalendarTravelTarget(event);
+      if (!targetAt)
+        throw calendarInvalidInput(
+          'Pro celodenní událost zadejte požadovaný čas příjezdu.',
+        );
       const origin = await this.origin.execute({
         userId,
         householdId,
         travelerUserId: plan.travelerUserId,
-        target: event,
+        target: { ...event, startsAt: targetAt },
         originMode: plan.originMode,
         originPlaceId: plan.originPlaceId,
         previousEventId: plan.previousEventId,
@@ -183,10 +189,10 @@ export class CalendarTravelPlanService {
         routeMode: plan.routeMode,
         avoidTolls: plan.avoidTolls,
         avoidHighways: plan.avoidHighways,
-        departureAt: event.startsAt,
+        departureAt: targetAt,
       });
       const departureAt = new Date(
-        event.startsAt.getTime() -
+        targetAt.getTime() -
           estimate.durationSeconds * 1000 -
           plan.travelBufferMinutes * 60_000,
       );

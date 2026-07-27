@@ -14,11 +14,19 @@ export function MonthCalendar({
   selectedDate,
   items,
   onSelectDate,
+  showTravelBlocks = false,
+  selectionMode = false,
+  selectedIds,
+  onSelectEvent,
 }: {
   date: Date;
   selectedDate: Date;
   items: CalendarFeedItem[];
   onSelectDate: (date: Date) => void;
+  showTravelBlocks?: boolean | undefined;
+  selectionMode?: boolean | undefined;
+  selectedIds?: ReadonlySet<string> | undefined;
+  onSelectEvent?: ((eventId: string) => void) | undefined;
 }) {
   const start = monthGridStart(date);
   const days = Array.from({ length: 42 }, (_, index) => addDays(start, index));
@@ -39,7 +47,12 @@ export function MonthCalendar({
       <div className="grid grid-cols-7">
         {days.map((day) => {
           const key = localIsoDate(day);
-          const visible = items.filter((item) => occursOnDate(item, day));
+          const allVisible = items.filter((item) => occursOnDate(item, day));
+          const visible = showTravelBlocks
+            ? allVisible
+            : allVisible.filter(
+                ({ sourceType }) => sourceType !== 'TRAVEL_BLOCK',
+              );
           return (
             <div
               key={key}
@@ -57,13 +70,40 @@ export function MonthCalendar({
                 {day.getDate()}
               </button>
               <div className="mt-1 hidden gap-1 sm:grid">
-                {visible.slice(0, 3).map((item) => (
-                  <CalendarEventItem
-                    key={`${item.sourceType}-${item.id}`}
-                    item={item}
-                    compact
-                  />
-                ))}
+                {visible.slice(0, 3).map((item) => {
+                  const travel = items.find(
+                    (candidate) =>
+                      candidate.sourceType === 'TRAVEL_BLOCK' &&
+                      candidate.eventId === item.id &&
+                      occursOnDate(candidate, day),
+                  );
+                  const travelMinutes =
+                    travel?.sourceType === 'TRAVEL_BLOCK'
+                      ? Math.ceil(travel.durationSeconds / 60)
+                      : 0;
+                  return (
+                    <div
+                      key={`${item.sourceType}-${item.id}`}
+                      className="grid gap-0.5"
+                    >
+                      <CalendarEventItem
+                        item={item}
+                        compact
+                        selectionMode={selectionMode}
+                        selected={
+                          item.sourceType === 'CALENDAR_EVENT' &&
+                          Boolean(selectedIds?.has(item.id))
+                        }
+                        onSelect={onSelectEvent}
+                      />
+                      {!showTravelBlocks && travelMinutes > 0 ? (
+                        <span className="truncate px-1 text-caption text-text-muted">
+                          🚗 cesta přibližně {String(travelMinutes)} min
+                        </span>
+                      ) : null}
+                    </div>
+                  );
+                })}
                 {visible.length > 3 ? (
                   <p className="px-1 text-caption text-text-muted">
                     + {visible.length - 3} další

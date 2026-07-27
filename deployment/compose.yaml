@@ -1,0 +1,267 @@
+name: homeapp
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: '3'
+
+x-api-environment: &api-environment
+  NODE_ENV: production
+  API_PORT: '3000'
+  POSTGRES_HOST: db
+  POSTGRES_PORT: '5432'
+  POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+  POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+  POSTGRES_PASSWORD_FILE: /run/homeapp-secrets/postgres_password
+  WEB_ORIGIN: ${WEB_ORIGIN:?WEB_ORIGIN is required}
+  GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:?GOOGLE_CLIENT_ID is required}
+  GOOGLE_ALLOWED_EMAILS: ${GOOGLE_ALLOWED_EMAILS:?GOOGLE_ALLOWED_EMAILS is required}
+  SINGLE_HOUSEHOLD_MODE: ${SINGLE_HOUSEHOLD_MODE:?SINGLE_HOUSEHOLD_MODE is required}
+  SINGLE_HOUSEHOLD_OWNER_EMAIL: ${SINGLE_HOUSEHOLD_OWNER_EMAIL:?SINGLE_HOUSEHOLD_OWNER_EMAIL is required}
+  SINGLE_HOUSEHOLD_NAME: ${SINGLE_HOUSEHOLD_NAME:?SINGLE_HOUSEHOLD_NAME is required}
+  SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:?SESSION_COOKIE_NAME is required}
+  CSRF_COOKIE_NAME: ${CSRF_COOKIE_NAME:?CSRF_COOKIE_NAME is required}
+  SESSION_TTL_DAYS: ${SESSION_TTL_DAYS:?SESSION_TTL_DAYS is required}
+  TRUST_PROXY: 'true'
+  INTERNAL_HEALTH_TOKEN_FILE: /run/homeapp-secrets/internal_health_token
+  UPLOAD_ROOT: /app/uploads
+  MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:?MAX_UPLOAD_BYTES is required}
+  FINANCE_IMPORT_MAX_FILE_BYTES: ${FINANCE_IMPORT_MAX_FILE_BYTES:?FINANCE_IMPORT_MAX_FILE_BYTES is required}
+  FINANCE_IMPORT_MAX_ROWS: ${FINANCE_IMPORT_MAX_ROWS:?FINANCE_IMPORT_MAX_ROWS is required}
+  FINANCE_IMPORT_SESSION_TTL_HOURS: ${FINANCE_IMPORT_SESSION_TTL_HOURS:?FINANCE_IMPORT_SESSION_TTL_HOURS is required}
+  MAPY_API_ENABLED: ${MAPY_API_ENABLED:-false}
+  MAPY_API_KEY_FILE: /run/homeapp-secrets/mapy_api_key
+  MAPY_API_TIMEOUT_MS: ${MAPY_API_TIMEOUT_MS:-5000}
+  MAPY_SUGGEST_MIN_QUERY_LENGTH: ${MAPY_SUGGEST_MIN_QUERY_LENGTH:-3}
+  MAPY_SUGGEST_MAX_RESULTS: ${MAPY_SUGGEST_MAX_RESULTS:-8}
+  MAPY_DEFAULT_LANGUAGE: ${MAPY_DEFAULT_LANGUAGE:-cs}
+
+services:
+  volumes-init:
+    image: alpine:3.22.2
+    environment:
+      APP_RUNTIME_UID: ${APP_RUNTIME_UID:-10001}
+      APP_RUNTIME_GID: ${APP_RUNTIME_GID:-10001}
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        install -d -m 0750 /uploads/documents /uploads/finance-imports/temporary
+        chown -R "$${APP_RUNTIME_UID}:$${APP_RUNTIME_GID}" /uploads
+        chmod 0750 /uploads /uploads/documents /uploads/finance-imports /uploads/finance-imports/temporary
+        install -d -m 0700 -o "$${APP_RUNTIME_UID}" -g "$${APP_RUNTIME_GID}" /backups
+        install -d -m 0750 -o "$${APP_RUNTIME_UID}" -g "$${APP_RUNTIME_GID}" /runtime-secrets
+        for secret in postgres_password internal_health_token mapy_api_key; do
+          install -m 0440 -o "$${APP_RUNTIME_UID}" -g "$${APP_RUNTIME_GID}" \
+            "/run/secrets/$${secret}" "/runtime-secrets/$${secret}"
+        done
+    volumes:
+      - uploads_data:/uploads
+      - backups:/backups
+      - runtime_secrets:/runtime-secrets
+    secrets:
+      - postgres_password
+      - internal_health_token
+      - mapy_api_key
+    restart: 'no'
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+
+  db:
+    image: postgres:18.4-bookworm
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      PGDATA: /var/lib/postgresql/18/docker
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 --auth-local=scram-sha-256
+    secrets:
+      - postgres_password
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    networks:
+      - backend
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    logging: *default-logging
+
+  migrate:
+    image: ghcr.io/streight1/home-app-api:${APP_IMAGE_TAG:-staging}
+    pull_policy: ${APP_PULL_POLICY:-always}
+    environment: *api-environment
+    command:
+      - node
+      - /app/bin/run-migrations.mjs
+    depends_on:
+      volumes-init:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+    volumes:
+      - runtime_secrets:/run/homeapp-secrets:ro
+    networks:
+      - backend
+    restart: 'no'
+    read_only: true
+    tmpfs:
+      - /tmp:mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging: *default-logging
+
+  api:
+    image: ghcr.io/streight1/home-app-api:${APP_IMAGE_TAG:-staging}
+    pull_policy: ${APP_PULL_POLICY:-always}
+    environment: *api-environment
+    user: '${APP_RUNTIME_UID:-10001}:${APP_RUNTIME_GID:-10001}'
+    volumes:
+      - uploads_data:/app/uploads
+      - runtime_secrets:/run/homeapp-secrets:ro
+    depends_on:
+      volumes-init:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - backend
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - /app/bin/healthcheck.mjs
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 20s
+    logging: *default-logging
+
+  gateway:
+    image: ghcr.io/streight1/home-app-web:${APP_IMAGE_TAG:-staging}
+    pull_policy: ${APP_PULL_POLICY:-always}
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL:?ACME_EMAIL is required}
+      APP_DOMAIN: ${APP_DOMAIN:?APP_DOMAIN is required}
+      GATEWAY_MAX_REQUEST_BODY: ${GATEWAY_MAX_REQUEST_BODY:-30MB}
+      API_URL: /api/v1
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:?GOOGLE_CLIENT_ID is required}
+      APP_ENV_LABEL: ${APP_ENV_LABEL:-Staging}
+      MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:?MAX_UPLOAD_BYTES is required}
+      FINANCE_IMPORT_MAX_FILE_BYTES: ${FINANCE_IMPORT_MAX_FILE_BYTES:?FINANCE_IMPORT_MAX_FILE_BYTES is required}
+      CSRF_COOKIE_NAME: ${CSRF_COOKIE_NAME:?CSRF_COOKIE_NAME is required}
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    tmpfs:
+      - /run/homeapp:mode=0755
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - edge
+      - backend
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    logging: *default-logging
+
+  backup:
+    image: postgres:18.4-bookworm
+    user: '${APP_RUNTIME_UID:-10001}:${APP_RUNTIME_GID:-10001}'
+    profiles:
+      - maintenance
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: '5432'
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD_FILE: /run/homeapp-secrets/postgres_password
+      APP_IMAGE_TAG: ${APP_IMAGE_TAG:-staging}
+      BACKUP_RETENTION_COUNT: ${BACKUP_RETENTION_COUNT:-7}
+    configs:
+      - source: backup_script
+        target: /maintenance/backup.sh
+      - source: restore_script
+        target: /maintenance/restore.sh
+    command:
+      - bash
+      - /maintenance/backup.sh
+    volumes:
+      - uploads_data:/uploads:ro
+      - backups:/backups
+      - runtime_secrets:/run/homeapp-secrets:ro
+    depends_on:
+      volumes-init:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+    networks:
+      - backend
+    restart: 'no'
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging: *default-logging
+
+networks:
+  edge:
+  backend:
+
+volumes:
+  postgres_data:
+    name: ${POSTGRES_VOLUME_NAME:-homeapp_postgres_data}
+  uploads_data:
+    name: ${UPLOADS_VOLUME_NAME:-homeapp_uploads_data}
+  caddy_data:
+    name: ${CADDY_DATA_VOLUME_NAME:-homeapp_caddy_data}
+  caddy_config:
+    name: ${CADDY_CONFIG_VOLUME_NAME:-homeapp_caddy_config}
+  backups:
+    name: ${BACKUPS_VOLUME_NAME:-homeapp_backups}
+  runtime_secrets:
+    name: ${RUNTIME_SECRETS_VOLUME_NAME:-homeapp_runtime_secrets}
+
+secrets:
+  postgres_password:
+    file: ${HOMEAPP_SECRETS_DIR:-./secrets}/postgres_password
+  internal_health_token:
+    file: ${HOMEAPP_SECRETS_DIR:-./secrets}/internal_health_token
+  mapy_api_key:
+    file: ${HOMEAPP_SECRETS_DIR:-./secrets}/mapy_api_key
+
+configs:
+  backup_script:
+    file: ./maintenance/backup.sh
+  restore_script:
+    file: ./maintenance/restore.sh

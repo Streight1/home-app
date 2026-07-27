@@ -3,6 +3,18 @@ import type {
   CalendarEventRecord,
   CalendarTemplateRecord,
 } from '../domain/calendar.types.js';
+import { calendarColorTokens } from '../domain/calendar.types.js';
+
+function toDateOnly(value: Date | null): string | null {
+  return value?.toISOString().slice(0, 10) ?? null;
+}
+
+function toCalendarColorToken(value: string | null) {
+  return value &&
+    calendarColorTokens.includes(value as (typeof calendarColorTokens)[number])
+    ? (value as CalendarEventRecord['colorToken'])
+    : null;
+}
 
 export const calendarEventInclude = {
   participants: {
@@ -45,6 +57,9 @@ export function toCalendarEventRecord(
     status: event.status,
     startsAt: event.startsAt,
     endsAt: event.endsAt,
+    allDayStartDate: toDateOnly(event.allDayStartDate),
+    allDayEndDateExclusive: toDateOnly(event.allDayEndDateExclusive),
+    desiredArrivalAt: event.desiredArrivalAt,
     timezone: event.timezone,
     isAllDay: event.isAllDay,
     location: event.location,
@@ -52,7 +67,7 @@ export function toCalendarEventRecord(
     locationLabel: event.locationLabel,
     locationNotes: event.locationNotes,
     calculateTravel: event.calculateTravel,
-    colorToken: event.colorToken as CalendarEventRecord['colorToken'],
+    colorToken: toCalendarColorToken(event.colorToken),
     source: event.source,
     templateId: event.templateId,
     templateApplicationBatchId: event.templateApplicationBatchId,

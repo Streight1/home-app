@@ -82,14 +82,26 @@ export function calendarPeriodLabel(
 export function formatCalendarInterval({
   startsAt,
   endsAt,
+  allDayStartDate,
+  allDayEndDateExclusive,
   timezone,
   isAllDay,
 }: {
-  startsAt: string;
-  endsAt: string;
+  startsAt: string | null;
+  endsAt: string | null;
+  allDayStartDate?: string | null | undefined;
+  allDayEndDateExclusive?: string | null | undefined;
   timezone: string;
   isAllDay: boolean;
 }): string {
+  if (isAllDay && allDayStartDate && allDayEndDateExclusive) {
+    const inclusiveEnd = addDays(fromIsoDate(allDayEndDateExclusive), -1);
+    const formatter = new Intl.DateTimeFormat('cs-CZ', {
+      dateStyle: 'long',
+    });
+    return `${formatter.format(fromIsoDate(allDayStartDate))} – ${formatter.format(inclusiveEnd)} · celý den`;
+  }
+  if (!startsAt || !endsAt) return 'Čas není dostupný';
   const formatter = new Intl.DateTimeFormat('cs-CZ', {
     day: 'numeric',
     month: 'numeric',

@@ -77,7 +77,7 @@ export class ApplyCalendarTemplateService {
     };
   }
   private conflicts(householdId: string, event: CalendarEventWriteInput) {
-    return event.type === 'WORK_SHIFT'
+    return event.type === 'WORK_SHIFT' && event.startsAt && event.endsAt
       ? this.events.countShiftConflicts({
           householdId,
           participantIds: event.participants.map(({ userId }) => userId),

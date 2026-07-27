@@ -9,6 +9,9 @@ import { CalendarTimeGrid } from '../../features/calendar/components/time-grid/C
 import { CalendarEventForm } from '../../features/calendar/components/forms/CalendarEventForm.js';
 import { CalendarEventDeleteDialog } from '../../features/calendar/components/dialogs/CalendarEventDeleteDialog.js';
 import { CalendarMonthPicker } from '../../features/calendar/components/templates/CalendarMonthPicker.js';
+import { CalendarSelectionToolbar } from '../../features/calendar/components/bulk/CalendarSelectionToolbar.js';
+import { CalendarBulkEditDialog } from '../../features/calendar/components/bulk/CalendarBulkEditDialog.js';
+import { CalendarBulkDeleteDialog } from '../../features/calendar/components/bulk/CalendarBulkDeleteDialog.js';
 import type {
   CalendarEvent,
   TravelPlan,
@@ -77,7 +80,14 @@ const editableEvent = {
     canDelete: true,
     canCompleteTask: false,
   },
-  visual: { colorToken: 'rose', isShared: false },
+  visual: {
+    colorToken: 'cyan',
+    backgroundToken: 'calendar-cyan-surface',
+    borderToken: 'calendar-cyan-border',
+    foregroundToken: 'calendar-cyan-foreground',
+    isShared: false,
+    kind: 'EVENT',
+  },
 } satisfies CalendarEvent;
 
 const taskLinkedEvent = {
@@ -87,6 +97,17 @@ const taskLinkedEvent = {
     taskId: '30000000-0000-4000-8000-000000000001',
     status: 'OPEN',
   },
+} satisfies CalendarEvent;
+
+const allDayEvent = {
+  ...editableEvent,
+  title: 'Rodinný den v knihovně',
+  startsAt: null,
+  endsAt: null,
+  allDayStartDate: '2030-07-18',
+  allDayEndDateExclusive: '2030-07-19',
+  desiredArrivalAt: null,
+  isAllDay: true,
 } satisfies CalendarEvent;
 
 const editableTravelPlan = {
@@ -146,9 +167,19 @@ function EditTravelScreen() {
 
 function CalendarScreen({
   view = 'month',
+  selectionMode = false,
 }: {
   view?: 'month' | 'week' | 'day';
+  selectionMode?: boolean;
 }) {
+  const selectedIds = new Set(
+    selectionMode
+      ? [
+          '40000000-0000-4000-8000-000000000010',
+          '40000000-0000-4000-8000-000000000011',
+        ]
+      : [],
+  );
   return (
     <AppShell
       householdName="Moje domácnost"
@@ -168,7 +199,20 @@ function CalendarScreen({
           onNext={() => undefined}
           onCreate={() => undefined}
           onTemplates={() => undefined}
+          selectionMode={selectionMode}
+          onSelectionModeChange={() => undefined}
         />
+        {selectionMode ? (
+          <CalendarSelectionToolbar
+            selectedCount={selectedIds.size}
+            selectableCount={4}
+            onSelectAll={() => undefined}
+            onClear={() => undefined}
+            onEdit={() => undefined}
+            onDelete={() => undefined}
+            onExit={() => undefined}
+          />
+        ) : null}
         {view === 'month' ? (
           <>
             <MonthCalendar
@@ -176,6 +220,9 @@ function CalendarScreen({
               selectedDate={referenceDate}
               items={calendarFeedFixture}
               onSelectDate={() => undefined}
+              selectionMode={selectionMode}
+              selectedIds={selectedIds}
+              onSelectEvent={() => undefined}
             />
             <section className="md:hidden">
               <h2 className="mb-3 text-section-title font-semibold">
@@ -184,6 +231,9 @@ function CalendarScreen({
               <CalendarAgendaList
                 items={calendarFeedFixture}
                 date={referenceDate}
+                selectionMode={selectionMode}
+                selectedIds={selectedIds}
+                onSelectEvent={() => undefined}
               />
             </section>
           </>
@@ -192,12 +242,18 @@ function CalendarScreen({
             date={referenceDate}
             items={calendarFeedFixture}
             onSelectDate={() => undefined}
+            selectionMode={selectionMode}
+            selectedIds={selectedIds}
+            onSelectEvent={() => undefined}
           />
         ) : (
           <CalendarTimeGrid
             date={referenceDate}
             items={calendarFeedFixture}
             mode="day"
+            selectionMode={selectionMode}
+            selectedIds={selectedIds}
+            onSelectEvent={() => undefined}
           />
         )}
       </div>
@@ -262,6 +318,11 @@ export const DayLight: Story = {
   parameters: { theme: 'light', route: '/app', workspace: 'calendar' },
 };
 
+export const SelectionMode: Story = {
+  args: { view: 'month', selectionMode: true },
+  parameters: { theme: 'dark', route: '/app', workspace: 'calendar' },
+};
+
 export const TimeGridRegressionDay: Story = {
   parameters: { theme: 'dark', route: '/app', workspace: 'calendar' },
   render: () => <TimeGridRegressionScreen mode="day" />,
@@ -307,6 +368,39 @@ export const EditTravelDialog: Story = {
 export const EditTravelDialogLight: Story = {
   parameters: { theme: 'light', route: '/app', workspace: 'calendar' },
   render: () => <EditTravelScreen />,
+};
+
+export const AllDayDialog: Story = {
+  parameters: { theme: 'dark', route: '/app', workspace: 'calendar' },
+  render: () => (
+    <>
+      <CalendarScreen />
+      <Dialog
+        open
+        onOpenChange={() => undefined}
+        title="Upravit celodenní událost"
+        description="Celodenní událost používá samostatná data bez falešné půlnoci."
+        size="lg"
+        mobileFullScreen
+      >
+        <CalendarEventForm
+          initial={allDayEvent}
+          initialTravelPlan={{
+            ...editableTravelPlan,
+            originMode: 'AUTO',
+            originPlaceId: null,
+            previousEventId: null,
+          }}
+          members={members}
+          currentUserId={members[0]?.id ?? ''}
+          loading={false}
+          error={null}
+          onSubmit={() => undefined}
+          onCancel={() => undefined}
+        />
+      </Dialog>
+    </>
+  ),
 };
 
 export const CalendarPreferences: Story = {
@@ -414,6 +508,43 @@ export const DeleteTaskEventDialog: Story = {
         error={null}
         onOpenChange={() => undefined}
         onConfirm={() => undefined}
+      />
+    </>
+  ),
+};
+
+export const BulkEditDialog: Story = {
+  parameters: { theme: 'light', route: '/app', workspace: 'calendar' },
+  render: () => (
+    <>
+      <CalendarScreen selectionMode />
+      <CalendarBulkEditDialog
+        open
+        eventIds={[
+          '40000000-0000-4000-8000-000000000010',
+          '40000000-0000-4000-8000-000000000011',
+        ]}
+        members={members}
+        onOpenChange={() => undefined}
+        onUpdated={() => undefined}
+      />
+    </>
+  ),
+};
+
+export const BulkDeleteDialog: Story = {
+  parameters: { theme: 'dark', route: '/app', workspace: 'calendar' },
+  render: () => (
+    <>
+      <CalendarScreen selectionMode />
+      <CalendarBulkDeleteDialog
+        open
+        eventIds={[
+          '40000000-0000-4000-8000-000000000010',
+          '40000000-0000-4000-8000-000000000011',
+        ]}
+        onOpenChange={() => undefined}
+        onDeleted={() => undefined}
       />
     </>
   ),

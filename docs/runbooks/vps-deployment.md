@@ -1,272 +1,218 @@
 # VPS staging deployment
 
-Tento runbook nasadí HomeApp na jeden veřejný VPS přes Caddy, Docker Compose,
-NestJS a PostgreSQL. Staging dodržuje produkční bezpečnostní konfiguraci. Příkazy
-spouštěj jako oddělený neprivilegovaný deployment uživatel z kořene repozitáře.
+Tento runbook je provozní rozcestník pro internetově dostupný single-VPS
+staging. Hlavní cesta používá hotové GHCR image, named volumes a
+`deployment/compose.yaml`. Původní `compose.prod.yaml` zůstává kompatibilní pro
+bezpečnou migraci, ale není výchozí postup.
+
+Podrobný první start je v
+[one-command runbooku](one-command-deployment.md), registry a tagy v
+[registry runbooku](container-registry.md) a data v
+[backup runbooku](backup-and-restore.md).
 
 ## Předpoklady
 
-- Debian/Ubuntu nebo jiný udržovaný Linux s 64bit Docker Engine a Compose
-  pluginem;
-- doména, jejíž DNS lze nasměrovat na VPS;
+- udržovaný 64bit Linux s Docker Engine a Compose pluginem;
+- DNS A a případně AAAA záznam na VPS;
 - veřejné porty 80/TCP a 443/TCP;
 - SSH přístup pomocí klíče;
-- alespoň disková rezerva z `VPS_MIN_FREE_BYTES`;
-- klon aplikace například v `/srv/homeapp`.
+- deployment adresář například `/srv/homeapp/deployment`;
+- privátní GHCR read token, pokud image nejsou veřejné.
 
-Docker instaluj z distribučního nebo
-[oficiálního Docker repozitáře](https://docs.docker.com/engine/install/).
-Automatizační skripty záměrně nepoužívají neověřený `curl | sh`.
+Na VPS nejsou potřeba Node.js, pnpm, nvm, Prisma CLI, Git ani zdrojový
+repozitář. Docker instaluj z distribučního nebo
+[oficiálního Docker repozitáře](https://docs.docker.com/engine/install/);
+nepoužívej neověřené `curl | sh`.
 
-## VPS hardening
+## Hardening
 
-1. Vytvoř deployment uživatele bez sdíleného hesla a povol mu jen nutná
-   oprávnění k Dockeru. Členství ve skupině `docker` je prakticky root
-   oprávnění; Docker socket nikdy nevystavuj do sítě.
-2. V SSH zakaž root login heslem a přihlášení heslem, ponech klíče.
-3. Firewallem povol SSH z očekávaných adres a veřejně pouze 80/TCP a 443/TCP.
-   Porty 3000 a 5432 neotvírej.
-4. Pravidelně aktualizuj operační systém a Docker. Rootless Docker může být
-   další vrstva ochrany, není ale podmínkou prvního staging deploye.
-
-Příklad UFW uprav podle vlastního SSH portu:
+1. Použij odděleného neprivilegovaného deployment uživatele. Členství ve
+   skupině `docker` je prakticky root oprávnění; Docker socket nevystavuj.
+2. V SSH zakaž heslový root login a ponech klíče.
+3. Firewallem povol SSH z očekávaných adres a veřejně jen 80/443. Porty 3000 a
+   5432 neotvírej.
+4. Pravidelně aktualizuj systém a Docker. Rootless Docker je volitelná další
+   ochrana.
 
 ```bash
 sudo ufw allow OpenSSH
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
 sudo ufw enable
-sudo ufw status
 ```
 
-## DNS
+## DNS a Google OAuth
 
-Nastav:
-
-- A record `homeapp` na IPv4 VPS;
-- volitelně AAAA record na skutečně dostupnou IPv6 VPS.
-
-Před prvním startem ověř, že DNS z internetu vrací správný server. Caddy potřebuje
-příchozí 80/443 pro ACME ověření a automatické HTTPS.
-
-## Environment
-
-```bash
-cd /srv/homeapp
-cp .env.example .env
-chmod 600 .env
-```
-
-V kořenovém `.env` změň minimálně následující názvy; skutečné hodnoty nikdy
-necommituj ani neposílej do issue:
-
-```dotenv
-NODE_ENV=production
-APP_DOMAIN=<veřejný-hostname>
-APP_PROTOCOL=https
-APP_RELEASE=<identifikátor-release>
-APP_ENV_LABEL=Staging
-VITE_APP_ENV_LABEL=${APP_ENV_LABEL}
-ACME_EMAIL=<provozní-e-mail>
-
-WEB_ORIGIN=https://${APP_DOMAIN}
-TRUST_PROXY=true
-VITE_API_URL=/api/v1
-
-POSTGRES_HOST=db
-POSTGRES_PORT=5432
-POSTGRES_DB=<název-databáze>
-POSTGRES_USER=<databázová-role>
-POSTGRES_PASSWORD=<silné-unikátní-heslo>
-DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?schema=public
-
-GOOGLE_CLIENT_ID=<web-client-id>
-VITE_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-GOOGLE_ALLOWED_EMAILS=<povolené-adresy>
-SINGLE_HOUSEHOLD_OWNER_EMAIL=<vlastník>
-INTERNAL_HEALTH_TOKEN=<nejméně-32-náhodných-znaků>
-
-APP_RUNTIME_UID=<číselné-uid-deployment-uživatele>
-APP_RUNTIME_GID=<číselné-gid-deployment-uživatele>
-```
-
-UID/GID zjistíš příkazy `id -u` a `id -g`; do `.env` zapiš výsledná čísla,
-nikoli shell substituci. Pro URL-safe heslo/token lze použít například
-`openssl rand -hex 32`. `POSTGRES_PASSWORD` v `DATABASE_URL` musí být URL
-encoded, pokud obsahuje speciální znaky.
-
-`VITE_*` hodnoty jsou vložené do veřejného JavaScript bundlu při buildu. Nikdy
-jim nedávej database URL, hesla, health token, session data, Mapy klíč ani jiné
-tajemství. Mapy klíč zůstává pouze v backendové `MAPY_API_KEY`.
-
-## Google OAuth
-
-V Google Cloud Console přidej do Authorized JavaScript origins přesný HTTPS
-origin:
+Nastav A record například `homeapp` na IPv4 VPS a AAAA jen při funkční IPv6.
+Caddy potřebuje příchozí 80/443 pro ACME. Do Google Cloud Authorized
+JavaScript origins přidej přesný origin:
 
 ```text
 https://homeapp.example.cz
 ```
 
-Nahraď ukázkový hostname vlastním. Současný Google Identity Services
-popup/callback flow nepotřebuje backend redirect URI ani Client Secret. Stejný
-Web Client ID používá frontend i backend, ID token vždy ověřuje backend a účet
-musí projít `GOOGLE_ALLOWED_EMAILS`.
-
-Požadavek odpovídá oficiálním pravidlům
-[Authorized JavaScript origins](https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid)
-a [GIS CSP](https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid#content_security_policy).
+Současný Google Identity Services popup flow nepotřebuje backend redirect URI
+ani Client Secret. Stejný veřejný Client ID používá browser i backend; ID token
+ověřuje backend a účet musí být v `GOOGLE_ALLOWED_EMAILS`.
 
 ## První start
 
-Nejdřív ověř konfiguraci bez změny runtime:
+Na důvěryhodném stroji připrav deployment balíček obsahující:
+
+```text
+deployment/compose.yaml
+deployment/Caddyfile
+deployment/maintenance/
+deployment/.env.example
+deployment/secrets/README.md
+```
+
+Na VPS:
 
 ```bash
-./scripts/vps-preflight.sh --dry-run
-./scripts/deploy-vps.sh --build --no-backup --dry-run
+cd /srv/homeapp/deployment
+cp .env.example .env
+chmod 600 .env
+mkdir -p secrets
+chmod 700 secrets
+# bezpečně vytvoř secrets/postgres_password,
+# secrets/internal_health_token a secrets/mapy_api_key
+chmod 600 secrets/*
+docker compose config --quiet
+docker compose up -d
+docker compose ps
 ```
 
-Na úplně novém VPS bez existující databáze je jediný přípustný první start bez
-zálohy explicitní:
+`docker compose up -d` stáhne image, vytvoří named volumes, opraví uploads
+oprávnění, připraví neprivilegované runtime kopie secrets, nastartuje SCRAM
+databázi, spustí `prisma migrate deploy`, počká na API health a teprve potom
+spustí gateway.
+
+## Ověření
 
 ```bash
-./scripts/deploy-vps.sh --build --no-backup
+docker compose ps
+docker compose logs --tail 100 migrate
+docker compose logs --tail 100 api
+curl --fail --show-error --silent "https://homeapp.example.cz/" >/dev/null
+curl --fail --show-error --silent "https://homeapp.example.cz/login" >/dev/null
 ```
 
-`--no-backup` nepoužívej, pokud `database/postgres/` už obsahuje provozní data.
-Skript vytvoří runtime adresáře, sestaví image, nastartuje DB, počká na
-readiness, spustí `prisma migrate deploy`, nastartuje API/gateway a ověří HTTPS.
-Nevytváří pojmenovaný PostgreSQL volume a nikdy nemaže data.
+V browseru ověř login, dashboard, databázový zápis a autentizovaný
+upload/download. `/internal/health/ready` ani `/uploads/` nesmějí vrátit interní
+data. Skutečný Google login nelze nahradit mockovaným testem.
 
-## Ověření po prvním startu
+## Aktualizace a rollback image
+
+Mutable staging tag:
 
 ```bash
-docker compose --env-file .env -f compose.prod.yaml ps
-curl --fail --show-error --silent "https://${APP_DOMAIN}/" >/dev/null
-curl --fail --show-error --silent "https://${APP_DOMAIN}/login" >/dev/null
+cd /srv/homeapp/deployment
+docker compose up -d
 ```
 
-V interaktivním browseru ověř Google login, dashboard, zápis do databáze a
-autentizovaný upload/download. Ověř, že `/internal/health/ready` ani
-`/uploads/` nevrací interní data. CSP musí dovolit Google popup, avatar a blob
-preview; neuvolňuj ji wildcardem, pokud se objeví chyba.
-
-## Aktualizace
+Explicitnější varianta:
 
 ```bash
-cd /srv/homeapp
-git status --short
-git pull --ff-only
-./scripts/deploy-vps.sh --build --dry-run
-./scripts/deploy-vps.sh --build
-docker compose --env-file .env -f compose.prod.yaml logs --tail 100 api
+docker compose pull
+docker compose up -d
 ```
 
-Výchozí deploy před buildem vytvoří zálohu. Pokud migrace selže, nová API verze
-se nespustí. Databázové migrace automaticky nevracej zpět; oprav release nebo
-obnov celou ověřenou zálohu.
+Pro release změň v `.env` pouze `APP_IMAGE_TAG=vX.Y.Z` a doporučeně
+`APP_PULL_POLICY=missing`, potom spusť stejný `up -d`. Aplikační rollback:
 
-## Stav, logy a bezpečné zastavení
+1. nastav předchozí release/SHA tag;
+2. `docker compose up -d`;
+3. ověř health a logy.
+
+Vrácení image není rollback databázových migrací. Před release migrací vytvoř
+ověřenou zálohu a používej dopředně kompatibilní schema změny.
+
+## Stav, logy a zastavení
 
 ```bash
-docker compose --env-file .env -f compose.prod.yaml ps
-docker compose --env-file .env -f compose.prod.yaml logs -f gateway
-docker compose --env-file .env -f compose.prod.yaml logs -f api
-docker compose --env-file .env -f compose.prod.yaml logs -f db
-docker compose --env-file .env -f compose.prod.yaml restart api
-docker compose --env-file .env -f compose.prod.yaml stop
+docker compose ps
+docker compose logs -f gateway
+docker compose logs -f api
+docker compose logs -f db
+docker compose restart api
+docker compose stop
+docker compose down
 ```
 
-`stop` zachová bind-mounted PostgreSQL, uploads i Caddy data. Nepoužívej
-`down -v`, nemaž `database/postgres/` ani `uploads/`.
+`stop` i `down` bez `-v` zachovají named volumes. Nikdy nepoužívej `down -v` na
+provozním stacku.
 
-## Záloha
+## Přechod z legacy bind mountů
 
-Dry-run a skutečná záloha:
+Migrační skript se spouští ještě ze stávajícího zdrojového workspace:
 
 ```bash
-./scripts/backup-vps.sh --dry-run
-./scripts/backup-vps.sh
+./scripts/migrate-vps-data-to-volumes.sh --dry-run
+./scripts/migrate-vps-data-to-volumes.sh --execute
 ```
 
-Skript krátce zastaví API zápisy, vytvoří custom-format `pg_dump`, samostatný
-`uploads.tar.gz`, manifest s UTC časem/release a `SHA256SUMS`. Výsledek je v
-`backups/<timestamp>/` s omezenými právy. Aktivní PostgreSQL datový adresář se
-netaruje. `BACKUP_RETENTION_COUNT` standardně ponechá sedm posledních záloh.
-
-Lokální disk VPS není off-site záloha. Hotovou složku po ověření checksumů
-šifrovaně replikuj na oddělené úložiště.
-
-Cron příklad pro denní zálohu ve 02:15:
-
-```cron
-15 2 * * * cd /srv/homeapp && ./scripts/backup-vps.sh >> /var/log/homeapp-backup.log 2>&1
-```
-
-Cron běží pod deployment uživatelem. Log rotuj a nepřidávej do něj `.env`.
-
-## Obnova
-
-Nejdřív ověř plán bez změny dat:
-
-```bash
-./scripts/restore-vps.sh --dry-run backups/20260723T021500Z
-```
-
-Skutečná obnova:
-
-```bash
-./scripts/restore-vps.sh backups/20260723T021500Z
-```
-
-Skript ověří manifest/checksumy a bezpečné cesty archivu, vyžádá text
-`OBNOVIT`, vytvoří bezpečnostní zálohu současného stavu, zastaví gateway/API,
-obnoví logical dump bez aplikačních zápisů, atomicky vymění uploads, aplikuje
-aktuální migrace a provede readiness. Task-linked data i audity zůstávají
-součástí celého PostgreSQL dumpu; neobnovuj jednotlivé tabulky.
+Vyžádá potvrzení `MIGROVAT`, vytvoří legacy logical backup, obnoví PostgreSQL a
+uploads do nových named volumes, ověří dump, počet a SHA-256 manifest uploadů,
+spustí migrace a až potom přepne gateway/API. Při selhání cutoveru se pokusí
+znovu spustit legacy stack. Původní `database/postgres/`, `uploads/` a zálohu
+nesmaže.
 
 ## Troubleshooting
 
-### DNS nebo certifikát
+### GHCR pull je odmítnutý
 
-- Ověř A/AAAA z externí sítě a dostupnost 80/443.
-- `docker compose --env-file .env -f compose.prod.yaml logs gateway` ukáže ACME
-  chybu bez nutnosti zveřejnit tajemství.
-- Pokud port drží jiný webserver, bezpečně jej přesuň nebo zastav; neměň Caddy
-  na náhodný veřejný port.
+Pro privátní image proveď jednou `docker login ghcr.io` s read-only tokenem
+`read:packages`. Token nepatří do Compose ani `.env`. Ověř `APP_IMAGE_TAG` a
+oprávnění balíčku k repozitáři.
 
-### API není ready nebo migrace selhala
+### Caddy nezíská certifikát
 
-- Zkontroluj `db` health a API logy.
-- Ověř, že `DATABASE_URL` používá host `db:5432` a odpovídá inicializované roli.
-- Migraci opakuj jen po opravě příčiny:
+Ověř veřejné DNS, porty 80/443 a `docker compose logs gateway`. Neměň gateway na
+náhodný veřejný port a neuvolňuj CSP wildcardem.
 
-  ```bash
-  docker compose --env-file .env -f compose.prod.yaml run --rm migrate
-  ```
+### Migrace selhala
 
-- Nikdy nepoužívej `migrate dev` ani reset.
+```bash
+docker compose logs migrate
+docker compose ps
+docker compose up -d
+```
 
-### Google origin mismatch nebo cookie
+API se při neúspěšné migraci nespustí. Oprav image/schema nebo DB přístup a
+zopakuj `up -d`; nepoužívej `migrate dev`, reset ani mazání volume.
 
-- Google origin i `WEB_ORIGIN` musí být přesné `https://<APP_DOMAIN>`.
-- Rebuild gateway po změně `VITE_GOOGLE_CLIENT_ID`.
-- Secure cookie vznikne jen přes HTTPS; API musí mít `TRUST_PROXY=true`.
+### API není healthy
+
+Ověř `db` health, API logy, existence secret souborů a jejich režim `0600`.
+Health token se čte uvnitř API přes `INTERNAL_HEALTH_TOKEN_FILE` a nesmí se
+kopírovat do gateway.
+
+### Google origin nebo secure cookie
+
+`WEB_ORIGIN` a Google origin musí být přesný HTTPS origin. Runtime
+`GOOGLE_CLIENT_ID` změníš v `deployment/.env` bez rebuildu image a následně
+spustíš `docker compose up -d gateway`. API musí mít production a
+`TRUST_PROXY=true`.
 
 ### Upload permission denied
 
-`uploads/` musí vlastnit numerické `APP_RUNTIME_UID:APP_RUNTIME_GID`. Oprav
-vlastnictví vědomě na VPS a znovu spusť preflight; nemountuj uploads do gateway
-a nepřidávej static route.
+```bash
+docker compose up volumes-init
+docker compose up -d api gateway
+```
+
+Init service je idempotentní. Neupravuj named volume ručně, nemountuj uploads do
+gateway a nepřidávej static route.
 
 ### PostgreSQL authentication failed
 
-Již inicializovaný PGDATA si pamatuje původní roli a heslo. Změna `.env` sama
-heslo uvnitř DB nezmění. Vrať správnou konfiguraci nebo heslo změň řízeným SQL
-postupem po záloze; nemaž PGDATA.
+Inicializovaný volume si pamatuje původní roli a heslo. Pouhá změna secret
+souboru heslo v DB nezmění. Vrať původní secret nebo změň heslo řízeně po
+záloze; volume nemaž.
 
 ### Disk je plný
 
-Zastav nové uploady/deploy, ověř `df -h`, Docker logy a adresář `backups/`.
-Nepromaž PostgreSQL datové soubory. Bezpečně aplikuj retention záloh, Docker
-image pruning pouze po kontrole používaných image a přidej off-site kapacitu.
+Zastav nové uploady a deploy, zkontroluj `df -h`, Docker logy a backup volume.
+Nemaž PGDATA. Exportuj a ověř off-site zálohu, aplikuj retention a image pruning
+jen po kontrole používaných image.

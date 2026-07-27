@@ -18,9 +18,11 @@ import { CalendarTemplateForm } from './CalendarTemplateForm.js';
 export function CalendarTemplateManagerDialog({
   open,
   onOpenChange,
+  onSelectAppliedEvents,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSelectAppliedEvents?: ((eventIds: string[]) => void) | undefined;
 }) {
   const templates = useCalendarTemplates();
   const members = useHouseholdMembers();
@@ -32,6 +34,7 @@ export function CalendarTemplateManagerDialog({
   const [dates, setDates] = useState<string[]>([]);
   const [allowConflicts, setAllowConflicts] = useState(false);
   const [lastBatch, setLastBatch] = useState<string | null>(null);
+  const [lastBatchEventIds, setLastBatchEventIds] = useState<string[]>([]);
   const apply = () => {
     if (!applying || !dates.length) return;
     const options = {
@@ -42,6 +45,7 @@ export function CalendarTemplateManagerDialog({
     mutations.bulkApplyTemplate.mutate(options, {
       onSuccess: (result) => {
         setLastBatch(result.batchId);
+        setLastBatchEventIds(result.events.map(({ id }) => id));
         setApplying(null);
         setDates([]);
       },
@@ -64,17 +68,33 @@ export function CalendarTemplateManagerDialog({
       {lastBatch ? (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-md border border-success/30 bg-success-soft p-3 text-body-sm text-success">
           <span>Hromadné vložení proběhlo úspěšně.</span>
-          <Button
-            size="sm"
-            onClick={() =>
-              mutations.revertBatch.mutate(lastBatch, {
-                onSuccess: () => setLastBatch(null),
-              })
-            }
-          >
-            <RotateCcw className="size-4" aria-hidden="true" />
-            Vrátit poslední vložení
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {onSelectAppliedEvents && lastBatchEventIds.length ? (
+              <Button
+                size="sm"
+                onClick={() => {
+                  onSelectAppliedEvents(lastBatchEventIds);
+                  onOpenChange(false);
+                }}
+              >
+                Vybrat události z tohoto vložení
+              </Button>
+            ) : null}
+            <Button
+              size="sm"
+              onClick={() =>
+                mutations.revertBatch.mutate(lastBatch, {
+                  onSuccess: () => {
+                    setLastBatch(null);
+                    setLastBatchEventIds([]);
+                  },
+                })
+              }
+            >
+              <RotateCcw className="size-4" aria-hidden="true" />
+              Vrátit poslední vložení
+            </Button>
+          </div>
         </div>
       ) : null}
       {creating ? (

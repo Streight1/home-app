@@ -7,6 +7,17 @@ Významné změny projektu jsou evidovány v tomto souboru ve formátu inspirova
 
 ### Fixed
 
+- Kalendářní event color nyní prochází centralizovaným visual mapperem a
+  podbarvuje celý block/surface v light i dark motivu místo pouze akcentu.
+- Přepínač Celý den už nevyžaduje čas, používá explicitní DATE hranice a změna
+  startu bezpečně posouvá neupravený nebo neplatný konec.
+- Měsíční kalendář výchozím způsobem neskládá travel plan jako plnohodnotnou
+  událost; zobrazuje kompaktní informaci a plný travel block ponechává dni/týdnu.
+- One-shot migrace v API image používá správnou absolutně odvozenou cestu ke
+  compiled secret resolveru a Prisma má ve finálním slim image OpenSSL, takže
+  na read-only rootu nemusí doplňovat engine.
+- Maintenance backup/restore běží jako neprivilegovaný runtime uživatel nad
+  inicializovanými oprávněními volumes a čte pouze read-only runtime secrets.
 - Produkční migrate image spouští lokální Prisma CLI bez Corepack runtime
   zápisu a funguje i s read-only root filesystemem.
 - Caddy obsluhuje `/uploads/*` a `/internal/*` explicitními 404 před SPA
@@ -18,6 +29,24 @@ Významné změny projektu jsou evidovány v tomto souboru ve formátu inspirova
 
 ### Added
 
+- Aurora kalendářní tokeny pro osm barev, neutral/shared stavy a serverovou
+  precedence explicitní event → jediný účastník → shared → neutral.
+- All-day `allDayStartDate`/`allDayEndDateExclusive`, volitelný
+  `desiredArrivalAt`, custom origin autocomplete a měsíční travel preference.
+- Přímé ovládání Den/Týden/Měsíc, lokální selection mode a atomické bulk
+  preview/update/delete s limitem 200 a zachováním Tasks/Templates.
+- One-command deployment v `deployment/compose.yaml` nad hotovými GHCR API a
+  gateway image, named volumes, idempotentním `volumes-init`, healthy databází
+  a automatickou one-shot `prisma migrate deploy` bránou.
+- GitHub Actions workflow s připnutými akcemi, povinným `pnpm check`, OCI
+  metadaty a staging/release/commit-SHA tagy pro publikování obou image do GHCR.
+- Veřejná runtime konfigurace webu generovaná gateway při startu, bezpečný error
+  screen a backendový `*_FILE` resolver s předností Compose secret souborů.
+- Kontejnerový maintenance profil pro logickou PostgreSQL a uploads zálohu,
+  kontrolovanou obnovu a jednorázový `migrate-vps-data-to-volumes.sh` s
+  dry-runem, checksumy a zachováním původních bind mountů.
+- Runbooky pro registry, one-command start, aktualizaci, rollback image,
+  backup/restore a migraci existujícího VPS.
 - Single-VPS staging přes `compose.prod.yaml`: Caddy na 80/443, statický React
   build, interní nepublikované NestJS API/PostgreSQL, persistentní bind mounty,
   same-origin `/api/v1`, CSP a rotace container logů.
@@ -211,6 +240,12 @@ Významné změny projektu jsou evidovány v tomto souboru ve formátu inspirova
 
 ### Security
 
+- Nově inicializovaný PostgreSQL používá SCRAM pro host i local spojení;
+  databázový port není publikovaný.
+- Source secret soubory zůstávají `0600`; init služba připraví `0440`
+  runtime kopie pro UID/GID aplikace a gateway k secret volume nemá přístup.
+- Produkční runtime config vynucuje same-origin API cestu a odmítá neznámá
+  pole, takže backendová tajemství nelze vložit do veřejného kontraktu.
 - Aplikační endpointy jsou ve výchozím stavu autentizované.
 - Jedinou veřejnou aplikační výjimkou je Google login.
 - Upload root není veřejně publikován a storage odmítá nebezpečné cesty.

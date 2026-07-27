@@ -87,17 +87,27 @@ nesmí se ručně upravovat ani mazat za běhu. Prisma schema a verzované migra
 
 ## VPS perzistence
 
-Produkční Compose používá bind mounty
-`./database/postgres:/var/lib/postgresql` a `./uploads:/app/uploads`.
-`uploads/` je připojené pouze k API; Caddy image ani kontejner jej nemají
-namountované a gateway vrací pro `/uploads/*` explicitní 404. Caddy TLS stav je
-oddělený v `caddy/data/` a `caddy/config/`; konzistentní aplikační záloha
-obsahuje logical PostgreSQL dump a archiv uploadů, nikoli tar aktivního PGDATA.
+Hlavní `deployment/compose.yaml` používá named volumes
+`homeapp_postgres_data`, `homeapp_uploads_data`, `homeapp_caddy_data`,
+`homeapp_caddy_config` a `homeapp_backups`. PostgreSQL data mountuje pouze
+služba `db`. Uploady mountují v běžném Compose jen `volumes-init`, API a
+read-only backup; Caddy k nim nemá filesystemový přístup a pro `/uploads/*`
+vrací 404.
 
-Preflight vytváří `database/postgres/`, `uploads/`, `backups/`,
-`caddy/data/` a `caddy/config/`. API běží pod
-`APP_RUNTIME_UID:APP_RUNTIME_GID`, takže vlastnictví upload rootu musí odpovídat
-těmto číslům. Všechny runtime obsahy jsou ignorované Gitem.
+`volumes-init` idempotentně vytvoří dokumentovou a dočasnou finance-import
+strukturu a nastaví vlastnictví podle `APP_RUNTIME_UID:GID`. API běží jako
+neprivilegovaný uživatel s read-only root filesystemem. `docker compose down`
+bez `-v` data zachová; `down -v` je provozně zakázaný.
+
+Legacy `compose.prod.yaml` nadále používá bind mounty
+`./database/postgres:/var/lib/postgresql` a `./uploads:/app/uploads`.
+Jednorázový přechod používá logical `pg_dump` a uploads archiv, nikdy přímé
+kopírování aktivního PGDATA. Původní bind data se po úspěšném cutoveru
+automaticky nemažou.
+
+Konzistentní aplikační záloha obsahuje logical PostgreSQL dump a archiv
+uploadů, ne tar PostgreSQL volume. Caddy TLS stav není aplikační databázová
+záloha.
 
 ## Budoucí NAS nebo S3
 

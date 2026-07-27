@@ -10,7 +10,7 @@
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run --project=unit",
     "test:watch": "vitest --project=unit",
-    "storybook": "storybook dev --port 6006 --no-open",
+    "storybook": "storybook dev --host 127.0.0.1 --port 6006 --no-open",
     "storybook:build": "storybook build --output-dir storybook-static",
     "storybook:test": "vitest run --project=storybook",
     "test:visual": "playwright test e2e/visual.spec.ts",

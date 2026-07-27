@@ -56,6 +56,9 @@ Implementované skupiny:
   a jejich soft surfaces;
 - systém: `focus`, disabled foreground/surface, skeleton, scrollbar a glow;
 - data: čtyři budoucí chart series bez produkčních demo grafů.
+- kalendář: pro `violet`, `blue`, `cyan`, `green`, `amber`, `orange`, `rose`,
+  `pink`, `neutral` a `shared` existuje vždy sémantický `surface`, `border`,
+  `foreground`, `hover` a `selected` token v light i dark motivu.
 
 `primary-emphasis` je kontrastnější textová varianta pro selected surface;
 primární CTA používá `primary` jako povrch. Toto oddělení je povinné, protože
@@ -65,6 +68,12 @@ Gradient smí existovat jen jako sémantický token. `gradient-aurora` patří n
 login pozadí, `gradient-primary` na hlavní CTA a značku a `gradient-header` na
 jediný dashboard header. Glow je povolený pro značku, primární CTA, aktivní
 navigaci, focus nebo vybraný stav. Běžné pracovní karty glow nepoužívají.
+
+Kalendářní blok používá token na celé ploše, ne jen na tenkém akcentu. Explicitní
+barva události má přednost před barvou jediného účastníka; více účastníků bez
+explicitní barvy používá `shared` a událost bez účastníka `neutral`. Směna,
+task-linked událost a cesta přidávají ikonu a textový typ. Travel blok používá
+tlumený povrch a přerušovaný border, takže barva není jediným rozlišením.
 
 ## Typografie
 

@@ -38,6 +38,10 @@ Kořenový `.env` je jediný lokální konfigurační soubor. Nevytvářej kopie
 - Nest ConfigModule a Prisma přes kanonickou cestu vůči workspace;
 - Vite přes kořenový `envDir`.
 
+Standalone VPS balíček je oddělená provozní výjimka: Compose v adresáři
+`deployment/` čte `deployment/.env` a secret soubory, protože na VPS není
+zdrojový workspace. Aplikace uvnitř image stále nedostává app-level `.env`.
+
 Syntaxe `${NAME}` odvozuje související hodnoty. `WEB_ORIGIN` používá
 `WEB_PORT`, `VITE_API_URL` používá `API_PORT`, frontendové Google Client ID
 přebírá `GOOGLE_CLIENT_ID`, `VITE_MAX_UPLOAD_BYTES` přebírá serverový
@@ -60,15 +64,17 @@ Proměnné `VITE_API_URL`, `VITE_GOOGLE_CLIENT_ID` a klientská kopie limitu
 `VITE_MAX_UPLOAD_BYTES` i `VITE_FINANCE_IMPORT_MAX_FILE_BYTES` jsou veřejné pro browser.
 Vite navíc předá pouze ne-citlivý název CSRF cookie. Heslo databáze,
 `DATABASE_URL`, interní health token ani session tajemství nesmějí mít prefix
-`VITE_`.
+`VITE_`. Produkční image tyto veřejné hodnoty nebere z konkrétního buildu:
+gateway při startu generuje validovaný `window.__HOMEAPP_CONFIG__`. Vite env
+adapter zůstává pouze pro lokální vývoj a testy.
 
 Deployment názvy `APP_DOMAIN`, `APP_RELEASE`, `APP_ENV_LABEL`,
 `APP_RUNTIME_UID/GID`, `ACME_EMAIL`, `GATEWAY_MAX_REQUEST_BODY`,
 `BACKUP_RETENTION_COUNT` a `VPS_MIN_FREE_BYTES` lokální servery nepoužívají.
-Jsou v centrálním `.env.example`, aby staging stále měl jediný kořenový
-kontrakt. `VITE_APP_ENV_LABEL` je veřejný build-time label; při prázdné hodnotě
-se badge nezobrazí. Produkční hodnoty a same-origin `/api/v1` popisuje
-[VPS runbook](../runbooks/vps-deployment.md).
+Jsou v kořenovém `.env.example` zachované pro legacy staging.
+`VITE_APP_ENV_LABEL` je lokální build-time label; registry deployment používá
+runtime `APP_ENV_LABEL`. Produkční same-origin `/api/v1` popisuje
+[one-command runbook](../runbooks/one-command-deployment.md).
 
 CSV import omezuje server pomocí `FINANCE_IMPORT_MAX_FILE_BYTES`,
 `FINANCE_IMPORT_MAX_ROWS` a `FINANCE_IMPORT_SESSION_TTL_HOURS`. Klientský limit

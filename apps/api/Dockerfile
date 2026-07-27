@@ -34,14 +34,20 @@ RUN pnpm install --frozen-lockfile --prod --filter @life-admin/api...
 
 FROM node:${NODE_VERSION}-bookworm-slim AS api
 ENV NODE_ENV=production
+ENV HOME=/tmp
 WORKDIR /app
-RUN groupadd --gid 10001 homeapp \
+RUN apt-get update \
+  && apt-get install --yes --no-install-recommends ca-certificates openssl \
+  && rm -rf /var/lib/apt/lists/* \
+  && groupadd --gid 10001 homeapp \
   && useradd --uid 10001 --gid homeapp --no-create-home --shell /usr/sbin/nologin homeapp
 COPY --from=production-dependencies /workspace/node_modules ./node_modules
 COPY --from=production-dependencies /workspace/apps/api/node_modules ./apps/api/node_modules
 COPY --from=build /workspace/apps/api/dist ./apps/api/dist
 COPY --from=build /workspace/apps/api/package.json ./apps/api/package.json
 COPY --from=build /workspace/apps/api/prisma ./apps/api/prisma
+COPY --from=build /workspace/apps/api/prisma.config.ts ./apps/api/prisma.config.ts
+COPY deployment/api ./bin
 USER homeapp
 CMD ["node", "apps/api/dist/main.js"]
 

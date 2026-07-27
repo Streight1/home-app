@@ -8,12 +8,26 @@ export type CalendarEventType =
   | 'TRAVEL'
   | 'OTHER';
 export type CalendarColorToken =
-  | 'primary'
+  | 'violet'
   | 'blue'
   | 'cyan'
-  | 'success'
-  | 'warning'
-  | 'danger';
+  | 'green'
+  | 'amber'
+  | 'orange'
+  | 'rose'
+  | 'pink';
+export type CalendarVisualColorToken =
+  | CalendarColorToken
+  | 'shared'
+  | 'neutral';
+export interface CalendarVisual {
+  colorToken: CalendarVisualColorToken;
+  backgroundToken?: string;
+  borderToken?: string;
+  foregroundToken?: string;
+  isShared: boolean;
+  kind?: 'EVENT' | 'WORK_SHIFT' | 'TASK';
+}
 
 export interface CalendarPerson {
   id: string;
@@ -38,8 +52,11 @@ export interface CalendarEvent {
   description: string | null;
   type: CalendarEventType;
   status: 'ACTIVE' | 'CANCELLED';
-  startsAt: string;
-  endsAt: string;
+  startsAt: string | null;
+  endsAt: string | null;
+  allDayStartDate?: string | null;
+  allDayEndDateExclusive?: string | null;
+  desiredArrivalAt?: string | null;
   timezone: string;
   isAllDay: boolean;
   location: string | null;
@@ -47,14 +64,11 @@ export interface CalendarEvent {
   locationLabel: string | null;
   locationNotes: string | null;
   calculateTravel?: boolean;
-  colorToken: CalendarColorToken;
+  colorToken: CalendarColorToken | null;
   source: 'MANUAL' | 'TEMPLATE' | 'TASK';
   templateId: string | null;
   participants: { role: 'ASSIGNEE' | 'ATTENDEE'; user: CalendarPerson }[];
-  visual?: {
-    colorToken: CalendarMemberColorToken | 'shared' | 'neutral';
-    isShared: boolean;
-  };
+  visual?: CalendarVisual;
   spansMidnight: boolean;
   taskLink: {
     taskId: string;
@@ -94,10 +108,7 @@ export interface EventCalendarItem {
     | CalendarColorToken
     | 'shared'
     | 'neutral';
-  visual?: {
-    colorToken: CalendarMemberColorToken | 'shared' | 'neutral';
-    isShared: boolean;
-  };
+  visual?: CalendarVisual;
   isAllDay: boolean;
   participants: CalendarPerson[];
   locationLabel?: string | null;
@@ -186,8 +197,11 @@ export interface CalendarEventInput {
   title: string;
   description: string | null;
   type: CalendarEventType;
-  startsAt: string;
-  endsAt: string;
+  startsAt: string | null;
+  endsAt: string | null;
+  allDayStartDate: string | null;
+  allDayEndDateExclusive: string | null;
+  desiredArrivalAt: string | null;
   timezone: string;
   isAllDay: boolean;
   location: string | null;
@@ -195,7 +209,7 @@ export interface CalendarEventInput {
   locationLabel: string | null;
   locationNotes: string | null;
   calculateTravel: boolean;
-  colorToken: CalendarColorToken;
+  colorToken: CalendarColorToken | null;
   participantIds: string[];
   allowShiftConflict?: boolean;
   travelPlan?: TravelPlanInput;
@@ -230,19 +244,18 @@ export interface CalendarDashboard {
     id: string;
     title: string;
     type: CalendarEventType;
-    startsAt: string;
-    endsAt: string;
+    startsAt: string | null;
+    endsAt: string | null;
+    allDayStartDate?: string | null;
+    allDayEndDateExclusive?: string | null;
     timezone: string;
     isAllDay: boolean;
-    colorToken: CalendarColorToken;
+    colorToken: CalendarColorToken | null;
     isOngoing: boolean;
     spansMidnight: boolean;
     participants: CalendarPerson[];
     locationLabel: string | null;
-    visual: {
-      colorToken: CalendarMemberColorToken | 'shared' | 'neutral';
-      isShared: boolean;
-    };
+    visual: CalendarVisual;
     travelPlans: {
       travelerUserId: string;
       status: TravelPlan['status'];
@@ -271,4 +284,29 @@ export interface TravelEstimatePreview {
   }[];
   provider: 'MAPY';
   persisted: false;
+}
+
+export interface CalendarBulkImpact {
+  eventCount: number;
+  taskEventCount: number;
+  templateEventCount: number;
+}
+
+export interface CalendarBulkUpdateInput {
+  eventIds: string[];
+  colorOperation?: 'UNCHANGED' | 'SET' | 'REMOVE';
+  colorToken?: CalendarColorToken;
+  typeOperation?: 'UNCHANGED' | 'SET' | 'REMOVE';
+  eventType?: CalendarEventType;
+  participantOperation?: 'UNCHANGED' | 'ADD' | 'REMOVE' | 'REPLACE';
+  participantIds?: string[];
+  locationOperation?: 'UNCHANGED' | 'SET' | 'REMOVE';
+  locationPlaceId?: string;
+  locationLabel?: string;
+  calculateTravelOperation?: 'UNCHANGED' | 'SET';
+  calculateTravel?: boolean;
+  routeModeOperation?: 'UNCHANGED' | 'SET';
+  routeMode?: TravelPlanInput['routeMode'];
+  travelBufferOperation?: 'UNCHANGED' | 'SET';
+  travelBufferMinutes?: number;
 }

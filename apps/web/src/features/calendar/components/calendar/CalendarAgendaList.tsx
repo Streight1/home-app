@@ -8,10 +8,16 @@ export function CalendarAgendaList({
   items,
   date,
   filterDate = true,
+  selectionMode = false,
+  selectedIds,
+  onSelectEvent,
 }: {
   items: CalendarFeedItem[];
   date: Date;
-  filterDate?: boolean;
+  filterDate?: boolean | undefined;
+  selectionMode?: boolean | undefined;
+  selectedIds?: ReadonlySet<string> | undefined;
+  onSelectEvent?: ((eventId: string) => void) | undefined;
 }) {
   const visible = filterDate
     ? items.filter((item) => occursOnDate(item, date))
@@ -27,7 +33,16 @@ export function CalendarAgendaList({
   return (
     <div className="grid gap-2">
       {visible.map((item) => (
-        <CalendarEventItem key={`${item.sourceType}-${item.id}`} item={item} />
+        <CalendarEventItem
+          key={`${item.sourceType}-${item.id}`}
+          item={item}
+          selectionMode={selectionMode}
+          selected={
+            item.sourceType === 'CALENDAR_EVENT' &&
+            Boolean(selectedIds?.has(item.id))
+          }
+          onSelect={onSelectEvent}
+        />
       ))}
     </div>
   );

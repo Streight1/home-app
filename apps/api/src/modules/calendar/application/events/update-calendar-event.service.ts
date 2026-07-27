@@ -11,6 +11,7 @@ import { CalendarEventValidationService } from './calendar-event-validation.serv
 import { EventLocationValidationService } from './event-location-validation.service.js';
 import { CalendarTravelPlanService } from '../travel/calendar-travel-plan.service.js';
 import { calendarInvalidInput } from '../../domain/calendar.errors.js';
+import { getCalendarTravelTarget } from '../../domain/calendar-event-schedule.js';
 
 @Injectable()
 export class UpdateCalendarEventService {
@@ -70,15 +71,27 @@ export class UpdateCalendarEventService {
     });
     if (!event) throw calendarNotFound();
     if (
-      ['startsAt', 'locationPlaceId', 'locationLabel'].some((key) =>
-        changedFields.includes(key),
-      )
+      [
+        'startsAt',
+        'endsAt',
+        'allDayStartDate',
+        'allDayEndDateExclusive',
+        'desiredArrivalAt',
+        'locationPlaceId',
+        'locationLabel',
+      ].some((key) => changedFields.includes(key))
     )
       await this.travel.staleAfterEventChange(membership.householdId, eventId);
     const response = this.responses.event(event);
-    if (!event.calculateTravel || !event.locationPlaceId) return response;
+    if (
+      !event.calculateTravel ||
+      !event.locationPlaceId ||
+      !getCalendarTravelTarget(event)
+    )
+      return response;
     const relevantChange = [
       'startsAt',
+      'desiredArrivalAt',
       'locationPlaceId',
       'participantIds',
       'calculateTravel',

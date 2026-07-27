@@ -144,8 +144,12 @@ ale nastaví linku `removedAt` a událost soft-delete.
 
 ## CalendarEvent, účastníci a šablony
 
-`CalendarEvent` patří domácnosti a ukládá UTC instanty, původní IANA timezone,
-typ, stav, zdroj a bezpečný Aurora color token. Nullable `deletedAt` a
+`CalendarEvent` patří domácnosti. Časovaná událost ukládá UTC `startsAt` a
+`endsAt`; celodenní událost je ukládá jako null a používá PostgreSQL DATE
+`allDayStartDate` plus exkluzivní `allDayEndDateExclusive`. Volitelný
+`desiredArrivalAt` je jediný časový cíl pro cestu k celodenní události. Dále
+model drží původní IANA timezone, typ, stav, zdroj a nullable explicitní Aurora
+color token. Nullable `deletedAt` a
 `deletedByUserId` odlišují uživatelské odstranění od stavu `CANCELLED` a běžné
 kalendářní query používají `deletedAt IS NULL`. `endsAt > startsAt`; noční či
 vícedenní událost je jeden řádek. `CalendarEventParticipant` má skutečné FK na
@@ -186,8 +190,10 @@ projekci odvodí jako `departureAt + durationSeconds`, nikoli jako začátek cí
 události.
 
 `HouseholdMember.calendarColorToken` je serverem validovaný token z pevného
-Aurora allowlistu. Události barvu člena nekopírují; response ji odvozuje z
-aktuálního členství. Více účastníků používá bezpečný `shared` visual model.
+Aurora allowlistu. Události barvu člena nekopírují; response preferuje
+explicitní `CalendarEvent.colorToken`, pak barvu jediného účastníka, `shared`
+pro více účastníků a `neutral` fallback. `CalendarUserPreference` navíc drží
+výchozí false pro plné travel bloky v měsíci.
 
 ## Finance ledger
 

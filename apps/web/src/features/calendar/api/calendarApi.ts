@@ -1,6 +1,8 @@
 import { apiRequest } from '../../../lib/api/apiClient.js';
 import type {
   CalendarDashboard,
+  CalendarBulkImpact,
+  CalendarBulkUpdateInput,
   CalendarEvent,
   CalendarEventInput,
   CalendarFeedItem,
@@ -14,7 +16,8 @@ import type {
 export function previewTravelEstimate(
   input: {
     eventId?: string;
-    startsAt: string;
+    startsAt?: string;
+    desiredArrivalAt?: string;
     participantIds: string[];
     destinationPlaceId: string;
     originMode: TravelPlanInput['originMode'];
@@ -103,6 +106,27 @@ export function deleteCalendarEvent(eventId: string) {
   return apiRequest<undefined>(`/calendar/events/${eventId}`, {
     method: 'DELETE',
   });
+}
+export function previewBulkCalendarEvents(eventIds: string[]) {
+  return apiRequest<CalendarBulkImpact>('/calendar/events/bulk-preview', {
+    method: 'POST',
+    body: JSON.stringify({ eventIds }),
+  });
+}
+export function updateBulkCalendarEvents(input: CalendarBulkUpdateInput) {
+  return apiRequest<{ updatedCount: number; changedFields: string[] }>(
+    '/calendar/events/bulk-update',
+    { method: 'PATCH', body: JSON.stringify(input) },
+  );
+}
+export function deleteBulkCalendarEvents(eventIds: string[]) {
+  return apiRequest<CalendarBulkImpact & { deletedCount: number }>(
+    '/calendar/events/bulk-delete',
+    {
+      method: 'POST',
+      body: JSON.stringify({ eventIds, confirmation: 'SMAZAT' }),
+    },
+  );
 }
 export function getCalendarTemplates() {
   return apiRequest<{ items: CalendarTemplate[] }>('/calendar/templates');

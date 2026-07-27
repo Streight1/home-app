@@ -36,9 +36,12 @@ export class PreviewTravelEstimateService {
       input.destinationPlaceId,
     );
     if (!destination) throw calendarInvalidInput('Cílové místo není dostupné.');
-    const startsAt = new Date(input.startsAt);
-    if (!Number.isFinite(startsAt.getTime()))
-      throw calendarInvalidInput('Začátek události není platný.');
+    const targetValue = input.desiredArrivalAt ?? input.startsAt;
+    const startsAt = targetValue ? new Date(targetValue) : null;
+    if (!startsAt || !Number.isFinite(startsAt.getTime()))
+      throw calendarInvalidInput(
+        'Začátek události nebo požadovaný příjezd není platný.',
+      );
     const participants: CalendarParticipantSummary[] = input.participantIds.map(
       (id) => ({
         role: 'ATTENDEE',
@@ -82,6 +85,9 @@ export class PreviewTravelEstimateService {
     input: TravelEstimateDto,
   ) {
     try {
+      const targetAt = target.startsAt;
+      if (!targetAt)
+        throw calendarInvalidInput('Požadovaný čas příjezdu není dostupný.');
       const origin = await this.origins.execute({
         userId,
         householdId,
@@ -101,21 +107,16 @@ export class PreviewTravelEstimateService {
         routeMode: input.routeMode,
         avoidTolls: input.avoidTolls,
         avoidHighways: input.avoidHighways,
-        departureAt: target.startsAt,
+        departureAt: targetAt,
       });
       const requiredSeconds =
         route.durationSeconds + input.travelBufferMinutes * 60;
-      const departureAt = new Date(
-        target.startsAt.getTime() - requiredSeconds * 1000,
-      );
-      const availableSeconds = origin.previousEvent
+      const departureAt = new Date(targetAt.getTime() - requiredSeconds * 1000);
+      const previousEnd = origin.previousEvent?.endsAt;
+      const availableSeconds = previousEnd
         ? Math.max(
             0,
-            Math.floor(
-              (target.startsAt.getTime() -
-                origin.previousEvent.endsAt.getTime()) /
-                1000,
-            ),
+            Math.floor((targetAt.getTime() - previousEnd.getTime()) / 1000),
           )
         : null;
       const missingSeconds =

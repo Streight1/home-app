@@ -1,7 +1,10 @@
 import type {
+  CalendarColorToken,
   CalendarEventRecord,
+  CalendarEventType,
   CalendarEventWriteInput,
 } from '../calendar.types.js';
+import type { RouteMode } from '../../../location/domain/location.types.js';
 
 export const CALENDAR_EVENT_REPOSITORY = Symbol('CALENDAR_EVENT_REPOSITORY');
 
@@ -10,6 +13,10 @@ export interface CalendarEventRepository {
     householdId: string,
     eventId: string,
   ): Promise<CalendarEventRecord | null>;
+  findManyByIds(
+    householdId: string,
+    eventIds: string[],
+  ): Promise<CalendarEventRecord[]>;
   list(
     householdId: string,
     from: Date,
@@ -52,6 +59,33 @@ export interface CalendarEventRepository {
     eventId: string;
     deletedAt: Date;
   }): Promise<boolean>;
+  bulkUpdate(input: {
+    householdId: string;
+    userId: string;
+    eventIds: string[];
+    colorToken?: CalendarColorToken | null;
+    eventType?: CalendarEventType;
+    participants?: {
+      operation: 'ADD' | 'REMOVE' | 'REPLACE';
+      userIds: string[];
+    };
+    location?: {
+      placeId: string | null;
+      label: string | null;
+    };
+    calculateTravel?: boolean;
+    routeMode?: RouteMode;
+    travelBufferMinutes?: number;
+    changedFields: string[];
+  }): Promise<number>;
+  bulkDelete(input: {
+    householdId: string;
+    userId: string;
+    eventIds: string[];
+    deletedAt: Date;
+    taskEventCount: number;
+    templateEventCount: number;
+  }): Promise<number>;
   countShiftConflicts(input: {
     householdId: string;
     participantIds: string[];

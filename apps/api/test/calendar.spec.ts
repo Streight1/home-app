@@ -1,6 +1,9 @@
 import { HttpStatus } from '@nestjs/common';
+import { plainToInstance } from 'class-transformer';
+import { validate } from 'class-validator';
 import { describe, expect, it, vi } from 'vitest';
 import { ApiException } from '../src/common/errors/api-exception.js';
+import { BulkUpdateCalendarEventsService } from '../src/modules/calendar/application/events/bulk-update-calendar-events.service.js';
 import { CalendarEventValidationService } from '../src/modules/calendar/application/events/calendar-event-validation.service.js';
 import { DeleteCalendarEventService } from '../src/modules/calendar/application/events/delete-calendar-event.service.js';
 import type { EventLocationValidationService } from '../src/modules/calendar/application/events/event-location-validation.service.js';
@@ -13,6 +16,7 @@ import type {
   CalendarEventRecord,
   CalendarTemplateRecord,
 } from '../src/modules/calendar/domain/calendar.types.js';
+import { getCalendarTravelTarget } from '../src/modules/calendar/domain/calendar-event-schedule.js';
 import type { CalendarEventRepository } from '../src/modules/calendar/domain/ports/calendar-event.repository.js';
 import type { CalendarTemplateRepository } from '../src/modules/calendar/domain/ports/calendar-template.repository.js';
 import type { CalendarClockPort } from '../src/modules/calendar/domain/ports/clock.port.js';
@@ -24,6 +28,10 @@ import type { PrismaService } from '../src/infrastructure/database/prisma.servic
 import type { AuditService } from '../src/modules/audit/audit.service.js';
 import type { TasksFacade } from '../src/modules/tasks/tasks.facade.js';
 import type { HouseholdAccessService } from '../src/modules/households/household-access.service.js';
+import {
+  BulkDeleteCalendarEventsDto,
+  BulkUpdateCalendarEventsDto,
+} from '../src/modules/calendar/presentation/dto/bulk-calendar-events.dto.js';
 
 const householdId = '10000000-0000-4000-8000-000000000001';
 const userId = '20000000-0000-4000-8000-000000000002';
@@ -85,6 +93,9 @@ function eventRecord(
     status: 'ACTIVE',
     startsAt: new Date('2026-07-15T16:00:00Z'),
     endsAt: new Date('2026-07-16T04:00:00Z'),
+    allDayStartDate: null,
+    allDayEndDateExclusive: null,
+    desiredArrivalAt: null,
     timezone: 'Europe/Prague',
     isAllDay: false,
     location: null,
@@ -126,7 +137,11 @@ describe('shared household calendar domain', () => {
     const result = templateValidation().occurrence(template(), '2026-07-15');
     expect(result.event.startsAt).toEqual(new Date('2026-07-15T16:00:00.000Z'));
     expect(result.event.endsAt).toEqual(new Date('2026-07-16T04:00:00.000Z'));
-    expect(result.event.endsAt > result.event.startsAt).toBe(true);
+    expect(
+      result.event.endsAt &&
+        result.event.startsAt &&
+        result.event.endsAt > result.event.startsAt,
+    ).toBe(true);
   });
 
   it('keeps a template destination and enables travel without storing an origin', () => {
@@ -187,13 +202,68 @@ describe('shared household calendar domain', () => {
       endsAt: '2026-07-15T12:00:00Z',
       timezone: 'Europe/Prague',
       isAllDay: false,
-      colorToken: 'primary',
+      colorToken: 'violet',
       participantIds: [userId, '50000000-0000-4000-8000-000000000005'],
       calculateTravel: true,
       allowShiftConflict: false,
     });
     expect(result.participants).toHaveLength(2);
     expect(events.countShiftConflicts).not.toHaveBeenCalled();
+  });
+
+  it('stores an all-day event with date boundaries and no artificial midnight time', async () => {
+    const validation = new CalendarEventValidationService(
+      access(),
+      {} as CalendarEventRepository,
+    );
+    await expect(
+      validation.create(householdId, {
+        title: 'Výročí',
+        type: 'PERSONAL',
+        allDayStartDate: '2026-08-10',
+        allDayEndDateExclusive: '2026-08-11',
+        desiredArrivalAt: null,
+        timezone: 'Europe/Prague',
+        isAllDay: true,
+        colorToken: null,
+        participantIds: [userId],
+        calculateTravel: false,
+        allowShiftConflict: false,
+      }),
+    ).resolves.toMatchObject({
+      startsAt: null,
+      endsAt: null,
+      allDayStartDate: new Date('2026-08-10T00:00:00.000Z'),
+      allDayEndDateExclusive: new Date('2026-08-11T00:00:00.000Z'),
+    });
+  });
+
+  it('uses desired arrival rather than a synthetic start for all-day travel', () => {
+    const desiredArrivalAt = new Date('2026-08-10T07:00:00.000Z');
+    expect(
+      getCalendarTravelTarget(
+        eventRecord({
+          isAllDay: true,
+          startsAt: null,
+          endsAt: null,
+          allDayStartDate: '2026-08-10',
+          allDayEndDateExclusive: '2026-08-11',
+          desiredArrivalAt,
+        }),
+      ),
+    ).toEqual(desiredArrivalAt);
+    expect(
+      getCalendarTravelTarget(
+        eventRecord({
+          isAllDay: true,
+          startsAt: null,
+          endsAt: null,
+          allDayStartDate: '2026-08-10',
+          allDayEndDateExclusive: '2026-08-11',
+          desiredArrivalAt: null,
+        }),
+      ),
+    ).toBeNull();
   });
 
   it('detects a same-member work shift conflict unless explicitly confirmed', async () => {
@@ -544,14 +614,21 @@ describe('shared household calendar domain', () => {
   });
 
   it('uses the participant color for a single-person event', () => {
-    const response = new CalendarResponseMapper().event(eventRecord());
-    expect(response.visual).toEqual({ colorToken: 'rose', isShared: false });
+    const response = new CalendarResponseMapper().event(
+      eventRecord({ colorToken: null }),
+    );
+    expect(response.visual).toMatchObject({
+      colorToken: 'rose',
+      isShared: false,
+      kind: 'WORK_SHIFT',
+    });
   });
 
   it('uses the shared visual model for a multi-person event', () => {
     const first = eventRecord().participants[0];
     const response = new CalendarResponseMapper().event(
       eventRecord({
+        colorToken: null,
         participants: [
           ...(first ? [first] : []),
           {
@@ -567,7 +644,125 @@ describe('shared household calendar domain', () => {
         ],
       }),
     );
-    expect(response.visual).toEqual({ colorToken: 'shared', isShared: true });
+    expect(response.visual).toMatchObject({
+      colorToken: 'shared',
+      isShared: true,
+    });
     expect(response.participants).toHaveLength(2);
+  });
+
+  it('gives an explicit event color precedence over participant colors', () => {
+    const response = new CalendarResponseMapper().event(
+      eventRecord({ colorToken: 'cyan' }),
+    );
+    expect(response.visual).toMatchObject({
+      colorToken: 'cyan',
+      backgroundToken: 'calendar-cyan-surface',
+      borderToken: 'calendar-cyan-border',
+    });
+  });
+
+  it('enforces the 200-event limit before a bulk delete reaches a use case', async () => {
+    const dto = plainToInstance(BulkDeleteCalendarEventsDto, {
+      eventIds: Array.from(
+        { length: 201 },
+        (_, index) =>
+          `40000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
+      ),
+      confirmation: 'SMAZAT',
+    });
+    expect(await validate(dto)).not.toHaveLength(0);
+  });
+
+  it('rejects the whole bulk update when one event is outside the household', async () => {
+    const repository = {
+      findManyByIds: vi.fn().mockResolvedValue([eventRecord()]),
+      bulkUpdate: vi.fn(),
+    } as unknown as CalendarEventRepository;
+    const service = new BulkUpdateCalendarEventsService(
+      access(),
+      {
+        assertVisible: vi.fn().mockResolvedValue(undefined),
+      } as unknown as EventLocationValidationService,
+      repository,
+    );
+    const input = plainToInstance(BulkUpdateCalendarEventsDto, {
+      eventIds: [eventRecord().id, '50000000-0000-4000-8000-000000000005'],
+      colorOperation: 'SET',
+      colorToken: 'cyan',
+    });
+    await expect(service.execute(userId, input)).rejects.toMatchObject({
+      code: 'CALENDAR_EVENT_NOT_FOUND',
+    });
+    expect(repository.bulkUpdate).not.toHaveBeenCalled();
+  });
+
+  it('prevents a viewer from running a bulk mutation', async () => {
+    const repository = {
+      findManyByIds: vi.fn(),
+      bulkUpdate: vi.fn(),
+    } as unknown as CalendarEventRepository;
+    const service = new BulkUpdateCalendarEventsService(
+      access('VIEWER'),
+      {} as EventLocationValidationService,
+      repository,
+    );
+    const input = plainToInstance(BulkUpdateCalendarEventsDto, {
+      eventIds: [eventRecord().id],
+      colorOperation: 'SET',
+      colorToken: 'cyan',
+    });
+    await expect(service.execute(userId, input)).rejects.toMatchObject({
+      code: 'HOUSEHOLD_ACCESS_DENIED',
+    });
+    expect(repository.bulkUpdate).not.toHaveBeenCalled();
+  });
+
+  it('bulk-deletes task-linked events atomically without deleting their tasks', async () => {
+    const transaction = {
+      calendarEvent: {
+        count: vi.fn().mockResolvedValue(1),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      taskCalendarLink: {
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      calendarEventTravelPlan: {
+        deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
+        updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+      },
+    };
+    const audit = { record: vi.fn().mockResolvedValue(undefined) };
+    const repository = new PrismaCalendarEventRepository(
+      {
+        $transaction: vi
+          .fn()
+          .mockImplementation(
+            async (
+              callback: (client: typeof transaction) => Promise<unknown>,
+            ) => callback(transaction),
+          ),
+      } as unknown as PrismaService,
+      audit as unknown as AuditService,
+    );
+    await expect(
+      repository.bulkDelete({
+        householdId,
+        userId,
+        eventIds: [eventRecord().id],
+        deletedAt: new Date('2026-08-10T12:00:00.000Z'),
+        taskEventCount: 1,
+        templateEventCount: 0,
+      }),
+    ).resolves.toBe(1);
+    expect(transaction.taskCalendarLink.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { removedAt: new Date('2026-08-10T12:00:00.000Z') },
+      }),
+    );
+    expect(transaction).not.toHaveProperty('task.delete');
+    expect(JSON.stringify(audit.record.mock.calls)).not.toMatch(
+      /Noční směna|location|address/,
+    );
   });
 });

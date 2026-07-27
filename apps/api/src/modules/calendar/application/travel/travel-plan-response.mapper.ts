@@ -5,14 +5,14 @@ import type {
 
 export const mapTravelPlanResponse = (
   plan: CalendarEventTravelPlanRecord,
-  previousEvent: { endsAt: Date } | null,
+  previousEvent: { endsAt: Date | null } | null,
   estimate: TransientTravelEstimate | null = null,
 ) => {
   const requiredSeconds = estimate
     ? estimate.durationSeconds + plan.travelBufferMinutes * 60
     : plan.travelBufferMinutes * 60;
   const availableSeconds =
-    previousEvent && estimate
+    previousEvent?.endsAt && estimate
       ? Math.max(
           0,
           Math.floor(

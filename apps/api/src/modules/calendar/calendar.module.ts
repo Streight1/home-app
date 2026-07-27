@@ -19,6 +19,7 @@ import { CALENDAR_TRAVEL_PLAN_REPOSITORY } from './domain/travel/calendar-event-
 import { GetCalendarFeedService } from './application/feed/get-calendar-feed.service.js';
 import { GetTodayCalendarSummaryService } from './application/feed/get-today-calendar-summary.service.js';
 import { CalendarResponseMapper } from './application/mappers/calendar-response.mapper.js';
+import { CalendarEventVisualService } from './application/mappers/calendar-event-visual.service.js';
 import { ApplyCalendarTemplateService } from './application/templates/apply-calendar-template.service.js';
 import { BulkApplyCalendarTemplateService } from './application/templates/bulk-apply-calendar-template.service.js';
 import { CalendarTemplateValidationService } from './application/templates/calendar-template-validation.service.js';
@@ -43,6 +44,9 @@ import { CalendarTravelController } from './presentation/calendar-travel.control
 import { CalendarTravelEstimateController } from './presentation/calendar-travel-estimate.controller.js';
 import { CalendarAvailabilityFacade } from './calendar-availability.facade.js';
 import { CalendarEventCreationFacade } from './calendar-event-creation.facade.js';
+import { PreviewBulkCalendarEventsService } from './application/events/preview-bulk-calendar-events.service.js';
+import { BulkUpdateCalendarEventsService } from './application/events/bulk-update-calendar-events.service.js';
+import { BulkDeleteCalendarEventsService } from './application/events/bulk-delete-calendar-events.service.js';
 
 @Module({
   imports: [TasksModule, AuditModule, HouseholdsModule, LocationModule],
@@ -72,6 +76,7 @@ import { CalendarEventCreationFacade } from './calendar-event-creation.facade.js
     SystemCalendarClockAdapter,
     { provide: CALENDAR_CLOCK_PORT, useExisting: SystemCalendarClockAdapter },
     CalendarResponseMapper,
+    CalendarEventVisualService,
     CalendarEventValidationService,
     EventLocationValidationService,
     ResolveTravelOriginService,
@@ -84,6 +89,9 @@ import { CalendarEventCreationFacade } from './calendar-event-creation.facade.js
     ListCalendarEventsService,
     CancelCalendarEventService,
     DeleteCalendarEventService,
+    PreviewBulkCalendarEventsService,
+    BulkUpdateCalendarEventsService,
+    BulkDeleteCalendarEventsService,
     CalendarTemplateValidationService,
     ListCalendarTemplatesService,
     CreateCalendarTemplateService,

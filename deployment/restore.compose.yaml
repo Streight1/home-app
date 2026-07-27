@@ -1,0 +1,6 @@
+services:
+  backup:
+    volumes: !override
+      - uploads_data:/uploads
+      - backups:/backups
+      - runtime_secrets:/run/homeapp-secrets:ro

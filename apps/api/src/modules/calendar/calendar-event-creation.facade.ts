@@ -39,6 +39,9 @@ export class CalendarEventCreationFacade {
         type: 'HOUSEHOLD',
         startsAt: input.startsAt,
         endsAt: input.endsAt,
+        allDayStartDate: null,
+        allDayEndDateExclusive: null,
+        desiredArrivalAt: null,
         timezone: input.timezone,
         isAllDay: false,
         location: input.locationLabel,
@@ -46,7 +49,7 @@ export class CalendarEventCreationFacade {
         locationLabel: input.locationLabel,
         locationNotes: null,
         calculateTravel: Boolean(input.locationPlaceId && input.considerTravel),
-        colorToken: 'primary',
+        colorToken: null,
         participants: input.participantIds.map((userId) => ({
           userId,
           role: 'ATTENDEE' as const,
@@ -65,8 +68,8 @@ export class CalendarEventCreationFacade {
     }
     return {
       eventId: event.id,
-      startsAt: event.startsAt.toISOString(),
-      endsAt: event.endsAt.toISOString(),
+      startsAt: event.startsAt?.toISOString() ?? input.startsAt.toISOString(),
+      endsAt: event.endsAt?.toISOString() ?? input.endsAt.toISOString(),
     };
   }
 

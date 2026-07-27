@@ -45,6 +45,8 @@ export function CalendarEventDeleteDialog({
               {formatCalendarInterval({
                 startsAt: event.startsAt,
                 endsAt: event.endsAt,
+                allDayStartDate: event.allDayStartDate,
+                allDayEndDateExclusive: event.allDayEndDateExclusive,
                 timezone: event.timezone,
                 isAllDay: event.isAllDay,
               })}

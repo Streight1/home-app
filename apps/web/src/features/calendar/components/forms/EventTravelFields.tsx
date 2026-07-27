@@ -1,7 +1,12 @@
 import { useEffect, useMemo } from 'react';
+import { DatePicker } from '../../../../components/ui/DatePicker/DatePicker.js';
 import { Input } from '../../../../components/ui/Input/Input.js';
 import { Select } from '../../../../components/ui/Select/Select.js';
 import type { HouseholdMemberSummary } from '../../../household/household.public.js';
+import {
+  PlaceAutocomplete,
+  type EventPlaceValue,
+} from '../../../location/components/PlaceAutocomplete.js';
 import { useCalendarPreferences } from '../../../location/hooks/useCalendarPreferences.js';
 import { useSavedPlaces } from '../../../location/hooks/useSavedPlaces.js';
 import {
@@ -15,6 +20,10 @@ export function EventTravelFields({
   eventId,
   members,
   startsAt,
+  isAllDay = false,
+  allDayStartDate = startsAt.slice(0, 10),
+  desiredArrivalAt = '',
+  onDesiredArrivalAtChange = () => undefined,
   destinationPlaceId,
   calculateTravel,
   value,
@@ -24,6 +33,10 @@ export function EventTravelFields({
   eventId?: string;
   members: HouseholdMemberSummary[];
   startsAt: string;
+  isAllDay?: boolean | undefined;
+  allDayStartDate?: string | undefined;
+  desiredArrivalAt?: string | undefined;
+  onDesiredArrivalAtChange?: ((value: string) => void) | undefined;
   destinationPlaceId: string | null;
   calculateTravel: boolean;
   value: TravelPlanInput | null;
@@ -37,6 +50,14 @@ export function EventTravelFields({
     eventId ?? null,
     traveler || null,
   );
+  const selectedOrigin = places.data?.items.find(
+    ({ id }) => id === value?.originPlaceId,
+  );
+  const customOrigin: EventPlaceValue = {
+    placeId: value?.originPlaceId ?? null,
+    label: selectedOrigin?.label ?? '',
+    manual: !value?.originPlaceId,
+  };
   const destinationReady = Boolean(destinationPlaceId) && members.length > 0;
   const defaults = useMemo<TravelPlanInput | null>(
     () =>
@@ -66,12 +87,15 @@ export function EventTravelFields({
     )
       onChange({ ...value, travelerUserId: first });
   }, [members, onChange, value]);
-  const validStart = Number.isFinite(new Date(startsAt).getTime());
+  const travelTarget = isAllDay ? desiredArrivalAt : startsAt;
+  const validStart = Number.isFinite(new Date(travelTarget).getTime());
   const previewInput =
     calculateTravel && value && destinationPlaceId && validStart
       ? {
           ...(eventId ? { eventId } : {}),
-          startsAt: new Date(startsAt).toISOString(),
+          ...(isAllDay
+            ? { desiredArrivalAt: new Date(travelTarget).toISOString() }
+            : { startsAt: new Date(travelTarget).toISOString() }),
           participantIds: members.map(({ id }) => id),
           destinationPlaceId,
           originMode: value.originMode,
@@ -120,6 +144,31 @@ export function EventTravelFields({
       ) : null}
       {calculateTravel && value ? (
         <div className="grid gap-4 rounded-lg border border-border bg-surface-subtle p-4 sm:grid-cols-2">
+          {isAllDay ? (
+            <>
+              <DatePicker
+                label="Datum požadovaného příjezdu"
+                value={desiredArrivalAt.slice(0, 10) || allDayStartDate}
+                onChange={(date) => {
+                  const time = desiredArrivalAt.slice(11, 16);
+                  onDesiredArrivalAtChange(time ? `${date}T${time}` : '');
+                }}
+              />
+              <Input
+                label="Kdy chcete na místo dorazit?"
+                type="time"
+                value={desiredArrivalAt.slice(11, 16)}
+                onChange={(event) =>
+                  onDesiredArrivalAtChange(
+                    event.target.value
+                      ? `${desiredArrivalAt.slice(0, 10) || allDayStartDate}T${event.target.value}`
+                      : '',
+                  )
+                }
+                hint="Bez času příjezdu se cesta nevypočítá."
+              />
+            </>
+          ) : null}
           <Select
             label="Počátek cesty"
             value={value.originMode}
@@ -141,22 +190,13 @@ export function EventTravelFields({
             ) : null}
           </Select>
           {value.originMode === 'CUSTOM_PLACE' ? (
-            <Select
-              label="Počáteční místo"
-              value={value.originPlaceId ?? ''}
-              onChange={(event) =>
-                patch({ originPlaceId: event.target.value || null })
+            <PlaceAutocomplete
+              label="Jiné místo odjezdu"
+              value={customOrigin}
+              onChange={(place) =>
+                patch({ originPlaceId: place.placeId ?? null })
               }
-            >
-              <option value="">Vyberte místo</option>
-              {places.data?.items
-                .filter(({ routable }) => routable)
-                .map((place) => (
-                  <option key={place.id} value={place.id}>
-                    {place.label}
-                  </option>
-                ))}
-            </Select>
+            />
           ) : null}
           {value.originMode === 'PREVIOUS_EVENT' ? (
             <Select
@@ -221,6 +261,11 @@ export function EventTravelFields({
             Vyhnout se dálnicím
           </label>
         </div>
+      ) : null}
+      {calculateTravel && isAllDay && !desiredArrivalAt ? (
+        <p className="text-caption text-text-muted">
+          Pro výpočet cesty zadejte, kdy chcete dorazit.
+        </p>
       ) : null}
       {preview.isError ? (
         <p className="text-body-sm text-warning">
