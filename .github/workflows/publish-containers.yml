@@ -42,7 +42,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Chromium for browser checks
-        run: pnpm exec playwright install --with-deps chromium
+        run: pnpm --filter @life-admin/web exec playwright install --with-deps chromium
 
       - name: Run required checks
         run: pnpm check
