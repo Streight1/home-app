@@ -38,6 +38,13 @@ jobs:
           npm --version
           pnpm --version
 
+      - name: Generate Prisma client
+        env:
+          DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/homeapp?schema=public
+        run: |
+          pnpm db:generate
+          test -d apps/api/src/generated/prisma
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
