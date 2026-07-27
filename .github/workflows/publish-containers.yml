@@ -1,6 +1,9 @@
-name: Publish container images
+name: Validate and publish HomeApp
 
 on:
+  pull_request:
+    branches:
+      - main
   push:
     branches:
       - main
@@ -8,57 +11,290 @@ on:
       - 'v*.*.*'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
-  group: publish-containers-${{ github.ref }}
-  cancel-in-progress: false
+  group: homeapp-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CI: 'true'
+  TZ: Europe/Prague
+  LANG: cs_CZ.UTF-8
+  DATABASE_URL: postgresql://homeapp_ci:homeapp_ci_password@127.0.0.1:5432/homeapp_ci?schema=public
 
 jobs:
-  quality:
-    name: Required project checks
+  quality-static:
+    name: Quality / Static checks
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    timeout-minutes: 30
     steps:
       - name: Check out repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Set up Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      - name: Start job timer
+        run: printf 'HOMEAPP_CI_STARTED_AT=%s\n' "$(date +%s)" >> "${GITHUB_ENV}"
+
+      - name: Set up project and generated artifacts
+        uses: ./.github/actions/setup-project
         with:
-          node-version: 24.18.0
+          generate-prisma: 'true'
 
-      - name: Enable pnpm through Corepack
+      - name: Validate CI workflow
+        run: pnpm ci:workflow
+
+      - name: Check whitespace errors
+        run: git diff --check
+
+      - name: Check architecture
+        run: pnpm architecture:check
+
+      - name: Check environment contract
+        run: pnpm env:check
+
+      - name: Check deployment contract
+        run: pnpm deployment:check
+
+      - name: Check documentation
+        run: pnpm docs:check
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Check formatting
+        run: pnpm format:check
+
+      - name: Write job summary
+        if: always()
+        env:
+          CI_JOB_STATUS: ${{ job.status }}
+        run: node scripts/ci/write-job-summary.mjs 'Quality / Static checks'
+
+  api-tests:
+    name: Tests / API
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    services:
+      postgres:
+        image: postgres:18.4-bookworm
+        env:
+          POSTGRES_DB: homeapp_ci
+          POSTGRES_USER: homeapp_ci
+          POSTGRES_PASSWORD: homeapp_ci_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U homeapp_ci -d homeapp_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Start job timer
+        run: printf 'HOMEAPP_CI_STARTED_AT=%s\n' "$(date +%s)" >> "${GITHUB_ENV}"
+
+      - name: Set up project and generated artifacts
+        uses: ./.github/actions/setup-project
+        with:
+          generate-prisma: 'true'
+
+      - name: Validate Prisma schema
+        run: pnpm --filter @life-admin/api exec prisma validate
+
+      - name: Deploy migrations to an empty CI database
         shell: bash
-        env:
-          COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
         run: |
-          npm install --global corepack@latest
-          corepack enable
-          node --version
-          npm --version
-          pnpm --version
+          set -euo pipefail
+          mkdir -p artifacts/api
+          pnpm db:migrate:deploy 2>&1 | tee artifacts/api/migrate-deploy.log
+          pnpm --filter @life-admin/api exec prisma migrate status 2>&1 | tee artifacts/api/migrate-status.log
 
-      - name: Generate Prisma client
+      - name: Run API tests
         env:
-          DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/homeapp?schema=public
+          VITEST_REPORT_FILE: ${{ github.workspace }}/artifacts/api/vitest-junit.xml
+        run: pnpm --filter @life-admin/api test
+
+      - name: Build production API
+        run: pnpm --filter @life-admin/api build
+
+      - name: Verify API build artifacts
+        run: node scripts/verify-build-artifacts.mjs api
+
+      - name: Upload API diagnostics
+        if: failure()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: api-diagnostics-${{ github.run_id }}
+          path: |
+            artifacts/api
+            apps/api/coverage
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Write job summary
+        if: always()
+        env:
+          CI_JOB_STATUS: ${{ job.status }}
+        run: >-
+          node scripts/ci/write-job-summary.mjs
+          'Tests / API'
+          artifacts/api/vitest-junit.xml
+
+  web-tests:
+    name: Tests / Web
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Start job timer
+        run: printf 'HOMEAPP_CI_STARTED_AT=%s\n' "$(date +%s)" >> "${GITHUB_ENV}"
+
+      - name: Set up project
+        uses: ./.github/actions/setup-project
+
+      - name: Run web unit and component tests without Vite deployment variables
+        env:
+          VITEST_REPORT_FILE: ${{ github.workspace }}/artifacts/web/vitest-junit.xml
         run: |
-          pnpm db:generate
-          test -d apps/api/src/generated/prisma
+          mkdir -p artifacts/web
+          pnpm --filter @life-admin/web test
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Build generic production web bundle
+        run: pnpm --filter @life-admin/web build
 
-      - name: Install Chromium for browser checks
+      - name: Build Storybook
+        run: pnpm storybook:build
+
+      - name: Verify web build artifacts
+        run: node scripts/verify-build-artifacts.mjs web
+
+      - name: Upload web diagnostics
+        if: failure()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: web-diagnostics-${{ github.run_id }}
+          path: |
+            artifacts/web
+            apps/web/coverage
+            apps/web/storybook-static
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Write job summary
+        if: always()
+        env:
+          CI_JOB_STATUS: ${{ job.status }}
+        run: >-
+          node scripts/ci/write-job-summary.mjs
+          'Tests / Web'
+          artifacts/web/vitest-junit.xml
+
+  browser-tests:
+    name: Tests / Browser
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Start job timer
+        run: printf 'HOMEAPP_CI_STARTED_AT=%s\n' "$(date +%s)" >> "${GITHUB_ENV}"
+
+      - name: Set up project
+        uses: ./.github/actions/setup-project
+
+      - name: Install Chromium and system dependencies
         run: pnpm --filter @life-admin/web exec playwright install --with-deps chromium
 
-      - name: Run required checks
-        run: pnpm check
+      - name: Verify Playwright workspace installation
+        run: pnpm --filter @life-admin/web exec playwright --version
+
+      - name: Run Storybook, E2E, visual and accessibility browser tests
+        env:
+          VITEST_REPORT_FILE: ${{ github.workspace }}/artifacts/browser/storybook-junit.xml
+        run: |
+          mkdir -p artifacts/browser
+          pnpm ci:browser
+
+      - name: Upload browser diagnostics
+        if: failure()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: browser-diagnostics-${{ github.run_id }}
+          path: |
+            artifacts/browser
+            apps/web/playwright-report
+            apps/web/test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Write job summary
+        if: always()
+        env:
+          CI_JOB_STATUS: ${{ job.status }}
+        run: >-
+          node scripts/ci/write-job-summary.mjs
+          'Tests / Browser'
+          artifacts/browser/storybook-junit.xml
+          apps/web/test-results/playwright-results.json
+
+  container-validation:
+    name: Containers / Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Start job timer
+        run: printf 'HOMEAPP_CI_STARTED_AT=%s\n' "$(date +%s)" >> "${GITHUB_ENV}"
+
+      - name: Set up project
+        uses: ./.github/actions/setup-project
+
+      - name: Build images and run isolated Compose smoke tests
+        run: pnpm ci:containers
+
+      - name: Upload sanitized container diagnostics
+        if: failure()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: container-diagnostics-${{ github.run_id }}
+          path: artifacts/containers
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Write job summary
+        if: always()
+        env:
+          CI_JOB_STATUS: ${{ job.status }}
+        run: node scripts/ci/write-job-summary.mjs 'Containers / Validation'
 
   publish:
-    name: Publish ${{ matrix.name }}
+    name: Publish / ${{ matrix.component }}
+    if: >-
+      github.event_name != 'pull_request' &&
+      (
+        (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+        (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
+        github.event_name == 'workflow_dispatch'
+      )
     needs:
-      - quality
+      - quality-static
+      - api-tests
+      - web-tests
+      - browser-tests
+      - container-validation
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     permissions:
       contents: read
       packages: write
@@ -66,40 +302,59 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: API
-            image: ghcr.io/streight1/home-app-api
+          - component: api
             dockerfile: apps/api/Dockerfile
             target: api
-          - name: web
-            image: ghcr.io/streight1/home-app-web
+            description: HomeApp NestJS API
+          - component: web
             dockerfile: apps/web/Dockerfile
             target: gateway
+            description: HomeApp React and Caddy gateway
     steps:
       - name: Check out repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Start job timer
+        run: printf 'HOMEAPP_CI_STARTED_AT=%s\n' "$(date +%s)" >> "${GITHUB_ENV}"
+
+      - name: Resolve image name from deployment manifest
+        id: image
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="$(node scripts/ci/resolve-image-reference.mjs '${{ matrix.component }}')"
+          printf 'name=%s\n' "${image}" >> "${GITHUB_OUTPUT}"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@06fb636fac595d6fb4b28a5dfcb21a6f5091859c # v4
+        uses: docker/login-action@06fb636fac595d6fb4b28a5dfcb21a6f5091859c # v4.0.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Generate OCI metadata
+      - name: Generate OCI metadata and tag policy
         id: metadata
-        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.0.0
         with:
-          images: ${{ matrix.image }}
+          images: ${{ steps.image.outputs.name }}
           flavor: latest=false
           tags: |
-            type=raw,value=staging,enable={{is_default_branch}}
+            type=raw,value=staging,enable=${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
             type=sha,format=long,prefix=
-            type=semver,pattern=v{{version}}
+            type=ref,event=tag
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+          labels: |
+            org.opencontainers.image.title=HomeApp ${{ matrix.component }}
+            org.opencontainers.image.description=${{ matrix.description }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ github.ref_name }}
 
-      - name: Build and publish image
+      - name: Build and publish verified revision
         uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
         with:
           context: .
@@ -109,4 +364,19 @@ jobs:
           push: true
           tags: ${{ steps.metadata.outputs.tags }}
           labels: ${{ steps.metadata.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.component }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.component }}
+          provenance: true
+          sbom: true
 
+      - name: Write published image summary
+        env:
+          IMAGE_TAGS: ${{ steps.metadata.outputs.tags }}
+        shell: bash
+        run: |
+          duration_seconds="$(( $(date +%s) - HOMEAPP_CI_STARTED_AT ))"
+          {
+            printf '## Publish / %s\n\n' '${{ matrix.component }}'
+            printf 'Publikované reference:\n\n```text\n%s\n```\n' "${IMAGE_TAGS}"
+            printf '\nDoba jobu: **%s s**\n' "${duration_seconds}"
+          } >> "${GITHUB_STEP_SUMMARY}"

@@ -1,0 +1,14 @@
+services:
+  migrate:
+    image: homeapp-api:ci
+    pull_policy: never
+
+  api:
+    image: homeapp-api:ci
+    pull_policy: never
+
+  gateway:
+    image: homeapp-web:ci
+    pull_policy: never
+    ports: !override
+      - '127.0.0.1:${CI_GATEWAY_PORT:-18080}:80'

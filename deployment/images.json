@@ -1,0 +1,5 @@
+{
+  "api": "ghcr.io/streight1/home-app-api",
+  "web": "ghcr.io/streight1/home-app-web",
+  "defaultTag": "staging"
+}

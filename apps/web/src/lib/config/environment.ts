@@ -5,9 +5,10 @@ let cachedEnvironment: WebEnvironment | undefined;
 
 export function getWebEnvironment(): WebEnvironment {
   if (import.meta.env.PROD && cachedEnvironment) return cachedEnvironment;
+  const runtimeConfig = window.__HOMEAPP_CONFIG__;
   const resolved = resolveWebEnvironment({
-    isProduction: import.meta.env.PROD,
-    runtimeConfig: window.__HOMEAPP_CONFIG__,
+    isProduction: import.meta.env.PROD || runtimeConfig != null,
+    runtimeConfig,
     viteEnvironment: import.meta.env,
   });
   if (import.meta.env.PROD) cachedEnvironment = resolved;

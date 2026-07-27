@@ -32,26 +32,33 @@ volitelný Mapy provider. Gateway explicitně odmítá `/internal/*` a `/uploads
 
 ## Registry image a CI
 
-GitHub Actions workflow `.github/workflows/publish-containers.yml` po
-`pnpm check` sestaví a publikuje:
+GitHub Actions workflow `.github/workflows/publish-containers.yml` rozdělí
+čistý runner na statické, API, web, browser a container validační joby. Teprve
+po úspěchu všech pěti sestaví a publikuje:
 
 - `ghcr.io/streight1/home-app-api`;
 - `ghcr.io/streight1/home-app-web`.
 
-Workflow používá pouze `GITHUB_TOKEN` s `contents: read` a v publish jobu
-`packages: write`. Použité actions jsou připnuté na úplné commit SHA. Build
-nedostává produkční tajemství. OCI metadata obsahují source, revision, created a
-version hodnoty generované `docker/metadata-action`.
+Workflow používá pouze `GITHUB_TOKEN`; globálně má `contents: read` a jen
+publish job `packages: write`. Použité actions jsou připnuté na úplné commit
+SHA. Build nedostává produkční tajemství. OCI metadata obsahují source,
+revision, created a version, publikace přidává provenance a SBOM.
 
 Tagy mají odlišnou stabilitu:
 
 - `staging` je mutable tag výchozí větve; s `pull_policy: always` jej běžné
   `docker compose up -d` aktualizuje;
 - plný commit SHA je neměnný identifikátor konkrétního buildu;
-- `vX.Y.Z` je release tag určený pro řízené připnutí.
+- `vX.Y.Z`, `X.Y` a `X` vznikají jen z release tagu.
 
 Workflow je připravený, ale publikování nastane až skutečným během GitHub
 Actions s povoleným package přístupem.
+
+Před publikací container job sestaví obě image pro `linux/amd64` a spustí
+izolovaný `deployment/compose.ci.yaml`: prázdnou DB, migraci, API/gateway
+smoke, opakovaný start, persistence marker a řízené selhání migrace. Používá
+unikátní volumes a syntetické secret soubory, nikoli staging data. Podrobnosti
+jsou v [CI dokumentaci](../development/continuous-integration.md).
 
 ## Image
 
@@ -60,7 +67,13 @@ obecný artefakt; runtime používá Caddy a neobsahuje Vite server ani workspac
 `node_modules`. Gateway entrypoint před startem vygeneruje do tmpfs
 `/run/homeapp/runtime-config.js`.
 
-`apps/api/Dockerfile` vytváří image `api`, který obsahuje:
+Oficiální Caddy image startuje jako root kvůli host portům 80/443. Gateway má
+`no-new-privileges`, nedostává uploads ani aplikační secrets a zapisuje jen do
+Caddy volumes a explicitního tmpfs. API naproti tomu běží vždy jako
+neprivilegovaný uživatel s read-only root filesystemem.
+
+`apps/api/Dockerfile` generuje Prisma Client uvnitř buildu a vytváří image
+`api`, který obsahuje:
 
 - production dependencies a sestavený NestJS;
 - Prisma klient, migrace a lokální Prisma CLI;

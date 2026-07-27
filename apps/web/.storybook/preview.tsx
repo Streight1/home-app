@@ -10,7 +10,10 @@ import type {
 } from '../src/app/workspace-navigation/workspace-navigation.types.js';
 import { ThemeProvider } from '../src/features/theme/providers/ThemeProvider.js';
 import type { ThemePreference } from '../src/features/theme/types/theme.types.js';
+import { installTestPublicRuntimeConfig } from '../src/lib/config/test-runtime-config.js';
 import '../src/styles/globals.css';
+
+installTestPublicRuntimeConfig({ APP_ENV_LABEL: '' });
 
 function StoryQueryProvider({ children }: { children: ReactNode }) {
   const [queryClient] = useState(

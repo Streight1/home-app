@@ -155,6 +155,11 @@ pnpm storybook:build
 pnpm test:e2e
 pnpm test:visual
 pnpm test:accessibility
+pnpm ci:generate
+pnpm ci:workflow
+pnpm ci:check
+pnpm ci:browser
+pnpm ci:containers
 pnpm check
 ```
 
@@ -165,3 +170,12 @@ scénáře. Jemnější příkazy zůstávají dostupné pro cílenou diagnostik
 typecheck, unit/HTTP testy, Storybook test/build, produkční build, screenshoty,
 accessibility a formát. Browser testy mohou v sandboxu potřebovat lokální socket;
 nejsou kvůli tomu vynechané.
+
+GitHub Actions používají kvůli čitelným logům granulární joby místo jednoho
+`pnpm check`. Společný setup nejprve instaluje locked dependencies a teprve
+potom generuje Prisma Client. Webové testy používají centrální veřejnou test
+runtime fixture a fungují bez `.env` a `VITE_API_URL`. API job ověřuje migrace
+od prázdného PostgreSQL service containeru. Browser job instaluje Chromium ze
+workspace `@life-admin/web`; container job používá výhradně náhodně pojmenované
+CI volumes. Celá topologie a diagnostika je v
+[CI dokumentaci](continuous-integration.md).

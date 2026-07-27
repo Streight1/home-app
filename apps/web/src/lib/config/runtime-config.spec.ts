@@ -1,18 +1,13 @@
 import { describe, expect, it } from 'vitest';
+import { TEST_PUBLIC_RUNTIME_CONFIG } from './test-runtime-config.js';
 import { parseRuntimeConfig, resolveWebEnvironment } from './runtime-config.js';
 
-const runtimeConfig = {
-  API_URL: '/api/v1',
-  GOOGLE_CLIENT_ID: 'browser-client.apps.googleusercontent.com',
-  APP_ENV_LABEL: 'Staging',
-  MAX_UPLOAD_BYTES: 26_214_400,
-  FINANCE_IMPORT_MAX_FILE_BYTES: 20_971_520,
-  CSRF_COOKIE_NAME: 'homeapp_csrf',
-};
+const runtimeConfig = { ...TEST_PUBLIC_RUNTIME_CONFIG };
 
 describe('public runtime configuration', () => {
   it('validates the public production values', () => {
     expect(parseRuntimeConfig(runtimeConfig)).toEqual(runtimeConfig);
+    expect(runtimeConfig.API_URL).toBe('/api/v1');
   });
 
   it('rejects missing, malformed and secret-shaped configuration', () => {
@@ -26,6 +21,10 @@ describe('public runtime configuration', () => {
         CSRF_COOKIE_NAME: 'unsafe cookie',
       }),
     ).toThrow('CSRF_COOKIE_NAME');
+  });
+
+  it('fails safely when the browser runtime config is missing', () => {
+    expect(() => parseRuntimeConfig(undefined)).toThrow('není dostupná');
   });
 
   it('uses runtime values in production without a Vite rebuild', () => {
@@ -44,7 +43,7 @@ describe('public runtime configuration', () => {
       viteEnvironment: {},
     });
 
-    expect(first.appEnvLabel).toBe('Staging');
+    expect(first.appEnvLabel).toBe('Test');
     expect(second.appEnvLabel).toBe('Production');
     expect(second.maxUploadBytes).toBe(52_428_800);
   });

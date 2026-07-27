@@ -1,40 +1,34 @@
 # Container registry
 
-## Image
+## Image a zdroj názvů
 
-GitHub Actions publikuje po úspěšném `pnpm check` dva image:
+Jediný registry manifest `deployment/images.json` používají deployment
+kontroly, Compose fallback i publish workflow:
 
 ```text
 ghcr.io/streight1/home-app-api
 ghcr.io/streight1/home-app-web
 ```
 
-Workflow je v `.github/workflows/publish-containers.yml`. Používá
-`GITHUB_TOKEN`, `contents: read`, `packages: write`, actions připnuté na commit
-SHA a neposkytuje Docker buildu produkční secrets.
+Workflow je v `.github/workflows/publish-containers.yml`. Nejdříve paralelně
+provede statické, API, web, browser a container kontroly. Image publikuje až
+potom. Používá pouze `GITHUB_TOKEN`; validační joby mají `contents: read` a
+jen publish job `packages: write`. Docker build nedostává produkční secrets.
 
-## Tagy
+## Události a tagy
 
-- `staging` je mutable tag posledního úspěšného buildu výchozí větve.
-- úplný commit SHA ukazuje na přesný zdrojový stav;
-- `vX.Y.Z` vzniká pro Git tag odpovídající release.
+- Pull request: všech pět validačních jobů, žádný publish.
+- Push do `main`: `staging` a celý commit SHA.
+- Release tag `vX.Y.Z`: `vX.Y.Z`, `X.Y`, `X` a celý commit SHA.
+- `workflow_dispatch`: validace a celý commit SHA.
 
-Pro průběžný staging používej:
+`latest` se automaticky nevytváří. `staging` je mutable tag posledního
+úspěšného buildu `main`; release a SHA tagy jsou určeny pro reprodukovatelné
+připnutí. Rollback image není rollback databázové migrace.
 
-```dotenv
-APP_IMAGE_TAG=staging
-APP_PULL_POLICY=always
-```
-
-Pro opakovatelný release:
-
-```dotenv
-APP_IMAGE_TAG=v1.2.3
-APP_PULL_POLICY=missing
-```
-
-Ještě silnější připnutí poskytuje full SHA tag. Rollback image nezpětně
-neodstraní aplikované databázové migrace.
+Build přidává OCI source/revision/version/description metadata, provenance a
+SBOM. Přesný digest a skutečnou dostupnost image prokáže pouze úspěšný GitHub
+Actions run, ne lokální validace workflow.
 
 ## Veřejné image
 
@@ -57,15 +51,21 @@ jednorázově:
 docker login ghcr.io
 ```
 
-Použij oddělený read-only token s minimálním `read:packages`. Token neukládej do
-Compose, `.env`, image ani repozitáře. Přihlašovací stav spravuje Docker daného
-deployment uživatele.
+Použij read-only token s minimálním `read:packages`. Token neukládej do
+Compose, `.env`, image ani repozitáře. GitHub Actions publikuje vestavěným
+`GITHUB_TOKEN`; žádný PAT nepotřebuje.
 
-## Publikování
+## Diagnostika publikace
 
-Publikace se spustí pushnutím na výchozí větev, release tagem `vX.Y.Z` nebo
-ručním `workflow_dispatch`. Image se nepublikuje, pokud kontroly selžou.
+V repository Actions otevři první selhaný required check:
 
-Lokální Docker build a workflow lint ověřují definici, ale nejsou důkazem, že
-image skutečně existuje v GHCR. To potvrzuje pouze úspěšný GitHub Actions run a
-viditelný package digest.
+1. `Quality / Static checks`;
+2. `Tests / API`;
+3. `Tests / Web`;
+4. `Tests / Browser`;
+5. `Containers / Validation`.
+
+Relevantní artifact vzniká pouze při chybě a má sedmidenní retention. Publish
+se při selhání či zrušení libovolného required jobu přes `needs` vůbec
+nespustí. Podrobnosti jsou v
+[CI dokumentaci](../development/continuous-integration.md).

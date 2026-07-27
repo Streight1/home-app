@@ -102,7 +102,7 @@ services:
     logging: *default-logging
 
   migrate:
-    image: ghcr.io/streight1/home-app-api:${APP_IMAGE_TAG:-staging}
+    image: ${HOMEAPP_API_IMAGE:-ghcr.io/streight1/home-app-api}:${APP_IMAGE_TAG:-staging}
     pull_policy: ${APP_PULL_POLICY:-always}
     environment: *api-environment
     command:
@@ -128,7 +128,7 @@ services:
     logging: *default-logging
 
   api:
-    image: ghcr.io/streight1/home-app-api:${APP_IMAGE_TAG:-staging}
+    image: ${HOMEAPP_API_IMAGE:-ghcr.io/streight1/home-app-api}:${APP_IMAGE_TAG:-staging}
     pull_policy: ${APP_PULL_POLICY:-always}
     environment: *api-environment
     user: '${APP_RUNTIME_UID:-10001}:${APP_RUNTIME_GID:-10001}'
@@ -164,7 +164,7 @@ services:
     logging: *default-logging
 
   gateway:
-    image: ghcr.io/streight1/home-app-web:${APP_IMAGE_TAG:-staging}
+    image: ${HOMEAPP_WEB_IMAGE:-ghcr.io/streight1/home-app-web}:${APP_IMAGE_TAG:-staging}
     pull_policy: ${APP_PULL_POLICY:-always}
     environment:
       ACME_EMAIL: ${ACME_EMAIL:?ACME_EMAIL is required}

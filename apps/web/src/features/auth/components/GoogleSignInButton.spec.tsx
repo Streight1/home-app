@@ -4,7 +4,6 @@ import { expect, it, vi } from 'vitest';
 import { GoogleSignInButton } from './GoogleSignInButton.js';
 
 it('initializes Google Identity Services only once in React StrictMode', () => {
-  vi.stubEnv('VITE_GOOGLE_CLIENT_ID', 'test-client.apps.googleusercontent.com');
   const initialize = vi.fn();
   window.google = {
     accounts: {

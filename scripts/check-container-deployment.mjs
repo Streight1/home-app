@@ -81,17 +81,17 @@ forbidPattern(
 );
 requirePattern(
   api,
-  /image:\s*ghcr\.io\/streight1\/home-app-api:\$\{APP_IMAGE_TAG:-staging\}/,
+  /image:\s*\$\{HOMEAPP_API_IMAGE:-ghcr\.io\/streight1\/home-app-api\}:\$\{APP_IMAGE_TAG:-staging\}/,
   'API musí používat verzovaný GHCR image.',
 );
 requirePattern(
   migrate,
-  /image:\s*ghcr\.io\/streight1\/home-app-api:\$\{APP_IMAGE_TAG:-staging\}/,
+  /image:\s*\$\{HOMEAPP_API_IMAGE:-ghcr\.io\/streight1\/home-app-api\}:\$\{APP_IMAGE_TAG:-staging\}/,
   'Migrate musí používat stejný GHCR API image.',
 );
 requirePattern(
   gateway,
-  /image:\s*ghcr\.io\/streight1\/home-app-web:\$\{APP_IMAGE_TAG:-staging\}/,
+  /image:\s*\$\{HOMEAPP_WEB_IMAGE:-ghcr\.io\/streight1\/home-app-web\}:\$\{APP_IMAGE_TAG:-staging\}/,
   'Gateway musí používat GHCR web image.',
 );
 forbidPattern(api, /^\s+ports:/m, 'API nesmí publikovat host port.');
@@ -199,7 +199,7 @@ requirePattern(
 );
 requirePattern(
   webEnvironment,
-  /isProduction:\s*import\.meta\.env\.PROD[\s\S]*window\.__HOMEAPP_CONFIG__/,
+  /runtimeConfig\s*=\s*window\.__HOMEAPP_CONFIG__[\s\S]*isProduction:\s*import\.meta\.env\.PROD\s*\|\|\s*runtimeConfig\s*!=\s*null/,
   'Produkční frontend musí používat window.__HOMEAPP_CONFIG__.',
 );
 requirePattern(
@@ -289,18 +289,18 @@ requirePattern(
 );
 requirePattern(
   workflow,
-  /run:\s*pnpm check/,
-  'Image se smí publikovat až po pnpm check.',
+  /quality-static:[\s\S]*api-tests:[\s\S]*web-tests:[\s\S]*browser-tests:[\s\S]*container-validation:/,
+  'Workflow musí před publikací oddělit statické, API, web, browser a container kontroly.',
 );
 requirePattern(
   workflow,
-  /ghcr\.io\/streight1\/home-app-api[\s\S]*ghcr\.io\/streight1\/home-app-web/,
-  'Workflow musí publikovat API i web GHCR image.',
+  /needs:[\s\S]*quality-static[\s\S]*api-tests[\s\S]*web-tests[\s\S]*browser-tests[\s\S]*container-validation/,
+  'Publish musí čekat na všechny validační joby.',
 );
 requirePattern(
   workflow,
-  /type=raw,value=staging[\s\S]*type=sha,format=long[\s\S]*type=semver,pattern=v\{\{version\}\}/,
-  'Workflow musí vytvářet staging, full SHA a release tagy.',
+  /resolve-image-reference\.mjs[\s\S]*type=raw,value=staging[\s\S]*type=sha,format=long[\s\S]*type=ref,event=tag[\s\S]*type=semver,pattern=\{\{major\}\}\.\{\{minor\}\}/,
+  'Workflow musí používat image manifest a vytvářet staging, full SHA a release tagy.',
 );
 const actionUses = [...workflow.matchAll(/^\s+uses:\s*[^@\s]+@([^\s#]+)/gm)];
 if (

@@ -66,6 +66,9 @@ docker compose up -d
 
 Compose při změně API image znovu vytvoří one-shot migrate container. API čeká
 na úspěšný exit migrace. Opakovaný start bez pending migrací je bezpečný.
+Tag `staging` se publikuje pouze z úspěšného push workflow na `main`. Pull
+request ani neúspěšná statická, API, web, browser či container kontrola jej
+nezmění.
 
 ## Změna veřejné browser konfigurace
 

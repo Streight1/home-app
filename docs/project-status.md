@@ -34,9 +34,13 @@ insighty, evidencí opakovaných plateb a kompaktním dashboard widgetem.
 Sdílený roční Bucket list je samostatný modul pro společná přání, více
 účastníků, cílové datum a místo, dokumentové vazby, dokončovací historii,
 progress, dashboard a explicitní rollover do dalšího roku.
-Projekt má také plně kontejnerový single-VPS staging. CI po úspěšných kontrolách
-připravuje verzované API a gateway image pro GHCR, deployment používá named
-volumes, one-shot inicializaci oprávnění a automatickou `migrate deploy` bránu.
+Projekt má také plně kontejnerový single-VPS staging. Reprodukovatelná CI
+odděluje statické, API, web, browser a container joby, ověřuje migraci od
+prázdné PostgreSQL, runtime config bez `.env`, browser regresní sadu a
+izolovaný Compose stack včetně opakovaného startu a selhání migrace. Teprve
+potom připravuje verzované API a gateway image pro GHCR; deployment používá
+named volumes, one-shot inicializaci oprávnění a automatickou `migrate deploy`
+bránu.
 Veřejná konfigurace webu vzniká až při startu gateway a tajemství lze předat
 přes Compose secret soubory. Běžný start i staging aktualizace používají
 `docker compose up -d`; záloha, obnova a nedestruktivní převod starých bind
@@ -137,6 +141,8 @@ GitHub Actions a Google production login vyžadují cílové externí prostřed�
 - Backendové, HTTP integrační, storage a frontendové komponentové testy.
 - Architektonická kontrola velikostí, public endpointů, statických uploadů,
   theme hranic, hardcoded React barev, story fixture a ikonových knihoven.
+- Strukturální CI kontrola pořadí pnpm/Prisma setupu, stabilních required
+  jobů, publish oprávnění/tagů, image manifestu a izolovaného Compose modelu.
 - Dokumentační rozcestník, architecture/feature/API dokumentace, runbooky a
   povinný Markdown lint s kontrolou odkazů, struktury a tajemství.
 - Jediný kořenový `.env` pro Compose, NestJS, Prisma a Vite, bezpečná expanze
@@ -201,6 +207,9 @@ GitHub Actions a Google production login vyžadují cílové externí prostřed�
   interaktivním prohlížečem; automatické testy verifier mockují.
 - Veřejný ACME certifikát, DNS, firewall a production Google origin lze ověřit
   až na cílovém VPS; lokální Compose smoke je neprokazuje.
+- Nový publish workflow je lokálně strukturálně a kontejnerově ověřitelný, ale
+  za skutečně proběhlý v GitHub Actions jej lze označit až po následujícím
+  pushi a úspěšném běhu na GitHub runneru.
 - Lokální úložiště je vhodné pro jeden server, ne pro horizontální škálování.
 - Upload progress zobrazuje probíhající požadavek bez procent přenesených bajtů.
 - Extraction job queue a storage deletion worker jsou in-process; extraction

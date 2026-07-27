@@ -1,0 +1,6 @@
+services:
+  migrate:
+    command:
+      - node
+      - -e
+      - process.exit(42)

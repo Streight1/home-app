@@ -4,11 +4,15 @@ import { resolve } from 'node:path';
 import { defineConfig, mergeConfig } from 'vitest/config';
 import { createViteConfig } from './vite.config.js';
 
+const reportFile = process.env.VITEST_REPORT_FILE;
+
 export default defineConfig(({ mode }) =>
   mergeConfig(
-    createViteConfig(mode),
+    createViteConfig(mode, 'build'),
     defineConfig({
       test: {
+        reporters: reportFile ? ['default', 'junit'] : ['default'],
+        ...(reportFile ? { outputFile: { junit: reportFile } } : {}),
         projects: [
           {
             test: {

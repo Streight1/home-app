@@ -1,7 +1,7 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath } from 'node:url';
-import { defineConfig, loadEnv, type UserConfig } from 'vite';
+import { defineConfig, loadEnv, type ConfigEnv, type UserConfig } from 'vite';
 
 const workspaceRoot = fileURLToPath(new URL('../../', import.meta.url));
 
@@ -33,28 +33,45 @@ function isValidApiUrl(value: string): boolean {
   }
 }
 
-export function createViteConfig(mode: string): UserConfig {
-  const environment = loadEnv(mode, workspaceRoot, '');
-  const apiUrl = readRequired(environment, 'VITE_API_URL');
-  const googleClientId = readRequired(environment, 'VITE_GOOGLE_CLIENT_ID');
-  const csrfCookieName = readRequired(environment, 'CSRF_COOKIE_NAME');
-  if (!isValidApiUrl(apiUrl))
-    throw new Error(
-      'VITE_API_URL musí být same-origin cesta nebo HTTP(S) adresa.',
-    );
-  if (!/^[A-Za-z0-9_-]+$/.test(csrfCookieName))
-    throw new Error('CSRF_COOKIE_NAME obsahuje nepovolené znaky.');
+export function createViteConfig(
+  mode: string,
+  command: ConfigEnv['command'] = 'build',
+): UserConfig {
+  const development = command === 'serve';
+  const environment = development ? loadEnv(mode, workspaceRoot, '') : {};
+  const csrfCookieName = development
+    ? readRequired(environment, 'CSRF_COOKIE_NAME')
+    : undefined;
+  if (development) {
+    const apiUrl = readRequired(environment, 'VITE_API_URL');
+    readRequired(environment, 'VITE_GOOGLE_CLIENT_ID');
+    if (!isValidApiUrl(apiUrl))
+      throw new Error(
+        'VITE_API_URL musí být same-origin cesta nebo HTTP(S) adresa.',
+      );
+    if (!csrfCookieName || !/^[A-Za-z0-9_-]+$/.test(csrfCookieName))
+      throw new Error('CSRF_COOKIE_NAME obsahuje nepovolené znaky.');
+  }
 
   return {
     envDir: workspaceRoot,
     plugins: [react(), tailwindcss()],
-    define: {
-      'import.meta.env.VITE_CSRF_COOKIE_NAME': JSON.stringify(csrfCookieName),
-      'import.meta.env.VITE_GOOGLE_CLIENT_ID': JSON.stringify(googleClientId),
-    },
-    server: { port: readPort(environment.WEB_PORT), strictPort: true },
+    ...(development
+      ? {
+          define: {
+            'import.meta.env.VITE_CSRF_COOKIE_NAME':
+              JSON.stringify(csrfCookieName),
+          },
+          server: {
+            port: readPort(environment.WEB_PORT),
+            strictPort: true,
+          },
+        }
+      : {}),
     preview: { port: 4173, strictPort: true },
   };
 }
 
-export default defineConfig(({ mode }) => createViteConfig(mode));
+export default defineConfig(({ mode, command }) =>
+  createViteConfig(mode, command),
+);

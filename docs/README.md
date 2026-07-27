@@ -33,6 +33,8 @@ chování má vždy přednost před zastaralým textem; při rozporu dokument op
 ## Vývoj
 
 - [Codex workflow](development/codex-workflow.md) — povinný životní cyklus agentního úkolu.
+- [Continuous integration](development/continuous-integration.md) — čistý
+  runner, povinné joby, PostgreSQL/browser/container testy a GHCR publish.
 - [Coding standards](development/coding-standards.md) — TypeScript, moduly, pojmenování a velikost souborů.
 - [Testing](development/testing.md) — testovací vrstvy, mocky a bezpečnostní scénáře.
 - [Databázové migrace](development/database-migrations.md) — bezpečný vývoj a aplikace Prisma migrací.

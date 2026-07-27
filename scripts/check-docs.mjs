@@ -48,6 +48,7 @@ const requiredDocuments = [
   'docs/architecture/storage.md',
   'docs/architecture/deployment.md',
   'docs/development/codex-workflow.md',
+  'docs/development/continuous-integration.md',
   'docs/development/local-development.md',
   'docs/development/coding-standards.md',
   'docs/development/testing.md',

@@ -20,6 +20,8 @@
     "src/app/workspace-navigation/workspace-navigation.types.ts",
     "src/features/theme/lib/*.ts",
     "src/features/theme/providers/ThemeProvider.tsx",
-    "src/features/theme/types/*.ts"
+    "src/features/theme/types/*.ts",
+    "src/lib/config/runtime-config.types.ts",
+    "src/lib/config/test-runtime-config.ts"
   ]
 }

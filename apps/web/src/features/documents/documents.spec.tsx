@@ -33,6 +33,7 @@ import type {
   DocumentTypeDefinition,
   MetadataValue,
 } from './types/document.types.js';
+import { installTestPublicRuntimeConfig } from '../../lib/config/test-runtime-config.js';
 import { WorkspaceNavigationProvider } from '../../app/workspace-navigation/WorkspaceNavigationProvider.js';
 
 const documentFileFixture: NonNullable<DocumentItem['file']> = {
@@ -198,7 +199,6 @@ function mockDocumentApi({
 describe('documents frontend', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn());
-    vi.stubEnv('VITE_MAX_UPLOAD_BYTES', '26214400');
   });
 
   it('shows an empty state without demo documents', async () => {
@@ -380,7 +380,7 @@ describe('documents frontend', () => {
   });
 
   it('shows an error for a file above the configured limit', async () => {
-    vi.stubEnv('VITE_MAX_UPLOAD_BYTES', '5');
+    installTestPublicRuntimeConfig({ MAX_UPLOAD_BYTES: 5 });
     renderWithClient(
       <DocumentUploadForm submitting={false} onSubmit={() => undefined} />,
     );

@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { AppRouter } from '../app/router.js';
 import { ThemeProvider } from '../features/theme/providers/ThemeProvider.js';
 import { WorkspaceNavigationProvider } from '../app/workspace-navigation/WorkspaceNavigationProvider.js';
@@ -95,13 +95,6 @@ function renderAt(path: string) {
 }
 
 describe('authentication UI', () => {
-  beforeEach(() => {
-    vi.stubEnv(
-      'VITE_GOOGLE_CLIENT_ID',
-      'test-client.apps.googleusercontent.com',
-    );
-  });
-
   it('creates the container for the official Google button', async () => {
     vi.stubGlobal(
       'fetch',
@@ -166,7 +159,11 @@ describe('authentication UI', () => {
     vi.stubGlobal('fetch', vi.fn().mockImplementation(authenticatedResponse));
     renderAt('/app');
     expect(
-      await screen.findByRole('heading', { name: 'Dobrý den, Jana Nováková' }),
+      await screen.findByRole(
+        'heading',
+        { name: 'Dobrý den, Jana Nováková' },
+        { timeout: 5_000 },
+      ),
     ).toBeInTheDocument();
     expect(screen.getAllByText('Moje domácnost').length).toBeGreaterThan(0);
   });

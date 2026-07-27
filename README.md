@@ -124,6 +124,9 @@ pnpm storybook:test
 pnpm test:visual
 pnpm build
 pnpm deployment:check
+pnpm ci:check
+pnpm ci:browser
+pnpm ci:containers
 pnpm check
 ```
 
@@ -135,5 +138,6 @@ pnpm check
 - [Bezpečnostní zásady](SECURITY.md)
 - [Přispívání](CONTRIBUTING.md)
 - [Vývojový postup pro Codex](docs/development/codex-workflow.md)
+- [Continuous integration](docs/development/continuous-integration.md)
 - [Design systém](DESIGN.md)
 - [Changelog](CHANGELOG.md)

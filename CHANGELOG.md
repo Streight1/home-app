@@ -29,6 +29,15 @@ Významné změny projektu jsou evidovány v tomto souboru ve formátu inspirova
 
 ### Added
 
+- Reprodukovatelná CI/CD pipeline s pěti paralelními validačními joby,
+  PostgreSQL migration testem, připnutým pnpm setupem, browser instalací,
+  izolovaným container smokem a GHCR publish branou.
+- Centrální testovací public runtime config pro Vitest, Storybook a browser
+  scénáře bez root `.env`, `VITE_API_URL` nebo produkčního Google Client ID.
+- Lokální příkazy `ci:generate`, `ci:workflow`, `ci:check`, `ci:browser` a
+  `ci:containers`, bezpečné failure artifacts a GitHub job summaries.
+- Jediný registry manifest `deployment/images.json` a strukturální validace
+  shody Compose image, workflow tag policy, oprávnění a dependency jobů.
 - Aurora kalendářní tokeny pro osm barev, neutral/shared stavy a serverovou
   precedence explicitní event → jediný účastník → shared → neutral.
 - All-day `allDayStartDate`/`allDayEndDateExclusive`, volitelný
@@ -171,6 +180,11 @@ Významné změny projektu jsou evidovány v tomto souboru ve formátu inspirova
 
 ### Changed
 
+- Produkční web build je deployment-agnostický; Vite build/test už nevyžaduje
+  build-time veřejné hodnoty a gateway je doplní až při startu.
+- GHCR publish nyní na PR vůbec neběží, na `main` vytváří `staging` a SHA a
+  release `vX.Y.Z` navíc vytváří `X.Y` a `X`; `packages: write` má pouze
+  publish job po všech validačních branách.
 - CORS konfigurace nyní explicitně povoluje také `PUT` a `DELETE`; browserový
   preflight už neblokuje smazání task-linked kalendářové události ani další
   existující mutace a regresi hlídá HTTP i architektonický test.
