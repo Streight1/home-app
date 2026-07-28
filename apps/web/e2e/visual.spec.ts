@@ -1,4 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
+import baseline from './visual-baseline.json' with { type: 'json' };
+import {
+  assertCanonicalInterFont,
+  expectNoHorizontalOverflow,
+  fontMetrics,
+  openVisualStory as openStory,
+} from './storybook-test-helpers.js';
 
 const dashboardViewports = [
   {
@@ -32,25 +39,6 @@ const dashboardViewports = [
     story: 'screens-dashboardpage--empty-dark',
   },
 ] as const;
-
-async function openStory(page: Page, storyId: string): Promise<void> {
-  await page.clock.setFixedTime(new Date('2026-07-15T10:00:00+02:00'));
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.route('https://api.mapy.com/img/api/logo.svg', (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: 'image/svg+xml',
-      body: '<svg xmlns="http://www.w3.org/2000/svg" width="0" height="30"/>',
-    }),
-  );
-  await page.goto(`/iframe.html?id=${storyId}&viewMode=story`);
-  await page.locator('#storybook-root').waitFor();
-  await page.evaluate(async () => document.fonts.ready);
-  await page.addStyleTag({
-    content:
-      '*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}',
-  });
-}
 
 async function installLocationApiMock(page: Page): Promise<void> {
   await page.route('**/api/v1/**', async (route) => {
@@ -190,14 +178,16 @@ async function installTasksDashboardErrorMock(page: Page): Promise<void> {
   });
 }
 
-async function expectNoHorizontalOverflow(page: Page): Promise<void> {
-  const hasOverflow = await page.evaluate(
-    () =>
-      document.documentElement.scrollWidth >
-      document.documentElement.clientWidth,
-  );
-  expect(hasOverflow).toBe(false);
-}
+test('kanonický Inter font je načtený s referenční metrikou', async ({
+  page,
+}) => {
+  await openStory(page, 'foundations-typography--default');
+  const metrics = await assertCanonicalInterFont(page);
+  expect(metrics.fontLoaded).toBe(true);
+  expect(metrics.fontFamily).toBe(fontMetrics.family);
+  expect(metrics.width).toBe(baseline.font.expectedWidthPx);
+  expect(metrics.height).toBe(baseline.font.expectedHeightPx);
+});
 
 for (const viewport of dashboardViewports) {
   test(`prázdný dashboard · ${viewport.name}`, async ({ page }) => {

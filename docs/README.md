@@ -37,6 +37,8 @@ chování má vždy přednost před zastaralým textem; při rozporu dokument op
   runner, povinné joby, PostgreSQL/browser/container testy a GHCR publish.
 - [Coding standards](development/coding-standards.md) — TypeScript, moduly, pojmenování a velikost souborů.
 - [Testing](development/testing.md) — testovací vrstvy, mocky a bezpečnostní scénáře.
+- [Vizuální regrese](development/visual-regression.md) — kanonický Playwright
+  container, kontrolovaná aktualizace baseline a diagnostika diffů.
 - [Databázové migrace](development/database-migrations.md) — bezpečný vývoj a aplikace Prisma migrací.
 - [Pravidla dokumentace](development/documentation-rules.md) — zdroje pravdy a mapování změn na dokumenty.
 

@@ -1,11 +1,36 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
+import { openStory } from './storybook-test-helpers.js';
 
-async function openStory(page: Page, storyId: string): Promise<void> {
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto(`/iframe.html?id=${storyId}&viewMode=story`);
-  await page.locator('#storybook-root').waitFor();
-  await page.evaluate(async () => document.fonts.ready);
+function createAxeBuilder(page: Page): AxeBuilder {
+  return new AxeBuilder({ page }).withTags([
+    'wcag2a',
+    'wcag2aa',
+    'wcag21aa',
+    'wcag22aa',
+  ]);
+}
+
+async function analyzeAccessibility(page: Page) {
+  try {
+    return await createAxeBuilder(page).analyze();
+  } catch (error) {
+    if (
+      !(error instanceof Error) ||
+      !error.message.includes('Axe is already running')
+    ) {
+      throw error;
+    }
+    await page.waitForFunction(
+      () =>
+        !(
+          window as typeof window & {
+            axe?: { _running?: boolean };
+          }
+        ).axe?._running,
+    );
+    return createAxeBuilder(page).analyze();
+  }
 }
 
 for (const story of [
@@ -66,9 +91,7 @@ for (const story of [
   test(`axe WCAG 2.2 AA · ${story}`, async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await openStory(page, story);
-    const results = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
-      .analyze();
+    const results = await analyzeAccessibility(page);
     expect(results.violations).toEqual([]);
   });
 }

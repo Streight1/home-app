@@ -200,10 +200,17 @@ jobs:
           'Tests / Web'
           artifacts/web/vitest-junit.xml
 
-  browser-tests:
-    name: Tests / Browser
+  browser-accessibility-tests:
+    name: Tests / Browser accessibility
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 40
+    container:
+      image: mcr.microsoft.com/playwright:v1.61.1-noble@sha256:5b8f294aff9041b7191c34a4bab3ac270157a28774d4b0660e9743297b697e48
+      options: --init
+    env:
+      HOMEAPP_PLAYWRIGHT_SUITE: accessibility
+      HOMEAPP_VISUAL_CANONICAL: 'true'
+      HOMEAPP_VISUAL_CONTAINER_IMAGE: mcr.microsoft.com/playwright:v1.61.1-noble@sha256:5b8f294aff9041b7191c34a4bab3ac270157a28774d4b0660e9743297b697e48
     steps:
       - name: Check out repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -214,28 +221,28 @@ jobs:
       - name: Set up project
         uses: ./.github/actions/setup-project
 
-      - name: Install Chromium and system dependencies
-        run: pnpm --filter @life-admin/web exec playwright install --with-deps chromium
+      - name: Report canonical browser environment
+        run: node scripts/visual/verify-visual-environment.mjs --report
 
-      - name: Verify Playwright workspace installation
-        run: pnpm --filter @life-admin/web exec playwright --version
-
-      - name: Run Storybook, E2E, visual and accessibility browser tests
+      - name: Run Storybook browser tests
         env:
-          VITEST_REPORT_FILE: ${{ github.workspace }}/artifacts/browser/storybook-junit.xml
+          VITEST_REPORT_FILE: ${{ github.workspace }}/artifacts/browser-accessibility/storybook-junit.xml
         run: |
-          mkdir -p artifacts/browser
-          pnpm ci:browser
+          mkdir -p artifacts/browser-accessibility
+          pnpm storybook:test
 
-      - name: Upload browser diagnostics
+      - name: Run accessibility, keyboard and reflow tests
+        run: pnpm test:accessibility
+
+      - name: Upload accessibility diagnostics
         if: failure()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
-          name: browser-diagnostics-${{ github.run_id }}
+          name: browser-accessibility-diagnostics-${{ github.run_id }}
           path: |
-            artifacts/browser
-            apps/web/playwright-report
-            apps/web/test-results
+            artifacts/browser-accessibility
+            apps/web/playwright-report/accessibility
+            apps/web/test-results/accessibility/playwright-results.json
           if-no-files-found: ignore
           retention-days: 7
 
@@ -245,9 +252,57 @@ jobs:
           CI_JOB_STATUS: ${{ job.status }}
         run: >-
           node scripts/ci/write-job-summary.mjs
-          'Tests / Browser'
-          artifacts/browser/storybook-junit.xml
-          apps/web/test-results/playwright-results.json
+          'Tests / Browser accessibility'
+          artifacts/browser-accessibility/storybook-junit.xml
+          apps/web/test-results/accessibility/playwright-results.json
+
+  browser-visual-tests:
+    name: Tests / Browser visual
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    container:
+      image: mcr.microsoft.com/playwright:v1.61.1-noble@sha256:5b8f294aff9041b7191c34a4bab3ac270157a28774d4b0660e9743297b697e48
+      options: --init
+    env:
+      HOMEAPP_PLAYWRIGHT_SUITE: visual
+      HOMEAPP_VISUAL_CANONICAL: 'true'
+      HOMEAPP_VISUAL_CONTAINER_IMAGE: mcr.microsoft.com/playwright:v1.61.1-noble@sha256:5b8f294aff9041b7191c34a4bab3ac270157a28774d4b0660e9743297b697e48
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Start job timer
+        run: printf 'HOMEAPP_CI_STARTED_AT=%s\n' "$(date +%s)" >> "${GITHUB_ENV}"
+
+      - name: Set up project
+        uses: ./.github/actions/setup-project
+
+      - name: Report and validate canonical visual environment
+        run: node scripts/visual/verify-visual-environment.mjs --report
+
+      - name: Compare visual baselines
+        run: pnpm --filter @life-admin/web test:visual:canonical
+
+      - name: Upload visual diagnostics
+        if: failure()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: browser-visual-diagnostics-${{ github.run_id }}
+          path: |
+            apps/web/e2e/visual-baseline.json
+            apps/web/playwright-report/visual
+            apps/web/test-results/visual/playwright-results.json
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Write job summary
+        if: always()
+        env:
+          CI_JOB_STATUS: ${{ job.status }}
+        run: >-
+          node scripts/ci/write-job-summary.mjs
+          'Tests / Browser visual'
+          apps/web/test-results/visual/playwright-results.json
 
   container-validation:
     name: Containers / Validation
@@ -294,7 +349,8 @@ jobs:
       - quality-static
       - api-tests
       - web-tests
-      - browser-tests
+      - browser-accessibility-tests
+      - browser-visual-tests
       - container-validation
     runs-on: ubuntu-latest
     timeout-minutes: 45

@@ -47,6 +47,10 @@ const [
   storybookMainSource,
   testRuntimeConfigSource,
   storybookPreviewSource,
+  baselineMetadataSource,
+  visualRunnerSource,
+  visualHelperSource,
+  rootPackageSource,
   webPackageSource,
 ] = await Promise.all([
   read(workflowPath),
@@ -62,16 +66,22 @@ const [
   read('apps/web/.storybook/main.ts'),
   read('apps/web/src/lib/config/test-runtime-config.ts'),
   read('apps/web/.storybook/preview.tsx'),
+  read('apps/web/e2e/visual-baseline.json'),
+  read('scripts/visual/run-in-container.sh'),
+  read('apps/web/e2e/storybook-test-helpers.ts'),
+  read('package.json'),
   read('apps/web/package.json'),
 ]);
 
 let workflow;
 let setupAction;
 let images;
+let baselineMetadata;
 try {
   workflow = parse(workflowSource);
   setupAction = parse(actionSource);
   images = JSON.parse(imagesSource);
+  baselineMetadata = JSON.parse(baselineMetadataSource);
 } catch (error) {
   errors.push(`CI YAML/JSON nelze bezpečně načíst: ${error.message}`);
 }
@@ -83,13 +93,14 @@ for (const [path, source] of [
   requireCondition(!source.includes('\t'), `${path} obsahuje tabulátor.`);
 }
 
-if (workflow && setupAction && images) {
+if (workflow && setupAction && images && baselineMetadata) {
   const jobs = workflow.jobs ?? {};
   const requiredJobs = [
     ['quality-static', 'Quality / Static checks'],
     ['api-tests', 'Tests / API'],
     ['web-tests', 'Tests / Web'],
-    ['browser-tests', 'Tests / Browser'],
+    ['browser-accessibility-tests', 'Tests / Browser accessibility'],
+    ['browser-visual-tests', 'Tests / Browser visual'],
     ['container-validation', 'Containers / Validation'],
   ];
   const requiredNeeds = requiredJobs.map(([jobId]) => jobId);
@@ -107,7 +118,7 @@ if (workflow && setupAction && images) {
   requireCondition(
     JSON.stringify(asArray(publish?.needs).sort()) ===
       JSON.stringify([...requiredNeeds].sort()),
-    'Publish musí záviset na všech pěti validačních jobech.',
+    'Publish musí záviset na všech šesti validačních jobech.',
   );
   const publishCondition = String(publish?.if ?? '');
   requireCondition(
@@ -209,17 +220,47 @@ if (workflow && setupAction && images) {
     Boolean(jobs['api-tests']?.services?.postgres),
     'API test job musí používat izolovaný PostgreSQL service container.',
   );
-  const browserCommands = (jobs['browser-tests']?.steps ?? [])
+  const browserJobIds = ['browser-accessibility-tests', 'browser-visual-tests'];
+  for (const jobId of browserJobIds) {
+    const browserJob = jobs[jobId];
+    const browserCommands = (browserJob?.steps ?? [])
+      .map((step) => step.run ?? '')
+      .join('\n');
+    requireCondition(
+      browserJob?.container?.image === baselineMetadata.containerImage,
+      `Job ${jobId} musí používat kanonický Playwright image z baseline metadata.`,
+    );
+    requireCondition(
+      browserCommands.includes(
+        'node scripts/visual/verify-visual-environment.mjs --report',
+      ) && !browserCommands.includes('playwright install'),
+      `Job ${jobId} musí ověřit hotový kanonický image bez další instalace browseru.`,
+    );
+    requireCondition(
+      browserJob?.env?.HOMEAPP_VISUAL_CANONICAL === 'true' &&
+        browserJob?.env?.HOMEAPP_VISUAL_CONTAINER_IMAGE ===
+          baselineMetadata.containerImage,
+      `Job ${jobId} musí runtime validatoru předat přesnou image reference.`,
+    );
+  }
+  const accessibilityCommands = (
+    jobs['browser-accessibility-tests']?.steps ?? []
+  )
+    .map((step) => step.run ?? '')
+    .join('\n');
+  const visualCommands = (jobs['browser-visual-tests']?.steps ?? [])
     .map((step) => step.run ?? '')
     .join('\n');
   requireCondition(
-    browserCommands.includes(
-      'pnpm --filter @life-admin/web exec playwright install --with-deps chromium',
-    ) &&
-      browserCommands.includes(
-        'pnpm --filter @life-admin/web exec playwright --version',
-      ),
-    'Browser job musí instalovat a ověřit Playwright ze správného workspace.',
+    accessibilityCommands.includes('pnpm storybook:test') &&
+      accessibilityCommands.includes('pnpm test:accessibility'),
+    'Accessibility job musí zachovat Storybook i povinné accessibility testy.',
+  );
+  requireCondition(
+    visualCommands.includes(
+      'pnpm --filter @life-admin/web test:visual:canonical',
+    ),
+    'Visual job musí porovnávat baseline přímo uvnitř kanonického containeru.',
   );
 
   requireCondition(
@@ -301,11 +342,47 @@ if (workflow && setupAction && images) {
       Object.keys(workflow.env).length === 3,
     'Globální CI prostředí smí obsahovat pouze CI, TZ a dostupný LANG=C.UTF-8.',
   );
+  for (const jobId of browserJobIds) {
+    requireCondition(
+      !/CSRF_COOKIE_NAME|CSRF_HEADER_NAME|VITE_API_URL|PUBLIC_API_URL/.test(
+        JSON.stringify(jobs[jobId]?.env ?? {}),
+      ),
+      `Job ${jobId} nesmí dostávat aplikační nebo produkční konfiguraci přes env.`,
+    );
+  }
   requireCondition(
-    !/CSRF_COOKIE_NAME|CSRF_HEADER_NAME|VITE_API_URL|PUBLIC_API_URL/.test(
-      JSON.stringify(jobs['browser-tests']?.env ?? {}),
-    ),
-    'Browser job nesmí dostávat aplikační nebo produkční konfiguraci přes env.',
+    !workflowSource.includes('--update-snapshots'),
+    'CI nesmí automaticky přepisovat visual baseline.',
+  );
+  requireCondition(
+    !workflowSource.includes('apps/web/test-results\n') &&
+      workflowSource.includes('apps/web/playwright-report/visual'),
+    'Visual failure artifact má obsahovat jeden HTML report bez duplicitní kopie všech test-results.',
+  );
+  const rootPackage = JSON.parse(rootPackageSource);
+  requireCondition(
+    rootPackage.scripts?.['visual:update:container']?.includes(
+      'scripts/visual/run-in-container.sh update',
+    ) &&
+      rootPackage.scripts?.['visual:check:container']?.includes(
+        'scripts/visual/run-in-container.sh check',
+      ) &&
+      !rootPackage.scripts?.['test:visual']?.includes('--update-snapshots') &&
+      rootPackage.scripts?.['test:e2e'] ===
+        'pnpm test:accessibility && pnpm visual:check:container',
+    'Baseline lze kontrolovaně měnit pouze explicitním container update příkazem.',
+  );
+  requireCondition(
+    visualRunnerSource.includes('HOMEAPP_VISUAL_CANONICAL') &&
+      visualRunnerSource.includes('--update-snapshots') &&
+      visualRunnerSource.includes('git -C "$repo_root" status'),
+    'Visual runner musí vynutit kanonický container a kontrolu dirty tree před update.',
+  );
+  requireCondition(
+    visualHelperSource.includes('document.fonts.ready') &&
+      visualHelperSource.includes('fontMetrics') &&
+      visualHelperSource.includes('requestAnimationFrame'),
+    'Browser helper musí čekat na fonty a deterministické layout frames.',
   );
   requireCondition(
     !/\|\|\s*true|continue-on-error:\s*true/.test(workflowSource),

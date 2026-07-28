@@ -33,8 +33,8 @@ volitelný Mapy provider. Gateway explicitně odmítá `/internal/*` a `/uploads
 ## Registry image a CI
 
 GitHub Actions workflow `.github/workflows/publish-containers.yml` rozdělí
-čistý runner na statické, API, web, browser a container validační joby. Teprve
-po úspěchu všech pěti sestaví a publikuje:
+čistý runner na statické, API, web, browser accessibility, browser visual
+a container validační joby. Teprve po úspěchu všech šesti sestaví a publikuje:
 
 - `ghcr.io/streight1/home-app-api`;
 - `ghcr.io/streight1/home-app-web`.

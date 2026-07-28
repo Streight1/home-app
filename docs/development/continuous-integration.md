@@ -9,15 +9,16 @@ Syntetické CI hodnoty nejsou provozní tajemství.
 
 ## Stabilní joby
 
-Workflow má pět povinných validačních jobů a jeden podmíněný publish job:
+Workflow má šest povinných validačních jobů a jeden podmíněný publish job:
 
-| Required check            | Odpovědnost                                                              |
-| ------------------------- | ------------------------------------------------------------------------ |
-| `Quality / Static checks` | workflow, architektura, env, deployment, docs, lint, typy a formát       |
-| `Tests / API`             | Prisma validace/generate, migrace od prázdné PostgreSQL a API test/build |
-| `Tests / Web`             | unit/component testy, generický runtime-config build a Storybook build   |
-| `Tests / Browser`         | Storybook browser, E2E, vizuální a accessibility testy v Chromium        |
-| `Containers / Validation` | build obou image a izolovaný Compose smoke                               |
+| Required check                  | Odpovědnost                                                              |
+| ------------------------------- | ------------------------------------------------------------------------ |
+| `Quality / Static checks`       | workflow, architektura, env, deployment, docs, lint, typy a formát       |
+| `Tests / API`                   | Prisma validace/generate, migrace od prázdné PostgreSQL a API test/build |
+| `Tests / Web`                   | unit/component testy, generický runtime-config build a Storybook build   |
+| `Tests / Browser accessibility` | Storybook, axe, klávesnice, reflow, touch target a reduced motion        |
+| `Tests / Browser visual`        | kanonické screenshot baseline v připnutém Playwright containeru          |
+| `Containers / Validation`       | build obou image a izolovaný Compose smoke                               |
 
 Tyto názvy jsou doporučené required checks v branch protection. `Publish`
 required checkem pro pull request není, protože se tam záměrně nespouští.
@@ -25,7 +26,7 @@ Validační joby běží paralelně a mají jen `contents: read`.
 
 ## Spouštěcí a publikační pravidla
 
-- Pull request do `main` spustí všech pět validací a nic nepublikuje.
+- Pull request do `main` spustí všech šest validací a nic nepublikuje.
 - Push do `main` po úspěchu všech validací publikuje `staging` a celý commit
   SHA.
 - Git tag `vX.Y.Z` po validaci publikuje `vX.Y.Z`, `X.Y`, `X` a celý commit
@@ -91,29 +92,31 @@ syntetického CI Google Client ID v browser bundlu.
 
 ## Browser testy
 
-Playwright je deklarovaný ve workspace `@life-admin/web`. Browser job proto
-explicitně provádí:
+Playwright je deklarovaný ve workspace `@life-admin/web`. Accessibility
+a visual sada jsou dva samostatné povinné joby v oficiálním image
+`mcr.microsoft.com/playwright:v1.61.1-noble`, připnutém digestem z baseline
+metadata. Image již obsahuje Chromium revision 1228 (149.0.7827.55), proto
+job nespouští další `playwright install`.
 
-```bash
-pnpm --filter @life-admin/web exec playwright install --with-deps chromium
-pnpm --filter @life-admin/web exec playwright --version
-pnpm ci:browser
-```
-
-`ci:browser` spustí Storybook test projekt a společnou Playwright sadu včetně
-vizuálních a accessibility scénářů. Storybook test plugin si skládá stories
-přímo přes Vitest/Vite; samostatný statický HTTP server nepotřebuje. Playwright
-E2E používá vlastní deklarovaný Storybook `webServer`, čeká na `/index.json` a
-v CI nikdy nespoléhá na dříve spuštěný server. Obě cesty používají shared Vite
-config a stejnou runtime fixture. CI baseline screenshoty nikdy neaktualizuje.
-Lokální reuse existujícího Storybooku je pouze explicitní optimalizace přes
-`PLAYWRIGHT_REUSE_STORYBOOK=true`; výchozí test vlastní start i ukončení
-serveru, aby nepřevzal právě dobíhající proces předchozího běhu.
+`ci:browser` spustí Storybook test projekt, accessibility sadu a kanonickou
+kontejnerovou visual kontrolu. Storybook test plugin si skládá stories přímo
+přes Vitest/Vite; samostatný statický HTTP server nepotřebuje. Playwright
+používá vlastní deklarovaný Storybook `webServer`, čeká na `/index.json`
+a v CI nikdy nespoléhá na dříve spuštěný server. Obě cesty používají shared
+Vite config a stejnou runtime fixture. CI baseline screenshoty nikdy
+neaktualizuje. Lokální reuse existujícího Storybooku je pouze explicitní
+optimalizace přes `PLAYWRIGHT_REUSE_STORYBOOK=true`; výchozí test vlastní
+start i ukončení serveru.
 
 Runner používá dostupný systémový locale `LANG=C.UTF-8`. České formátování se
 testuje explicitně browserovým `locale: cs-CZ`; systémový shell locale a
 JavaScript `Intl` locale jsou dvě odlišné vrstvy. Tím nevzniká varování kvůli
 nenainstalovanému `cs_CZ.UTF-8`.
+
+Visual validator ještě před screenshoty porovná package, Chromium, Ubuntu,
+image digest, lokální Inter, browser locale, timezone a DPR s
+`apps/web/e2e/visual-baseline.json`. Kontrolované vytváření a review PNG
+popisuje [dokumentace vizuálních regresí](visual-regression.md).
 
 ## Container validation
 
@@ -138,9 +141,11 @@ Test po sobě maže pouze volumes s vlastním CI prefixem.
 ## Artefakty a diagnostika
 
 Při selhání se na sedm dnů ukládají pouze relevantní reporty: Vitest JUnit,
-Prisma migration log se syntetickými údaji, Playwright report/traces/screenshots
-a sanitizovaný Compose stav/log. Neukládá se `.env`, secret soubor, databázový
-dump, cookie ani token. Každý job zapisuje stav a dostupný počet testů do
+Prisma migration log se syntetickými údaji, oddělený accessibility report,
+visual HTML report s `expected`/`actual`/`diff` a trace prvního retry
+a sanitizovaný Compose stav/log. Raw `test-results` se vedle HTML reportu
+neuploadují podruhé. Neukládá se `.env`, secret soubor, databázový dump, cookie
+ani token. Každý job zapisuje stav a dostupný počet testů do
 `GITHUB_STEP_SUMMARY`; publish vypíše přesné image reference.
 
 Neúspěch diagnostikuj od prvního červeného required checku. U browser testu
@@ -159,6 +164,7 @@ pnpm ci:containers
 ```
 
 `ci:check` simuluje generate, statické kontroly, unit testy a buildy.
-`ci:browser` vyžaduje lokálně nainstalované Chromium. `ci:containers` vyžaduje
-Docker a používá jen izolované CI volumes. Úplná vývojová brána `pnpm check`
-navíc zahrnuje samostatné vizuální a accessibility příkazy.
+`ci:browser` používá Docker pro visual část, takže hostitelský browser neurčuje
+baseline. `ci:containers` vyžaduje Docker a používá jen izolované CI volumes.
+Úplná vývojová brána `pnpm check` zahrnuje stejnou kanonickou visual kontrolu
+i samostatné accessibility testy.

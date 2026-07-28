@@ -122,6 +122,8 @@ pnpm test
 pnpm storybook
 pnpm storybook:test
 pnpm test:visual
+pnpm visual:check:container
+pnpm visual:update:container
 pnpm build
 pnpm deployment:check
 pnpm ci:check
@@ -139,5 +141,6 @@ pnpm check
 - [Přispívání](CONTRIBUTING.md)
 - [Vývojový postup pro Codex](docs/development/codex-workflow.md)
 - [Continuous integration](docs/development/continuous-integration.md)
+- [Vizuální regrese](docs/development/visual-regression.md)
 - [Design systém](DESIGN.md)
 - [Changelog](CHANGELOG.md)

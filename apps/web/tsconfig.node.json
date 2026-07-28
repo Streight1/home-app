@@ -20,6 +20,7 @@
     ".storybook/**/*.ts",
     ".storybook/**/*.tsx",
     "e2e/**/*.ts",
+    "e2e/**/*.json",
     "src/app/workspace-navigation/workspace-navigation.context.ts",
     "src/app/workspace-navigation/workspace-navigation.types.ts",
     "src/features/theme/lib/*.ts",

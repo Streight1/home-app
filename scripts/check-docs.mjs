@@ -52,6 +52,7 @@ const requiredDocuments = [
   'docs/development/local-development.md',
   'docs/development/coding-standards.md',
   'docs/development/testing.md',
+  'docs/development/visual-regression.md',
   'docs/development/database-migrations.md',
   'docs/development/documentation-rules.md',
   'docs/features/README.md',

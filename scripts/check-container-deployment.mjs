@@ -289,12 +289,12 @@ requirePattern(
 );
 requirePattern(
   workflow,
-  /quality-static:[\s\S]*api-tests:[\s\S]*web-tests:[\s\S]*browser-tests:[\s\S]*container-validation:/,
-  'Workflow musí před publikací oddělit statické, API, web, browser a container kontroly.',
+  /quality-static:[\s\S]*api-tests:[\s\S]*web-tests:[\s\S]*browser-accessibility-tests:[\s\S]*browser-visual-tests:[\s\S]*container-validation:/,
+  'Workflow musí před publikací oddělit statické, API, web, browser accessibility, browser visual a container kontroly.',
 );
 requirePattern(
   workflow,
-  /needs:[\s\S]*quality-static[\s\S]*api-tests[\s\S]*web-tests[\s\S]*browser-tests[\s\S]*container-validation/,
+  /needs:[\s\S]*quality-static[\s\S]*api-tests[\s\S]*web-tests[\s\S]*browser-accessibility-tests[\s\S]*browser-visual-tests[\s\S]*container-validation/,
   'Publish musí čekat na všechny validační joby.',
 );
 requirePattern(

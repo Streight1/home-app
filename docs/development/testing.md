@@ -114,19 +114,26 @@ Storybook project i skutečný Storybook server instalují stejnou
 
 ### Vizuální testy
 
-`pnpm test:visual` porovnává 89 deterministických PNG baseline. Povinné
-kombinace dashboardu jsou 390×844 dark, 390×844 light, 768×1024 dark,
-1280×800 light a 1440×900 dark.
+`pnpm test:visual` spouští v připnutém Playwright containeru 90 testů:
+referenční metriku lokálního Inter fontu a 89 vizuálních scénářů se
+91 screenshot baseline. Povinné kombinace dashboardu jsou 390×844 dark,
+390×844 light, 768×1024 dark, 1280×800 light a 1440×900 dark.
 
 Další scénáře pokrývají login dark/light na telefonu a desktopu, fixture
 dashboard, Úkoly, kalendář včetně desktopového týdne, barevný výběrový režim,
 all-day a custom-origin formulář, bulk edit/delete, event create dialog,
 otevřené user menu, mobilní Více, ThemeSelector, dialog a sheet.
-Stabilizují se fonty, locale, timezone, motion a caret. Storybook authenticated
-dashboard je deterministický UI mock, nikoli důkaz reálného Google loginu.
-GitHub runner používá `LANG=C.UTF-8`; Playwright nastavuje JavaScript/browser
-locale explicitně na `cs-CZ`, takže české formátování nezávisí na
-nenainstalovaném systémovém locale.
+Stabilizují se lokální fonty, pevný čas, locale, timezone, DPR, motion, caret
+a dva layout frames. Inter reference musí mít v kanonickém Chromium metriku
+248 × 24 CSS px; fallback font test zastaví. Storybook authenticated dashboard
+je deterministický UI mock, nikoli důkaz reálného Google loginu. GitHub runner
+používá `LANG=C.UTF-8`; Playwright nastavuje JavaScript/browser locale
+explicitně na `cs-CZ`, takže české formátování nezávisí na nenainstalovaném
+systémovém locale.
+
+Baseline se nikdy nepřepisují hostitelským browserem ani automaticky v CI.
+Použij `pnpm visual:check:container`; vědomý update a checklist review jsou
+v [dokumentaci vizuálních regresí](visual-regression.md).
 
 ### Accessibility testy
 
@@ -164,6 +171,9 @@ pnpm storybook:build
 pnpm test:e2e
 pnpm test:visual
 pnpm test:accessibility
+pnpm visual:verify
+pnpm visual:check:container
+pnpm visual:update:container
 pnpm ci:generate
 pnpm ci:workflow
 pnpm ci:check
@@ -172,11 +182,12 @@ pnpm ci:containers
 pnpm check
 ```
 
-`pnpm test:e2e` spouští společně všechny Playwright vizuální a accessibility
-scénáře. Jemnější příkazy zůstávají dostupné pro cílenou diagnostiku.
-Playwright startuje vlastní Storybook `webServer`, čeká na jeho `/index.json`
-a při `CI=true` nepoužije existující proces. Lokálně smí již běžící Storybook
-znovu použít pouze jako explicitní optimalizaci s
+`pnpm test:e2e` spouští accessibility scénáře a vizuální scénáře v kanonickém
+Playwright containeru. Tím se linuxové baseline nikdy neporovnávají
+hostitelským browserem. Jemnější příkazy zůstávají dostupné pro cílenou
+diagnostiku. Playwright startuje vlastní Storybook `webServer`, čeká na jeho
+`/index.json` a při `CI=true` nepoužije existující proces. Lokálně smí již
+běžící Storybook znovu použít pouze jako explicitní optimalizaci s
 `PLAYWRIGHT_REUSE_STORYBOOK=true`; výchozí běh server vždy vlastní.
 
 `pnpm check` kombinuje architekturu, environment, dokumentaci, lint, strict
@@ -188,7 +199,8 @@ GitHub Actions používají kvůli čitelným logům granulární joby místo je
 `pnpm check`. Společný setup nejprve instaluje locked dependencies a teprve
 potom generuje Prisma Client. Webové testy používají centrální veřejnou test
 runtime fixture a fungují bez `.env` a `VITE_API_URL`. API job ověřuje migrace
-od prázdného PostgreSQL service containeru. Browser job instaluje Chromium ze
-workspace `@life-admin/web`; container job používá výhradně náhodně pojmenované
-CI volumes. Celá topologie a diagnostika je v
+od prázdného PostgreSQL service containeru. Browser accessibility a visual
+joby používají stejný připnutý Playwright image s hotovým Chromiumem; container
+job používá výhradně náhodně pojmenované CI volumes. Celá topologie
+a diagnostika je v
 [CI dokumentaci](continuous-integration.md).

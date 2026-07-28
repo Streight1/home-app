@@ -35,16 +35,18 @@ Sdílený roční Bucket list je samostatný modul pro společná přání, víc
 účastníků, cílové datum a místo, dokumentové vazby, dokončovací historii,
 progress, dashboard a explicitní rollover do dalšího roku.
 Projekt má také plně kontejnerový single-VPS staging. Reprodukovatelná CI
-odděluje statické, API, web, browser a container joby, ověřuje migraci od
-prázdné PostgreSQL, runtime config bez `.env`, browser regresní sadu a
-izolovaný Compose stack včetně opakovaného startu a selhání migrace. Teprve
-potom připravuje verzované API a gateway image pro GHCR; deployment používá
-named volumes, one-shot inicializaci oprávnění a automatickou `migrate deploy`
-bránu.
+odděluje statické, API, web, browser accessibility, browser visual a container
+joby, ověřuje migraci od prázdné PostgreSQL, runtime config bez `.env`,
+kanonickou browser regresní sadu a izolovaný Compose stack včetně opakovaného
+startu a selhání migrace. Teprve potom připravuje verzované API a gateway image
+pro GHCR; deployment používá named volumes, one-shot inicializaci oprávnění
+a automatickou `migrate deploy` bránu.
 Generický Vite build, Vitest a Storybook používají environment-independent
 shared config. Pouze explicitní aplikační dev server načítá kořenový `.env`;
 Playwright Storybook webServer proto funguje i v čistém CI runneru a používá
-stejnou syntetickou runtime fixture jako ostatní webové testy.
+stejnou syntetickou runtime fixture jako ostatní webové testy. Screenshoty
+vznikají jen v digestem připnutém Playwright 1.61.1/Noble image s ověřeným
+Chromiumem a lokálním Inter fontem.
 Veřejná konfigurace webu vzniká až při startu gateway a tajemství lze předat
 přes Compose secret soubory. Běžný start i staging aktualizace používají
 `docker compose up -d`; záloha, obnova a nedestruktivní převod starých bind
@@ -241,8 +243,8 @@ GitHub Actions a Google production login vyžadují cílové externí prostřed�
   konfigurovaným limitem omezený soubor a není streamovaný pro neomezené vstupy.
 - Interní health používá sdílený statický token; rotaci musí řešit provozní
   konfigurace.
-- Vizuální baselines jsou vytvořené pro připnutý Playwright Chromium na tomto
-  Linux prostředí; cross-browser nebo cloudové vizuální porovnání není zapojené.
+- Vizuální baselines jsou vytvořené v připnutém Playwright/Noble containeru;
+  cross-browser ani cloudové vizuální porovnání není zapojené.
 - Mutable `staging` image usnadňuje aktualizaci, ale pro reprodukovatelný
   release je nutné použít release nebo commit-SHA tag; image rollback není
   databázový rollback.
@@ -256,15 +258,17 @@ GitHub Actions a Google production login vyžadují cílové externí prostřed�
 - `pnpm env:check` a `pnpm architecture:check` — prošly pro 266 produkčních
   TSX souborů, 46 centralizovaných environment proměnných a produkční
   i registry deployment kontrakt.
-- `pnpm docs:check` — 0 lint chyb, 63 Markdown a 61 povinných dokumentů.
+- `pnpm docs:check` — 0 lint chyb, 64 Markdown a 62 povinných dokumentů.
 - `pnpm lint` — prošlo bez varování; `pnpm typecheck` prošlo pro API i web.
 - `pnpm test` — API 372/372 a web 198/198 testů prošlo včetně čtyř
   konfiguračních boundary regresí.
 - `pnpm storybook:test` — 81/81 Chromium story testů prošlo.
 - `pnpm build` — NestJS i Vite build prošly; `pnpm storybook:build` prošel.
-- `pnpm test:visual` — 89/89 baseline screenshot testů prošlo včetně ročního
-  Bucket listu a jeho dashboardu na mobilu, tabletu a desktopu i finančního
-  ledgeru, CSV importního review, kategorií a trendu v light/dark režimu,
+- `pnpm test:visual` — dva po sobě jdoucí kanonické běhy prošly 90/90
+  (fontová metrika + 89 scénářů a 91 PNG baseline) se shodným souhrnným hashem;
+  sada pokrývá roční Bucket list a jeho dashboard na mobilu, tabletu
+  a desktopu i finanční ledger, CSV importní review, kategorie a trend
+  v light/dark režimu,
   rozpočtových stavů, dialogu, zjištění, opakovaných plateb a dashboard widgetu,
   výdajového formuláře na mobilu, tabletu a desktopu, přesné
   768px geometrie 720minutové směny, shodné výšky surface a click targetu,
@@ -274,12 +278,12 @@ GitHub Actions a Google production login vyžadují cílové externí prostřed�
   all-day/custom-origin formuláře, bulk dialogů a dashboardového error/empty
   rozlišení na 390, 768, 1280 a 1440 px v light/dark režimu.
 - `pnpm test:accessibility` — 63/63 axe, keyboard date-picker, focus, reflow,
-  touch-target a reduced-motion testů prošlo; společný `pnpm test:e2e` prošel
-  152/152 Playwright scénářů.
+  touch-target a reduced-motion testů prošlo; browser sada má celkem 153
+  Playwright scénářů včetně kanonického fontového kontraktu.
 - `pnpm format:check` a celý `pnpm check` prošly.
 - Storybook dev i Playwright webServer nastartovaly s `CI=true`,
-  `LANG=C.UTF-8` a bez aplikačních env hodnot; přesný clean-env Playwright běh
-  prošel 152/152 a `pnpm ci:browser` 81/81 + 152/152 testů.
+  `LANG=C.UTF-8` a bez aplikačních env hodnot; `pnpm ci:browser` prošel
+  81/81 Storybook, 63/63 accessibility a 90/90 visual testů.
 - Produkční gateway Docker image se sestavil bez root `.env`; generický Vite
   build prošel kontrolou runtime-config scriptu, secret názvů a nepřítomnosti
   syntetického testovacího Google Client ID.

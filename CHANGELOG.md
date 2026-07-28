@@ -7,6 +7,9 @@ Významné změny projektu jsou evidovány v tomto souboru ve formátu inspirova
 
 ### Fixed
 
+- Vizuální baseline už nejsou závislé na Fedora/Ubuntu rasterizačním rozdílu:
+  82 dotčených PNG bylo vědomě zkontrolováno a přegenerováno ve verzovaném
+  Playwright 1.61.1/Noble prostředí bez uvolnění pixelové tolerance.
 - Storybook a Playwright webServer už nenačítají aplikační Vite dev konfiguraci
   ani kořenový `.env`; shared/build/test config je oddělený od explicitně
   validovaného lokálního dev serveru a browser CI používá dostupný
@@ -33,8 +36,14 @@ Významné změny projektu jsou evidovány v tomto souboru ve formátu inspirova
 
 ### Added
 
-- Reprodukovatelná CI/CD pipeline s pěti paralelními validačními joby,
-  PostgreSQL migration testem, připnutým pnpm setupem, browser instalací,
+- Kanonický digestovaný Playwright container, strojová baseline metadata,
+  kontrola Chromium/fontů/locale/timezone/DPR a lokální
+  `visual:check:container`/`visual:update:container` workflow.
+- Oddělené povinné `Tests / Browser accessibility` a
+  `Tests / Browser visual` joby s menším failure artifactem a nezměněnou GHCR
+  publish branou.
+- Reprodukovatelná CI/CD pipeline se šesti paralelními validačními joby,
+  PostgreSQL migration testem, připnutým pnpm setupem, browser prostředím,
   izolovaným container smokem a GHCR publish branou.
 - Centrální testovací public runtime config pro Vitest, Storybook a browser
   scénáře bez root `.env`, `VITE_API_URL` nebo produkčního Google Client ID.

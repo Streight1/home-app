@@ -11,15 +11,16 @@ ghcr.io/streight1/home-app-web
 ```
 
 Workflow je v `.github/workflows/publish-containers.yml`. Nejdříve paralelně
-provede statické, API, web, browser a container kontroly. Image publikuje až
-potom. Používá pouze `GITHUB_TOKEN`; validační joby mají `contents: read` a
-jen publish job `packages: write`. Docker build nedostává produkční secrets.
-Browser job spouští Storybook a Playwright nad environment-independent Vite
-konfigurací s `LANG=C.UTF-8`; neobsahuje aplikační CSRF, API ani Vite hodnoty.
+provede statické, API, web, browser accessibility, browser visual a container
+kontroly. Image publikuje až potom. Používá pouze `GITHUB_TOKEN`; validační
+joby mají `contents: read` a jen publish job `packages: write`. Docker build
+nedostává produkční secrets. Browser joby běží v připnutém Playwright
+1.61.1/Noble image nad environment-independent Vite konfigurací
+s `LANG=C.UTF-8`; neobsahují aplikační CSRF, API ani Vite hodnoty.
 
 ## Události a tagy
 
-- Pull request: všech pět validačních jobů, žádný publish.
+- Pull request: všech šest validačních jobů, žádný publish.
 - Push do `main`: `staging` a celý commit SHA.
 - Release tag `vX.Y.Z`: `vX.Y.Z`, `X.Y`, `X` a celý commit SHA.
 - `workflow_dispatch`: validace a celý commit SHA.
@@ -64,10 +65,13 @@ V repository Actions otevři první selhaný required check:
 1. `Quality / Static checks`;
 2. `Tests / API`;
 3. `Tests / Web`;
-4. `Tests / Browser`;
-5. `Containers / Validation`.
+4. `Tests / Browser accessibility`;
+5. `Tests / Browser visual`;
+6. `Containers / Validation`.
 
 Relevantní artifact vzniká pouze při chybě a má sedmidenní retention. Publish
 se při selhání či zrušení libovolného required jobu přes `needs` vůbec
 nespustí. Podrobnosti jsou v
-[CI dokumentaci](../development/continuous-integration.md).
+[CI dokumentaci](../development/continuous-integration.md). Screenshot diffy
+se schvalují pouze postupem z
+[visual regression dokumentace](../development/visual-regression.md).

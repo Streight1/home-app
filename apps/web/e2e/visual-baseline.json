@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "snapshotCount": 91,
+  "playwrightVersion": "1.61.1",
+  "chromiumRevision": "1228",
+  "chromiumVersion": "149.0.7827.55",
+  "containerImage": "mcr.microsoft.com/playwright:v1.61.1-noble@sha256:5b8f294aff9041b7191c34a4bab3ac270157a28774d4b0660e9743297b697e48",
+  "containerDigest": "sha256:5b8f294aff9041b7191c34a4bab3ac270157a28774d4b0660e9743297b697e48",
+  "os": {
+    "family": "ubuntu",
+    "version": "24.04",
+    "codename": "noble"
+  },
+  "font": {
+    "family": "Inter",
+    "package": "@fontsource/inter",
+    "version": "5.2.8",
+    "referenceText": "Příliš žluťoučký kůň 0123456789",
+    "weight": 400,
+    "sizePx": 16,
+    "expectedWidthPx": 248,
+    "expectedHeightPx": 24
+  },
+  "osLocale": "C.UTF-8",
+  "browserLocale": "cs-CZ",
+  "timezone": "Europe/Prague",
+  "deviceScaleFactor": 1,
+  "reducedMotion": "reduce",
+  "snapshotPlatform": "linux",
+  "lastReviewedAt": "2026-07-28"
+}
