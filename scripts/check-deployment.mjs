@@ -39,7 +39,7 @@ const [
   deployScript,
   backupScript,
   restoreScript,
-  viteConfig,
+  runtimeConfig,
   sessionCookie,
   apiMain,
 ] = await Promise.all([
@@ -50,7 +50,7 @@ const [
   read('scripts/deploy-vps.sh'),
   read('scripts/backup-vps.sh'),
   read('scripts/restore-vps.sh'),
-  read('apps/web/vite.config.ts'),
+  read('apps/web/src/lib/config/runtime-config.ts'),
   read('apps/api/src/modules/auth/session/session-cookie.service.ts'),
   read('apps/api/src/main.ts'),
 ]);
@@ -170,9 +170,9 @@ requirePattern(
   'Produkční frontend musí být sestavený s relativním /api/v1.',
 );
 requirePattern(
-  viteConfig,
-  /value\.startsWith\('\/'\)/,
-  'Vite musí explicitně podporovat same-origin API cestu.',
+  runtimeConfig,
+  /apiUrl\.startsWith\('\/'\)[\s\S]*apiUrl\.startsWith\('\/\/'\)/,
+  'Veřejný runtime config musí explicitně vynucovat same-origin API cestu.',
 );
 requirePattern(
   sessionCookie,

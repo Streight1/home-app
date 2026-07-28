@@ -7,6 +7,10 @@ Významné změny projektu jsou evidovány v tomto souboru ve formátu inspirova
 
 ### Fixed
 
+- Storybook a Playwright webServer už nenačítají aplikační Vite dev konfiguraci
+  ani kořenový `.env`; shared/build/test config je oddělený od explicitně
+  validovaného lokálního dev serveru a browser CI používá dostupný
+  `LANG=C.UTF-8`.
 - Kalendářní event color nyní prochází centralizovaným visual mapperem a
   podbarvuje celý block/surface v light i dark motivu místo pouze akcentu.
 - Přepínač Celý den už nevyžaduje čas, používá explicitní DATE hranice a změna

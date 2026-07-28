@@ -2,13 +2,13 @@ import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
 import { playwright } from '@vitest/browser-playwright';
 import { resolve } from 'node:path';
 import { defineConfig, mergeConfig } from 'vitest/config';
-import { createViteConfig } from './vite.config.js';
+import { createSharedViteConfig } from './vite.shared.config.js';
 
 const reportFile = process.env.VITEST_REPORT_FILE;
 
-export default defineConfig(({ mode }) =>
+export default defineConfig(() =>
   mergeConfig(
-    createViteConfig(mode, 'build'),
+    createSharedViteConfig(),
     defineConfig({
       test: {
         reporters: reportFile ? ['default', 'junit'] : ['default'],
@@ -21,7 +21,11 @@ export default defineConfig(({ mode }) =>
               setupFiles: './src/test/setup.ts',
               css: true,
               restoreMocks: true,
-              include: ['src/**/*.spec.ts', 'src/**/*.spec.tsx'],
+              include: [
+                'src/**/*.spec.ts',
+                'src/**/*.spec.tsx',
+                'vite-config.spec.ts',
+              ],
             },
           },
           {

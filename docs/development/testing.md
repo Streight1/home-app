@@ -106,6 +106,12 @@ deterministické a mimo produkční kód. Calendar stories navíc pokrývají m�
 týden s vícedenní/noční směnou, výběrový režim, all-day formulář a bulk
 edit/delete dialogy.
 
+Storybook používá `vite.shared.config.ts` s vypnutým `envDir`, nikoli
+`vite.development.config.ts`. Jeho dev server proto musí nastartovat bez
+kořenového `.env`, `CSRF_COOKIE_NAME` a dalších aplikačních dev hodnot. Vitest
+Storybook project i skutečný Storybook server instalují stejnou
+`TEST_PUBLIC_RUNTIME_CONFIG` fixture přes preview.
+
 ### Vizuální testy
 
 `pnpm test:visual` porovnává 89 deterministických PNG baseline. Povinné
@@ -118,6 +124,9 @@ all-day a custom-origin formulář, bulk edit/delete, event create dialog,
 otevřené user menu, mobilní Více, ThemeSelector, dialog a sheet.
 Stabilizují se fonty, locale, timezone, motion a caret. Storybook authenticated
 dashboard je deterministický UI mock, nikoli důkaz reálného Google loginu.
+GitHub runner používá `LANG=C.UTF-8`; Playwright nastavuje JavaScript/browser
+locale explicitně na `cs-CZ`, takže české formátování nezávisí na
+nenainstalovaném systémovém locale.
 
 ### Accessibility testy
 
@@ -165,6 +174,10 @@ pnpm check
 
 `pnpm test:e2e` spouští společně všechny Playwright vizuální a accessibility
 scénáře. Jemnější příkazy zůstávají dostupné pro cílenou diagnostiku.
+Playwright startuje vlastní Storybook `webServer`, čeká na jeho `/index.json`
+a při `CI=true` nepoužije existující proces. Lokálně smí již běžící Storybook
+znovu použít pouze jako explicitní optimalizaci s
+`PLAYWRIGHT_REUSE_STORYBOOK=true`; výchozí běh server vždy vlastní.
 
 `pnpm check` kombinuje architekturu, environment, dokumentaci, lint, strict
 typecheck, unit/HTTP testy, Storybook test/build, produkční build, screenshoty,

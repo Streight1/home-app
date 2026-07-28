@@ -198,9 +198,13 @@ transaction filter; React je znovu nepočítá z raw ledgeru. Finance workspace
 rozšiřují typované screens `budgets`, `insights` a `recurring` bez nové browser
 routy nebo zápisu částek/evidence do navigation state.
 
-Vite čte environment výhradně z kořene workspace a browseru vystavuje jen
-schválené veřejné hodnoty. Theme preference není environment tajemství ani
-autentizační stav.
+Generický Vite build, Vitest a Storybook používají
+`vite.shared.config.ts` s `envDir: false`; nečtou aplikační `.env`.
+`vite.development.config.ts` je samostatný explicitní vstup lokálního
+aplikačního serveru a jako jediný načítá kořenový `.env`. Produkční browser
+čte validovaný allowlist z `window.__HOMEAPP_CONFIG__`, lokální aplikace Vite
+development adapter a Storybook/Vitest/Playwright jedinou syntetickou testovací
+fixture. Theme preference není environment tajemství ani autentizační stav.
 
 ## Design systém a Storybook
 
@@ -213,4 +217,6 @@ Lucide.
 Storybook 10 není importovaný produkční aplikací. Addon Vitest spouští stories
 v Chromium a addon a11y vynucuje WCAG. Storybook preview používá produkční
 ThemeProvider s vypnutou persistencí. Playwright porovnává explicitní light a
-dark baseline; mock GIS a fixture zůstávají v testovací vrstvě.
+dark baseline; jeho Storybook webServer používá pouze shared Vite konfiguraci,
+čeká na story index a v CI nerecykluje cizí server. Mock GIS a runtime fixture
+zůstávají v testovací vrstvě.

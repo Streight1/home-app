@@ -41,6 +41,10 @@ izolovaný Compose stack včetně opakovaného startu a selhání migrace. Teprv
 potom připravuje verzované API a gateway image pro GHCR; deployment používá
 named volumes, one-shot inicializaci oprávnění a automatickou `migrate deploy`
 bránu.
+Generický Vite build, Vitest a Storybook používají environment-independent
+shared config. Pouze explicitní aplikační dev server načítá kořenový `.env`;
+Playwright Storybook webServer proto funguje i v čistém CI runneru a používá
+stejnou syntetickou runtime fixture jako ostatní webové testy.
 Veřejná konfigurace webu vzniká až při startu gateway a tajemství lze předat
 přes Compose secret soubory. Běžný start i staging aktualizace používají
 `docker compose up -d`; záloha, obnova a nedestruktivní převod starých bind
@@ -142,7 +146,8 @@ GitHub Actions a Google production login vyžadují cílové externí prostřed�
 - Architektonická kontrola velikostí, public endpointů, statických uploadů,
   theme hranic, hardcoded React barev, story fixture a ikonových knihoven.
 - Strukturální CI kontrola pořadí pnpm/Prisma setupu, stabilních required
-  jobů, publish oprávnění/tagů, image manifestu a izolovaného Compose modelu.
+  jobů, publish oprávnění/tagů, image manifestu, Vite/Storybook hranic a
+  izolovaného Compose modelu.
 - Dokumentační rozcestník, architecture/feature/API dokumentace, runbooky a
   povinný Markdown lint s kontrolou odkazů, struktury a tajemství.
 - Jediný kořenový `.env` pro Compose, NestJS, Prisma a Vite, bezpečná expanze
@@ -251,9 +256,10 @@ GitHub Actions a Google production login vyžadují cílové externí prostřed�
 - `pnpm env:check` a `pnpm architecture:check` — prošly pro 266 produkčních
   TSX souborů, 46 centralizovaných environment proměnných a produkční
   i registry deployment kontrakt.
-- `pnpm docs:check` — 0 lint chyb, 62 Markdown a 60 povinných dokumentů.
+- `pnpm docs:check` — 0 lint chyb, 63 Markdown a 61 povinných dokumentů.
 - `pnpm lint` — prošlo bez varování; `pnpm typecheck` prošlo pro API i web.
-- `pnpm test` — API 372/372 a web 193/193 testů prošlo.
+- `pnpm test` — API 372/372 a web 198/198 testů prošlo včetně čtyř
+  konfiguračních boundary regresí.
 - `pnpm storybook:test` — 81/81 Chromium story testů prošlo.
 - `pnpm build` — NestJS i Vite build prošly; `pnpm storybook:build` prošel.
 - `pnpm test:visual` — 89/89 baseline screenshot testů prošlo včetně ročního
@@ -271,6 +277,12 @@ GitHub Actions a Google production login vyžadují cílové externí prostřed�
   touch-target a reduced-motion testů prošlo; společný `pnpm test:e2e` prošel
   152/152 Playwright scénářů.
 - `pnpm format:check` a celý `pnpm check` prošly.
+- Storybook dev i Playwright webServer nastartovaly s `CI=true`,
+  `LANG=C.UTF-8` a bez aplikačních env hodnot; přesný clean-env Playwright běh
+  prošel 152/152 a `pnpm ci:browser` 81/81 + 152/152 testů.
+- Produkční gateway Docker image se sestavil bez root `.env`; generický Vite
+  build prošel kontrolou runtime-config scriptu, secret názvů a nepřítomnosti
+  syntetického testovacího Google Client ID.
 - `deployment/compose.yaml` i restore override prošly `docker compose config`.
   Lokální GHCR-compatible API/gateway image se sestavily; API běží jako UID
   10001 a oba image neobsahují source/test fixtures ani development server.

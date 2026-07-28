@@ -37,6 +37,7 @@ if (target === 'web' || target === 'all') {
     'POSTGRES_PASSWORD',
     'INTERNAL_HEALTH_TOKEN',
     'MAPY_API_KEY',
+    '000000000000-ci.apps.googleusercontent.com',
   ];
   for (const asset of assets.filter((name) => name.endsWith('.js'))) {
     const source = await readFile(

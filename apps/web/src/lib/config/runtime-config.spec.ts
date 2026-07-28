@@ -8,6 +8,7 @@ describe('public runtime configuration', () => {
   it('validates the public production values', () => {
     expect(parseRuntimeConfig(runtimeConfig)).toEqual(runtimeConfig);
     expect(runtimeConfig.API_URL).toBe('/api/v1');
+    expect(runtimeConfig.CSRF_COOKIE_NAME).toBe('homeapp_csrf');
   });
 
   it('rejects missing, malformed and secret-shaped configuration', () => {

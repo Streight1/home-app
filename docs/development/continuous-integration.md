@@ -68,14 +68,26 @@ Unit/HTTP testy zůstávají deterministické a externí služby mockují.
 ## Veřejná konfigurace webu v testech
 
 Produkce načítá `window.__HOMEAPP_CONFIG__` z gateway
-`/runtime-config.js`. Lokální Vite dev používá oddělený Vite adapter. Unit,
-Storybook a browser testy používají jedinou fixture
+`/runtime-config.js`. Vite konfigurace je rozdělená podle odpovědnosti:
+
+- `vite.shared.config.ts` obsahuje pouze React/Tailwind pluginy a obecné build
+  nastavení; má `envDir: false`;
+- `vite.config.ts` skládá generický produkční build pouze ze shared vrstvy;
+- `vite.development.config.ts` je explicitní vstup `pnpm dev`, jako jediný čte
+  kořenový `.env` a validuje lokální API, Google, port a CSRF cookie;
+- Vitest a Storybook skládají pouze shared vrstvu a nikdy neaktivují aplikační
+  dev server jen proto, že Vite běží v režimu `serve`.
+
+Unit, Storybook a browser testy používají jedinou fixture
 `TEST_PUBLIC_RUNTIME_CONFIG`; nevyžadují `.env`, `VITE_API_URL` ani skutečný
-Google Client ID. Test setup fixture obnoví před každým testem a po testu ji
-odstraní.
+Google Client ID. Fixture obsahuje také syntetický název CSRF cookie, protože
+ten browser ke čtení double-submit cookie skutečně potřebuje. Název
+`X-CSRF-Token` je stabilní HTTP kontrakt, nikoli deployment konfigurace. Test
+setup fixture obnoví před každým testem a po testu ji odstraní.
 
 Webový Docker build je generický. Kontrola artefaktů ověřuje načtení
-`runtime-config.js` a zákaz backendových secret názvů v browser bundlu.
+`runtime-config.js`, zákaz backendových secret názvů i nepřítomnost
+syntetického CI Google Client ID v browser bundlu.
 
 ## Browser testy
 
@@ -91,8 +103,17 @@ pnpm ci:browser
 `ci:browser` spustí Storybook test projekt a společnou Playwright sadu včetně
 vizuálních a accessibility scénářů. Storybook test plugin si skládá stories
 přímo přes Vitest/Vite; samostatný statický HTTP server nepotřebuje. Playwright
-E2E používá vlastní deklarovaný Storybook `webServer`. CI baseline screenshoty
-nikdy neaktualizuje.
+E2E používá vlastní deklarovaný Storybook `webServer`, čeká na `/index.json` a
+v CI nikdy nespoléhá na dříve spuštěný server. Obě cesty používají shared Vite
+config a stejnou runtime fixture. CI baseline screenshoty nikdy neaktualizuje.
+Lokální reuse existujícího Storybooku je pouze explicitní optimalizace přes
+`PLAYWRIGHT_REUSE_STORYBOOK=true`; výchozí test vlastní start i ukončení
+serveru, aby nepřevzal právě dobíhající proces předchozího běhu.
+
+Runner používá dostupný systémový locale `LANG=C.UTF-8`. České formátování se
+testuje explicitně browserovým `locale: cs-CZ`; systémový shell locale a
+JavaScript `Intl` locale jsou dvě odlišné vrstvy. Tím nevzniká varování kvůli
+nenainstalovanému `cs_CZ.UTF-8`.
 
 ## Container validation
 

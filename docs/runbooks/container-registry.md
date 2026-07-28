@@ -14,6 +14,8 @@ Workflow je v `.github/workflows/publish-containers.yml`. Nejdříve paralelně
 provede statické, API, web, browser a container kontroly. Image publikuje až
 potom. Používá pouze `GITHUB_TOKEN`; validační joby mají `contents: read` a
 jen publish job `packages: write`. Docker build nedostává produkční secrets.
+Browser job spouští Storybook a Playwright nad environment-independent Vite
+konfigurací s `LANG=C.UTF-8`; neobsahuje aplikační CSRF, API ani Vite hodnoty.
 
 ## Události a tagy
 

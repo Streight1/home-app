@@ -1,5 +1,8 @@
 import { defineConfig } from '@playwright/test';
 
+const reuseLocalStorybook =
+  !process.env.CI && process.env.PLAYWRIGHT_REUSE_STORYBOOK === 'true';
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
@@ -32,8 +35,8 @@ export default defineConfig({
   },
   webServer: {
     command: 'pnpm storybook',
-    url: 'http://127.0.0.1:6006',
-    reuseExistingServer: false,
+    url: 'http://127.0.0.1:6006/index.json',
+    reuseExistingServer: reuseLocalStorybook,
     timeout: 120_000,
     stdout: 'pipe',
     stderr: 'pipe',

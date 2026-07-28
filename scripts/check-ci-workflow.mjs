@@ -39,16 +39,30 @@ const [
   composeSource,
   imagesSource,
   viteConfigSource,
+  viteSharedConfigSource,
+  viteDevelopmentConfigSource,
+  viteDevelopmentEnvironmentSource,
+  vitestConfigSource,
+  playwrightConfigSource,
+  storybookMainSource,
   testRuntimeConfigSource,
   storybookPreviewSource,
+  webPackageSource,
 ] = await Promise.all([
   read(workflowPath),
   read(setupActionPath),
   read('deployment/compose.yaml'),
   read('deployment/images.json'),
   read('apps/web/vite.config.ts'),
+  read('apps/web/vite.shared.config.ts'),
+  read('apps/web/vite.development.config.ts'),
+  read('apps/web/vite.development-environment.ts'),
+  read('apps/web/vitest.config.ts'),
+  read('apps/web/playwright.config.ts'),
+  read('apps/web/.storybook/main.ts'),
   read('apps/web/src/lib/config/test-runtime-config.ts'),
   read('apps/web/.storybook/preview.tsx'),
+  read('apps/web/package.json'),
 ]);
 
 let workflow;
@@ -215,18 +229,83 @@ if (workflow && setupAction && images) {
     'Workflow nesmí obnovovat starou build-time Vite konfiguraci.',
   );
   requireCondition(
-    /const environment = development\s*\?\s*loadEnv\([\s\S]*\)\s*:\s*\{\}/.test(
-      viteConfigSource,
-    ),
-    'Vite smí číst deployment env pouze pro lokální serve režim.',
+    viteSharedConfigSource.includes('envDir: false') &&
+      !/\bloadEnv\b|\breadRequired\b|CSRF_COOKIE_NAME|VITE_API_URL/.test(
+        viteSharedConfigSource,
+      ),
+    'Sdílený Vite config musí být načitatelný bez .env a aplikačních proměnných.',
+  );
+  requireCondition(
+    viteConfigSource.includes('createSharedViteConfig') &&
+      !viteConfigSource.includes('vite.development') &&
+      !/\bloadEnv\b|\breadRequired\b/.test(viteConfigSource),
+    'Generický Vite build smí skládat pouze environment-independent shared config.',
+  );
+  requireCondition(
+    viteDevelopmentConfigSource.includes("loadEnv(mode, workspaceRoot, '')") &&
+      viteDevelopmentConfigSource.includes(
+        'validateApplicationDevelopmentEnvironment',
+      ) &&
+      viteDevelopmentEnvironmentSource.includes(
+        "readRequired(environment, 'CSRF_COOKIE_NAME')",
+      ) &&
+      viteDevelopmentEnvironmentSource.includes(
+        "readRequired(environment, 'VITE_API_URL')",
+      ) &&
+      viteDevelopmentEnvironmentSource.includes(
+        "readRequired(environment, 'VITE_GOOGLE_CLIENT_ID')",
+      ),
+    'Pouze explicitní aplikační dev config musí validovat lokální env kontrakt.',
+  );
+  const webPackage = JSON.parse(webPackageSource);
+  requireCondition(
+    webPackage.scripts?.dev === 'vite --config vite.development.config.ts',
+    'Aplikační dev server musí explicitně používat development Vite config.',
+  );
+  requireCondition(
+    vitestConfigSource.includes("from './vite.shared.config.js'") &&
+      !vitestConfigSource.includes("from './vite.config.js'"),
+    'Vitest musí používat shared Vite config bez aplikační dev vrstvy.',
+  );
+  requireCondition(
+    storybookMainSource.includes('createSharedViteConfig') &&
+      storybookMainSource.includes('viteFinal') &&
+      !storybookMainSource.includes('vite.development'),
+    'Storybook musí ve viteFinal používat pouze shared Vite config.',
+  );
+  requireCondition(
+    playwrightConfigSource.includes(
+      "url: 'http://127.0.0.1:6006/index.json'",
+    ) &&
+      playwrightConfigSource.includes(
+        "!process.env.CI && process.env.PLAYWRIGHT_REUSE_STORYBOOK === 'true'",
+      ) &&
+      playwrightConfigSource.includes(
+        'reuseExistingServer: reuseLocalStorybook',
+      ),
+    'Playwright musí čekat na Storybook index a reuse serveru smí být pouze lokální opt-in.',
   );
   requireCondition(
     testRuntimeConfigSource.includes("API_URL: '/api/v1'") &&
       testRuntimeConfigSource.includes(
         "GOOGLE_CLIENT_ID: '000000000000-ci.apps.googleusercontent.com'",
       ) &&
+      testRuntimeConfigSource.includes("CSRF_COOKIE_NAME: 'homeapp_csrf'") &&
       storybookPreviewSource.includes('installTestPublicRuntimeConfig'),
     'Vitest a Storybook musí sdílet centrální syntetickou runtime fixture.',
+  );
+  requireCondition(
+    workflow.env?.CI === 'true' &&
+      workflow.env?.TZ === 'Europe/Prague' &&
+      workflow.env?.LANG === 'C.UTF-8' &&
+      Object.keys(workflow.env).length === 3,
+    'Globální CI prostředí smí obsahovat pouze CI, TZ a dostupný LANG=C.UTF-8.',
+  );
+  requireCondition(
+    !/CSRF_COOKIE_NAME|CSRF_HEADER_NAME|VITE_API_URL|PUBLIC_API_URL/.test(
+      JSON.stringify(jobs['browser-tests']?.env ?? {}),
+    ),
+    'Browser job nesmí dostávat aplikační nebo produkční konfiguraci přes env.',
   );
   requireCondition(
     !/\|\|\s*true|continue-on-error:\s*true/.test(workflowSource),

@@ -11,6 +11,10 @@
   },
   "include": [
     "vite.config.ts",
+    "vite.shared.config.ts",
+    "vite.development.config.ts",
+    "vite.development-environment.ts",
+    "vite-config.spec.ts",
     "vitest.config.ts",
     "playwright.config.ts",
     ".storybook/**/*.ts",

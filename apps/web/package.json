@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --config vite.development.config.ts",
     "build": "tsc -b && vite build",
-    "lint": "eslint src vite.config.ts --max-warnings 0",
+    "lint": "eslint src vite.config.ts vite.shared.config.ts vite.development.config.ts vite.development-environment.ts vite-config.spec.ts --max-warnings 0",
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run --project=unit",
     "test:watch": "vitest --project=unit",

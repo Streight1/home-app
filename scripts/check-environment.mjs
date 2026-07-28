@@ -187,11 +187,13 @@ if (!apiConfig.includes('expandVariables: true'))
   errors.push('Nest ConfigModule nemá zapnutou expanzi ${VAR}.');
 
 const viteConfig = await readFile(
-  join(root, 'apps/web/vite.config.ts'),
+  join(root, 'apps/web/vite.development.config.ts'),
   'utf8',
 );
 if (!viteConfig.includes('envDir: workspaceRoot'))
-  errors.push('Vite nemá kořen workspace nastavený jako envDir.');
+  errors.push(
+    'Aplikační Vite dev server nemá kořen workspace nastavený jako envDir.',
+  );
 
 const prismaConfig = await readFile(
   join(root, 'apps/api/prisma.config.ts'),
