@@ -7,6 +7,9 @@ Významné změny projektu jsou evidovány v tomto souboru ve formátu inspirova
 
 ### Fixed
 
+- Jednodenní celodenní událost se už kvůli implicitnímu UTC převodu
+  exkluzivního data nezobrazuje v následujícím dni; jediný date-only adapter
+  používá `start <= den < endExclusive` i přes DST.
 - Vizuální baseline už nejsou závislé na Fedora/Ubuntu rasterizačním rozdílu:
   82 dotčených PNG bylo vědomě zkontrolováno a přegenerováno ve verzovaném
   Playwright 1.61.1/Noble prostředí bez uvolnění pixelové tolerance.
@@ -36,6 +39,11 @@ Významné změny projektu jsou evidovány v tomto souboru ve formátu inspirova
 
 ### Added
 
+- Centrální calendar event draft/dialog pro toolbar, dvojklik na prázdný
+  month den či day/week slot, homepage a globální `Přidat`, včetně klávesové
+  alternativy a ochrany interaktivních eventů před propagací.
+- Persistované sbalení desktopového sidebaru, oddělený homepage brand a
+  samostatné ovladače `Sbalit hlavní menu` / `Rozbalit hlavní menu`.
 - Kanonický digestovaný Playwright container, strojová baseline metadata,
   kontrola Chromium/fontů/locale/timezone/DPR a lokální
   `visual:check:container`/`visual:update:container` workflow.

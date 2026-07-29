@@ -26,6 +26,7 @@ export function CalendarTimeGrid({
   selectionMode = false,
   selectedIds,
   onSelectEvent,
+  onCreateAt,
 }: {
   date: Date;
   items: CalendarFeedItem[];
@@ -34,6 +35,7 @@ export function CalendarTimeGrid({
   selectionMode?: boolean | undefined;
   selectedIds?: ReadonlySet<string> | undefined;
   onSelectEvent?: ((eventId: string) => void) | undefined;
+  onCreateAt?: ((date: Date, startTime: string) => void) | undefined;
 }) {
   const viewport = useRef<HTMLDivElement>(null);
   const days = useMemo(() => {
@@ -99,6 +101,7 @@ export function CalendarTimeGrid({
                 selectionMode={selectionMode}
                 selectedIds={selectedIds}
                 onSelectEvent={onSelectEvent}
+                onCreateAt={onCreateAt}
               />
             ))}
           </div>

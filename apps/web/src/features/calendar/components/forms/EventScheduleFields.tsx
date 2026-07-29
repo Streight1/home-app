@@ -1,8 +1,16 @@
 import { useMemo, useState } from 'react';
 import { DatePicker } from '../../../../components/ui/DatePicker/DatePicker.js';
 import { Input } from '../../../../components/ui/Input/Input.js';
-import type { CalendarEvent } from '../../types/calendar.types.js';
-import { addDays, fromIsoDate, localIsoDate } from '../../lib/calendarDate.js';
+import type {
+  CalendarEvent,
+  CalendarEventDraft,
+} from '../../types/calendar.types.js';
+import { exclusiveAllDayEndToInclusive } from '../../lib/calendarDate.js';
+import {
+  calendarEventDraftEnd,
+  calendarEventDraftStart,
+  createCalendarEventDraft,
+} from '../../lib/createCalendarEventDraft.js';
 
 const localDateTime = (value: string | Date) => {
   const date = typeof value === 'string' ? new Date(value) : value;
@@ -17,17 +25,25 @@ const split = (value: string) => ({
 
 export function useCalendarEventSchedule(
   initial: CalendarEvent | undefined,
-  initialDate: string | undefined,
+  initialDraft: CalendarEventDraft | undefined,
 ) {
   const defaults = useMemo(() => {
     const baseDate =
-      initial?.allDayStartDate ?? initialDate ?? localIsoDate(new Date());
+      initial?.allDayStartDate ??
+      initialDraft?.date ??
+      createCalendarEventDraft({
+        source: 'calendar-toolbar',
+      }).date;
     const start = initial?.startsAt
       ? localDateTime(initial.startsAt)
-      : `${baseDate}T09:00`;
+      : initialDraft
+        ? calendarEventDraftStart(initialDraft)
+        : `${baseDate}T09:00`;
     const end = initial?.endsAt
       ? localDateTime(initial.endsAt)
-      : localDateTime(new Date(new Date(start).getTime() + 60 * 60_000));
+      : initialDraft
+        ? calendarEventDraftEnd(initialDraft)
+        : localDateTime(new Date(new Date(start).getTime() + 60 * 60_000));
     const allDayStart = initial?.allDayStartDate ?? baseDate;
     const exclusive = initial?.allDayEndDateExclusive;
     return {
@@ -35,10 +51,10 @@ export function useCalendarEventSchedule(
       end,
       allDayStart,
       allDayEnd: exclusive
-        ? localIsoDate(addDays(fromIsoDate(exclusive), -1))
+        ? exclusiveAllDayEndToInclusive(exclusive)
         : allDayStart,
     };
-  }, [initial, initialDate]);
+  }, [initial, initialDraft]);
   const [isAllDay, setIsAllDay] = useState(initial?.isAllDay ?? false);
   const [start, setStart] = useState(defaults.start);
   const [end, setEnd] = useState(defaults.end);

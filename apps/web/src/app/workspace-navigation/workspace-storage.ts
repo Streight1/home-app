@@ -4,11 +4,26 @@ import {
   type WorkspaceOverlay,
   type WorkspaceView,
 } from './workspace-navigation.types.js';
+import type { CalendarEventDraftSource } from './workspace-navigation.types.js';
 
 export const WORKSPACE_STORAGE_KEY = 'homeapp.workspace.navigation';
 const uuid =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const date = /^\d{4}-\d{2}-\d{2}$/;
+const time = /^([01]\d|2[0-3]):[0-5]\d$/;
+const calendarDraftSources = new Set<CalendarEventDraftSource>([
+  'calendar-toolbar',
+  'month-day-double-click',
+  'time-slot-double-click',
+  'dashboard',
+  'global-add',
+  'task-conversion',
+]);
+function isCalendarDraftSource(
+  value: string,
+): value is CalendarEventDraftSource {
+  return calendarDraftSources.has(value as CalendarEventDraftSource);
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -137,13 +152,46 @@ function parseOverlay(value: unknown): WorkspaceOverlay | null {
     uuid.test(value.documentId)
   )
     return { kind: value.kind, documentId: value.documentId };
-  if (value.kind === 'calendar-create')
-    return {
-      kind: value.kind,
-      ...(typeof value.date === 'string' && date.test(value.date)
-        ? { date: value.date }
-        : {}),
-    };
+  if (value.kind === 'calendar-create') {
+    if (isRecord(value.draft)) {
+      const draft = value.draft;
+      if (
+        typeof draft.source === 'string' &&
+        isCalendarDraftSource(draft.source) &&
+        typeof draft.date === 'string' &&
+        date.test(draft.date) &&
+        typeof draft.startTime === 'string' &&
+        time.test(draft.startTime) &&
+        typeof draft.durationMinutes === 'number' &&
+        Number.isInteger(draft.durationMinutes) &&
+        draft.durationMinutes >= 5 &&
+        draft.durationMinutes <= 24 * 60 &&
+        draft.isAllDay === false
+      )
+        return {
+          kind: value.kind,
+          draft: {
+            source: draft.source,
+            date: draft.date,
+            startTime: draft.startTime,
+            durationMinutes: draft.durationMinutes,
+            isAllDay: false,
+          },
+        };
+    }
+    if (typeof value.date === 'string' && date.test(value.date))
+      return {
+        kind: value.kind,
+        draft: {
+          source: 'calendar-toolbar',
+          date: value.date,
+          startTime: '09:00',
+          durationMinutes: 60,
+          isAllDay: false,
+        },
+      };
+    return null;
+  }
   if (
     value.kind === 'calendar-edit' &&
     typeof value.eventId === 'string' &&

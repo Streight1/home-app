@@ -17,7 +17,9 @@ historii dokončení, dokumentové vazby a dashboard s explicitním API kontrakt
 Kalendář je oddělený modul pro události, přesné směnové presety,
 centralizované event/participant/shared barvy, explicitní all-day DATE model,
 kompaktní měsíční cestu, selection/bulk operace, timezone/DST šablony,
-read-only task feed a skutečný day/week time-grid. Scheduling navrhuje společné
+read-only task feed a skutečný day/week time-grid. Jediný event draft/dialog
+obsluhuje toolbar, dvojklik na den či slot, homepage i globální Add; all-day
+render používá date-only hranici bez implicitního UTC převodu. Scheduling navrhuje společné
 sloty a vytváří `TASK` event
 výhradně po explicitním potvrzení.
 Samostatný location/travel modul přidává skutečný default-place autocomplete,
@@ -135,7 +137,9 @@ GitHub Actions a Google production login vyžadují cílové externí prostřed�
 - ThemeProvider s výchozím system režimem, živým sledováním OS, namespacovaným
   `homeapp.theme` storage a pre-hydration ochranou proti flashnutí.
 - Samostatný compact shell s mobilním headerem a bottom navigation, medium rail
-  a expanded sbalitelný sidebar s topbarem.
+  a expanded sbalitelný sidebar s topbarem. Brand vede interně na dashboard,
+  collapse má vlastní ovladač a lokální preference přežije reload bez změny
+  `/app`.
 - Attention-first dashboard v pořadí header, pozornost, rychlé akce a úkoly;
   další panely se bez reálných dat nevykreslují.
 - Storybook 10 s foundations, component, shell a screen stories; fixtures jsou

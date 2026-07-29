@@ -1,4 +1,8 @@
 export type CalendarViewMode = 'month' | 'week' | 'day' | 'agenda';
+export type {
+  CalendarEventDraft,
+  CalendarEventDraftSource,
+} from '../../../app/workspace-navigation/workspace-navigation.types.js';
 export type CalendarEventType =
   | 'GENERAL'
   | 'WORK_SHIFT'

@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { useState } from 'react';
 import { AppShell } from '../../layouts/AppShell/AppShell.js';
 import { Dialog } from '../../components/ui/Dialog/Dialog.js';
 import { CalendarAgendaList } from '../../features/calendar/components/calendar/CalendarAgendaList.js';
@@ -22,6 +23,9 @@ import {
   calendarFeedFixture,
   calendarTimeGridRegressionFixture,
 } from '../fixtures/calendar.fixture.js';
+import { createCalendarEventDraft } from '../../features/calendar/lib/createCalendarEventDraft.js';
+import { localIsoDate } from '../../features/calendar/lib/calendarDate.js';
+import type { CalendarEventDraft } from '../../app/workspace-navigation/workspace-navigation.types.js';
 
 const referenceDate = new Date('2030-07-15T12:00:00.000Z');
 const members = [
@@ -168,9 +172,11 @@ function EditTravelScreen() {
 function CalendarScreen({
   view = 'month',
   selectionMode = false,
+  onCreateDate,
 }: {
   view?: 'month' | 'week' | 'day';
   selectionMode?: boolean;
+  onCreateDate?: (date: Date) => void;
 }) {
   const selectedIds = new Set(
     selectionMode
@@ -223,6 +229,7 @@ function CalendarScreen({
               selectionMode={selectionMode}
               selectedIds={selectedIds}
               onSelectEvent={() => undefined}
+              onCreateDate={onCreateDate}
             />
             <section className="md:hidden">
               <h2 className="mb-3 text-section-title font-semibold">
@@ -258,6 +265,44 @@ function CalendarScreen({
         )}
       </div>
     </AppShell>
+  );
+}
+
+function QuickCreateCalendarScreen() {
+  const [draft, setDraft] = useState<CalendarEventDraft | null>(null);
+  return (
+    <>
+      <CalendarScreen
+        onCreateDate={(date) =>
+          setDraft(
+            createCalendarEventDraft({
+              source: 'month-day-double-click',
+              date: localIsoDate(date),
+            }),
+          )
+        }
+      />
+      {draft ? (
+        <Dialog
+          open
+          onOpenChange={(open) => !open && setDraft(null)}
+          title="Nová událost"
+          description="Přidejte společnou událost, osobní termín nebo pracovní směnu."
+          size="lg"
+          mobileFullScreen
+        >
+          <CalendarEventForm
+            initialDraft={draft}
+            members={members}
+            currentUserId={members[0]?.id ?? ''}
+            loading={false}
+            error={null}
+            onSubmit={() => undefined}
+            onCancel={() => setDraft(null)}
+          />
+        </Dialog>
+      ) : null}
+    </>
   );
 }
 
@@ -347,7 +392,10 @@ export const CreateDialog: Story = {
         mobileFullScreen
       >
         <CalendarEventForm
-          initialDate="2030-07-15"
+          initialDraft={createCalendarEventDraft({
+            source: 'calendar-toolbar',
+            date: '2030-07-15',
+          })}
           members={members}
           currentUserId={members[0]?.id ?? ''}
           loading={false}
@@ -358,6 +406,11 @@ export const CreateDialog: Story = {
       </Dialog>
     </>
   ),
+};
+
+export const QuickCreateByDoubleClick: Story = {
+  parameters: { theme: 'dark', route: '/app', workspace: 'calendar' },
+  render: () => <QuickCreateCalendarScreen />,
 };
 
 export const EditTravelDialog: Story = {

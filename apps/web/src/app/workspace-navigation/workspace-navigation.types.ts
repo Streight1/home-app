@@ -1,3 +1,19 @@
+export type CalendarEventDraftSource =
+  | 'calendar-toolbar'
+  | 'month-day-double-click'
+  | 'time-slot-double-click'
+  | 'dashboard'
+  | 'global-add'
+  | 'task-conversion';
+
+export interface CalendarEventDraft {
+  source: CalendarEventDraftSource;
+  date: string;
+  startTime: string;
+  durationMinutes: number;
+  isAllDay: false;
+}
+
 export type WorkspaceView =
   | { area: 'dashboard' }
   | {
@@ -44,7 +60,7 @@ export type WorkspaceView =
 export type WorkspaceOverlay =
   | { kind: 'task-create' }
   | { kind: 'document-preview'; documentId: string }
-  | { kind: 'calendar-create'; date?: string }
+  | { kind: 'calendar-create'; draft: CalendarEventDraft }
   | { kind: 'calendar-edit'; eventId: string }
   | { kind: 'finance-transaction'; type: 'expense' | 'income' }
   | { kind: 'bucket-list-item-create'; listId: string }

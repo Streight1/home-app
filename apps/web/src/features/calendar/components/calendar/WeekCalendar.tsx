@@ -8,6 +8,7 @@ export function WeekCalendar({
   selectionMode,
   selectedIds,
   onSelectEvent,
+  onCreateAt,
 }: {
   date: Date;
   items: CalendarFeedItem[];
@@ -15,6 +16,7 @@ export function WeekCalendar({
   selectionMode?: boolean | undefined;
   selectedIds?: ReadonlySet<string> | undefined;
   onSelectEvent?: ((eventId: string) => void) | undefined;
+  onCreateAt?: ((date: Date, startTime: string) => void) | undefined;
 }) {
   return (
     <CalendarTimeGrid
@@ -25,6 +27,7 @@ export function WeekCalendar({
       selectionMode={selectionMode}
       selectedIds={selectedIds}
       onSelectEvent={onSelectEvent}
+      onCreateAt={onCreateAt}
     />
   );
 }

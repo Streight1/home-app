@@ -44,8 +44,11 @@ overlap sloupec. Calendar regresní sada navíc ověřuje centralizovaný event
 visual model a plné podbarvení, all-day DATE hranice bez falešné půlnoci,
 desired arrival, kompaktní month travel, segmented view, selection, potvrzení
 `SMAZAT`, bulk limit, VIEWER zákaz a transakční task-link lifecycle. Workspace
-testy
-ověřují namespacovaný bezpečný stav, stálou
+testy navíc ověřují centrální 09:00/60min create draft, půlhodinový slot,
+zákaz propagace dvojkliku z eventu, přesný jednodenní/vícedenní date-only
+rozsah včetně DST a shodný dashboard/global overlay. AppShell testuje
+oddělený homepage brand, sbalení, rozbalení a reload lokální preference.
+Workspace testy ověřují namespacovaný bezpečný stav, stálou
 `/app`, invalid fallback a logout cleanup. Single-household testy pokrývají
 owner/member bootstrap a převzetí bez resetu.
 
@@ -114,9 +117,9 @@ Storybook project i skutečný Storybook server instalují stejnou
 
 ### Vizuální testy
 
-`pnpm test:visual` spouští v připnutém Playwright containeru 90 testů:
-referenční metriku lokálního Inter fontu a 89 vizuálních scénářů se
-91 screenshot baseline. Povinné kombinace dashboardu jsou 390×844 dark,
+`pnpm test:visual` spouští v připnutém Playwright containeru 93 testů:
+referenční metriku lokálního Inter fontu a 92 vizuálních scénářů se
+93 screenshot baseline. Povinné kombinace dashboardu jsou 390×844 dark,
 390×844 light, 768×1024 dark, 1280×800 light a 1440×900 dark.
 
 Další scénáře pokrývají login dark/light na telefonu a desktopu, fixture

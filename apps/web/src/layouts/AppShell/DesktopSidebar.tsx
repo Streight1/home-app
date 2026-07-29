@@ -1,8 +1,8 @@
 import { ChevronLeft } from 'lucide-react';
 import { useWorkspaceNavigation } from '../../app/workspace-navigation/useWorkspaceNavigation.js';
 import { Badge } from '../../components/ui/Badge/Badge.js';
-import { BrandMark } from '../../components/ui/BrandMark/BrandMark.js';
 import { IconButton } from '../../components/ui/IconButton/IconButton.js';
+import { HomeBrandButton } from './HomeBrandButton.js';
 import {
   desktopNavigation,
   workspaceViewForArea,
@@ -13,9 +13,9 @@ export function DesktopSidebar({ onCollapse }: { onCollapse: () => void }) {
   return (
     <aside className="fixed inset-y-0 left-0 z-(--z-sticky) hidden w-(--navigation-sidebar-width) border-r border-border bg-sidebar xl:flex xl:flex-col">
       <div className="flex h-(--navigation-topbar-height) items-center gap-3 border-b border-border px-4">
-        <BrandMark />
+        <HomeBrandButton className="flex-1" />
         <IconButton
-          aria-label="Sbalit navigaci"
+          aria-label="Sbalit hlavní menu"
           variant="ghost"
           className="ml-auto"
           onClick={onCollapse}

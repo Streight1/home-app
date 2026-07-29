@@ -61,6 +61,11 @@ sessionStorage a jinak dashboard. Logout oba stavy vymaže. Ukládají se jen
 `area`, `screen`, `overlay.kind` a nutná UUID/data výběru, nikdy názvy, metadata,
 tokeny ani obsah. Veřejné deep links na entity nejsou podporované.
 
+Calendar create overlay nese pouze validovaný draft se zdrojem, date-only
+datem, lokálním časem a délkou. Továrna draftu je jediným zdrojem defaultů pro
+toolbar, month/day/week interakce, homepage i globální `Přidat`;
+`WorkspaceOverlayHost` vždy skládá stejný `EventCreateDialog`.
+
 Skrytí feature cesty není bezpečnostní mechanismus. Stránky se načítají lazy.
 `AnonymousRoute` přesměruje přihlášeného z loginu;
 `ProtectedRoute` před ověřením session nezobrazí chráněný obsah a při 401 vede
@@ -73,6 +78,11 @@ Obsah se v DOM neduplikuje. CSS media queries mění pouze shell:
 - compact `<768 px`: `MobileHeader`, jeden sloupec a bottom navigation;
 - medium `768–1199 px`: 72px `TabletNavigationRail` a `AppTopBar`;
 - expanded `≥1200 px`: 248px `DesktopSidebar`, sbalení na 72 px a 1440px obsah.
+
+Expanded sidebar ukládá čistě lokální UI preferenci pod jediným verzovaným
+klíčem `homeapp.navigation.sidebar.v1`. `HomeBrandButton` a ovladač sbalení
+jsou oddělené click targety; brand naviguje interně na dashboard a zachovává
+`/app`. Preference desktopu nemění tabletový rail ani plnou mobilní navigaci.
 
 `HouseholdSwitcher`, připravené hledání, `QuickCreateButton` a `UserMenu` jsou
 samostatné komponenty. Radix zajišťuje menu, dialog, sheet, tooltip a focus.
@@ -153,6 +163,10 @@ serverového calendar response, nikoli z e-mailu nebo klientského hashe.
 registr a barví celý surface. `EventScheduleFields` odděluje timed a all-day
 hodnoty, uchovává ručně změněný konec a `EventTravelFields` pro all-day vyžádá
 desired arrival pouze pro routing. Toolbar nabízí Den/Týden/Měsíc přímo.
+Quick create používá centrální `createCalendarEventDraft`,
+`useCreateCalendarEventDialog` a `useCalendarQuickCreate`. Date-only all-day
+inclusive/exclusive převod vlastní pouze `calendarDate.ts`, nikoli jednotlivé
+komponenty.
 Selection state zůstává jen v instanci CalendarPage; bulk dialogy používají
 explicitní operace a žádné event ID nezapisují do URL.
 

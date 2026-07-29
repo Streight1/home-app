@@ -1,5 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState, type ReactElement } from 'react';
 import { MemoryRouter } from 'react-router-dom';
@@ -11,6 +17,7 @@ import { deleteCalendarEvent } from './api/calendarApi.js';
 import { CalendarEventItem } from './components/calendar/CalendarEventItem.js';
 import { MonthCalendar } from './components/calendar/MonthCalendar.js';
 import { WeekCalendar } from './components/calendar/WeekCalendar.js';
+import { DayColumn } from './components/time-grid/DayColumn.js';
 import { CalendarBulkDeleteDialog } from './components/bulk/CalendarBulkDeleteDialog.js';
 import { CalendarTemplateManagerDialog } from './components/templates/CalendarTemplateManagerDialog.js';
 import { CalendarEventDeleteDialog } from './components/dialogs/CalendarEventDeleteDialog.js';
@@ -31,6 +38,12 @@ import type {
   CalendarTemplate,
   TravelPlanInput,
 } from './types/calendar.types.js';
+import { createCalendarEventDraft } from './lib/createCalendarEventDraft.js';
+import {
+  calendarEventDraftEnd,
+  calendarEventDraftStart,
+} from './lib/createCalendarEventDraft.js';
+import { occursOnDate } from './lib/calendarDate.js';
 
 function ColorPickerHarness() {
   const [value, setValue] = useState<CalendarColorToken | null>(null);
@@ -83,6 +96,20 @@ const eventItem: CalendarFeedItem = {
     area: 'calendar',
     screen: 'detail',
     eventId: '10000000-0000-4000-8000-000000000001',
+  },
+};
+const allDayItem: CalendarFeedItem = {
+  ...eventItem,
+  id: '90000000-0000-4000-8000-000000000009',
+  title: 'Jeden den',
+  start: '2026-07-29',
+  end: '2026-07-30',
+  isAllDay: true,
+  eventType: 'PERSONAL',
+  navigationTarget: {
+    area: 'calendar',
+    screen: 'detail',
+    eventId: '90000000-0000-4000-8000-000000000009',
   },
 };
 const taskItem: CalendarFeedItem = {
@@ -300,6 +327,107 @@ describe('shared calendar frontend', () => {
     expect(
       screen.queryByRole('dialog', { name: 'Šablony událostí a směn' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('creates deterministic drafts for a day, a slot and the next half hour', () => {
+    const day = createCalendarEventDraft(
+      { source: 'month-day-double-click', date: '2026-07-29' },
+      () => new Date(2026, 6, 29, 20, 7),
+    );
+    expect(day).toMatchObject({
+      date: '2026-07-29',
+      startTime: '09:00',
+      durationMinutes: 60,
+      isAllDay: false,
+    });
+    const slot = createCalendarEventDraft({
+      source: 'time-slot-double-click',
+      date: '2026-07-29',
+      startTime: '08:30',
+    });
+    expect(calendarEventDraftStart(slot)).toBe('2026-07-29T08:30');
+    expect(calendarEventDraftEnd(slot)).toBe('2026-07-29T09:30');
+    const dashboard = createCalendarEventDraft(
+      { source: 'dashboard' },
+      () => new Date(2026, 6, 29, 20, 7),
+    );
+    expect(dashboard).toMatchObject({
+      date: '2026-07-29',
+      startTime: '20:30',
+    });
+  });
+
+  it('keeps an all-day exclusive end out of the following day without UTC conversion', () => {
+    expect(occursOnDate(allDayItem, new Date(2026, 6, 29))).toBe(true);
+    expect(occursOnDate(allDayItem, new Date(2026, 6, 30))).toBe(false);
+    const multiDay = { ...allDayItem, end: '2026-08-01' };
+    expect(occursOnDate(multiDay, new Date(2026, 6, 31))).toBe(true);
+    expect(occursOnDate(multiDay, new Date(2026, 7, 1))).toBe(false);
+  });
+
+  it('opens quick create on an empty month day but not on an event', () => {
+    const onCreateDate = vi.fn();
+    wrapper(
+      <MonthCalendar
+        date={new Date(2026, 6, 29)}
+        selectedDate={new Date(2026, 6, 29)}
+        items={[allDayItem]}
+        onSelectDate={() => undefined}
+        onCreateDate={onCreateDate}
+      />,
+    );
+    fireEvent.doubleClick(
+      screen.getByLabelText('Vytvořit událost na 30. července 2026'),
+    );
+    expect(onCreateDate).toHaveBeenCalledWith(new Date(2026, 6, 30));
+    fireEvent.doubleClick(
+      screen.getByRole('button', { name: /Otevřít: Jeden den/ }),
+    );
+    expect(onCreateDate).toHaveBeenCalledOnce();
+  });
+
+  it('opens keyboard quick create for a focused month day', () => {
+    const onCreateDate = vi.fn();
+    wrapper(
+      <MonthCalendar
+        date={new Date(2026, 6, 29)}
+        selectedDate={new Date(2026, 6, 29)}
+        items={[]}
+        onSelectDate={() => undefined}
+        onCreateDate={onCreateDate}
+      />,
+    );
+    fireEvent.keyDown(
+      screen.getByLabelText('Vytvořit událost na 29. července 2026'),
+      { key: 'Enter' },
+    );
+    expect(onCreateDate).toHaveBeenCalledWith(new Date(2026, 6, 29));
+  });
+
+  it('maps a time-grid double click to one shared 30-minute slot', () => {
+    const onCreateAt = vi.fn();
+    const { container } = wrapper(
+      <DayColumn
+        day={new Date(2026, 6, 29)}
+        items={[]}
+        onCreateAt={onCreateAt}
+      />,
+    );
+    const column = container.querySelector<HTMLElement>('[role="group"]');
+    if (!column) throw new Error('Time-grid day column was not rendered.');
+    vi.spyOn(column, 'getBoundingClientRect').mockReturnValue({
+      top: 0,
+      bottom: 1536,
+      left: 0,
+      right: 200,
+      width: 200,
+      height: 1536,
+      x: 0,
+      y: 0,
+      toJSON: () => undefined,
+    });
+    fireEvent.doubleClick(column, { clientY: 544 });
+    expect(onCreateAt).toHaveBeenCalledWith(new Date(2026, 6, 29), '08:30');
   });
 
   it('shows a selected-day agenda below the mobile month without a table', async () => {
@@ -564,7 +692,10 @@ describe('shared calendar frontend', () => {
     const onSubmit = vi.fn<(input: CalendarEventInput) => void>();
     wrapper(
       <CalendarEventForm
-        initialDate="2026-08-10"
+        initialDraft={createCalendarEventDraft({
+          source: 'calendar-toolbar',
+          date: '2026-08-10',
+        })}
         members={[
           {
             id: '20000000-0000-4000-8000-000000000002',

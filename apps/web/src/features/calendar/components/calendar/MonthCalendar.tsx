@@ -6,6 +6,7 @@ import {
 } from '../../lib/calendarDate.js';
 import type { CalendarFeedItem } from '../../types/calendar.types.js';
 import { CalendarEventItem } from './CalendarEventItem.js';
+import { isCalendarInteractiveTarget } from '../time-grid/time-grid.interaction.js';
 
 const weekdays = ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'];
 
@@ -18,6 +19,7 @@ export function MonthCalendar({
   selectionMode = false,
   selectedIds,
   onSelectEvent,
+  onCreateDate,
 }: {
   date: Date;
   selectedDate: Date;
@@ -27,6 +29,7 @@ export function MonthCalendar({
   selectionMode?: boolean | undefined;
   selectedIds?: ReadonlySet<string> | undefined;
   onSelectEvent?: ((eventId: string) => void) | undefined;
+  onCreateDate?: ((date: Date) => void) | undefined;
 }) {
   const start = monthGridStart(date);
   const days = Array.from({ length: 42 }, (_, index) => addDays(start, index));
@@ -56,6 +59,33 @@ export function MonthCalendar({
           return (
             <div
               key={key}
+              tabIndex={onCreateDate && !selectionMode ? 0 : undefined}
+              aria-label={
+                onCreateDate && !selectionMode
+                  ? `Vytvořit událost na ${day.toLocaleDateString('cs-CZ', {
+                      dateStyle: 'long',
+                    })}`
+                  : undefined
+              }
+              onKeyDown={(event) => {
+                if (
+                  event.key !== 'Enter' ||
+                  event.target !== event.currentTarget ||
+                  selectionMode
+                )
+                  return;
+                event.preventDefault();
+                onCreateDate?.(day);
+              }}
+              onDoubleClick={(event) => {
+                if (
+                  selectionMode ||
+                  !onCreateDate ||
+                  isCalendarInteractiveTarget(event.target)
+                )
+                  return;
+                onCreateDate(day);
+              }}
               className={`min-h-24 border-b border-r border-border p-1 last:border-r-0 sm:min-h-32 sm:p-2 ${day.getMonth() === date.getMonth() ? 'bg-surface-raised' : 'bg-surface-subtle text-text-muted'} ${key === selectedKey ? 'ring-2 ring-inset ring-focus' : ''}`}
             >
               <button
@@ -105,7 +135,10 @@ export function MonthCalendar({
                   );
                 })}
                 {visible.length > 3 ? (
-                  <p className="px-1 text-caption text-text-muted">
+                  <p
+                    data-calendar-no-create=""
+                    className="px-1 text-caption text-text-muted"
+                  >
                     + {visible.length - 3} další
                   </p>
                 ) : null}

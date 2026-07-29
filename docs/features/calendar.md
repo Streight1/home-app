@@ -30,7 +30,10 @@ přes `TaskCalendarLink` jako skutečný event se zdrojem `TASK`.
 - termín Úkolu v kalendáři a dokončení přes veřejné Tasks API;
 - explicitně potvrzený task slot, otevření zdrojového úkolu a bezpečné odebrání
   pouze calendar vazby;
-- dnešní a právě probíhající události na dashboardu.
+- dnešní a právě probíhající události na dashboardu;
+- rychlé vytvoření ze záhlaví, dvojkliku na prázdný desktopový den nebo slot,
+  dashboardu a globální nabídky `Přidat`; všechny vstupy otevírají stejný
+  formulář nad jednou továrnou draftu.
 - celodenní událost bez povinného času a volitelný požadovaný čas příjezdu pro
   výpočet cesty;
 - hromadně změnit barvu, typ, účastníky, cíl nebo cestovní konfiguraci a
@@ -57,6 +60,15 @@ popisek. Jednočlenná událost používá
 serverem validovaný `calendarColorToken` účastníka; společná událost používá
 `shared` akcent a avatar/iniciály všech členů. Barva vždy doplňuje jméno nebo
 avatar a nikdy nenese význam sama.
+
+Na desktopu otevře dvojklik na prázdnou část dne v měsíci časovanou událost
+v 09:00 na vybraný den; dvojklik na prázdný půlhodinový slot dne nebo týdne
+použije čas slotu. Event, menu, tlačítko „další“ ani selection prvek událost
+nevytvoří. Fokusovaná denní buňka nabízí stejnou akci klávesou Enter. Telefon
+nadále používá explicitní `Nová událost`, aby dvojtap nekolidoval se
+scrollováním. Homepage i globální `Přidat` volí nejbližší budoucí půlhodinu.
+`createCalendarEventDraft` a jediný workspace overlay sjednocují defaulty,
+validaci, mutation, chyby i invalidaci cache.
 
 Události používají centralizovaný `visual` model. Explicitní event color má
 přednost před barvou jednoho účastníka, následuje `shared` pro více účastníků a
@@ -108,6 +120,11 @@ location/routing portech.
 Časovaná `CalendarEvent` nese UTC instanty `startsAt`/`endsAt`. Celodenní
 událost místo nich používá PostgreSQL `DATE` hranice `allDayStartDate` a
 `allDayEndDateExclusive`; jednodenní 10. srpna tedy končí exkluzivně 11. srpna.
+Formulář přitom zobrazuje první a poslední zahrnutý den. Jediný date-only
+adapter převádí poslední zahrnutý den na exkluzivní API/DB hranici a zpět.
+Vykreslení používá čisté `YYYY-MM-DD` pravidlo
+`start <= den < endExclusive`; datum neprochází UTC instantem a jednodenní
+událost se nezobrazí v následující buňce ani při přechodu DST.
 Volitelné `desiredArrivalAt` určuje výpočet cesty, jinak se pro all-day event
 trasa nepočítá. Model dále drží IANA timezone, typ, stav, zdroj
 (`MANUAL`, `TEMPLATE` nebo `TASK`), nullable explicitní color token a volitelné

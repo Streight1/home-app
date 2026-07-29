@@ -1,4 +1,10 @@
-import { FilePlus2, ListPlus, Plus, ReceiptText } from 'lucide-react';
+import {
+  CalendarPlus,
+  FilePlus2,
+  ListPlus,
+  Plus,
+  ReceiptText,
+} from 'lucide-react';
 import { useWorkspaceNavigation } from '../../app/workspace-navigation/useWorkspaceNavigation.js';
 import { Button } from '../../components/ui/Button/Button.js';
 import {
@@ -10,14 +16,17 @@ import { IconButton } from '../../components/ui/IconButton/IconButton.js';
 import { InlineAlert } from '../../components/ui/InlineAlert/InlineAlert.js';
 import { Sheet } from '../../components/ui/Sheet/Sheet.js';
 import { useCurrentUser } from '../../features/auth/hooks/useCurrentUser.js';
+import { useCreateCalendarEventDialog } from '../../features/calendar/hooks/useCreateCalendarEventDialog.js';
 
 function PreparedActions({
   onAddDocument,
   onAddTask,
+  onAddEvent,
   onAddExpense,
 }: {
   onAddDocument: () => void;
   onAddTask?: () => void;
+  onAddEvent?: () => void;
   onAddExpense?: () => void;
 }) {
   return (
@@ -32,6 +41,12 @@ function PreparedActions({
           Přidat úkol
         </Button>
       ) : null}
+      {onAddEvent ? (
+        <Button className="justify-start" onClick={onAddEvent}>
+          <CalendarPlus className="size-4" aria-hidden="true" />
+          Nová událost
+        </Button>
+      ) : null}
       <Button
         disabled={!onAddExpense}
         className="justify-start"
@@ -41,8 +56,8 @@ function PreparedActions({
         Přidat výdaj
       </Button>
       <InlineAlert>
-        Dokumenty, úkoly a ruční finance jsou připravené. Další oblasti budeme
-        zpřístupňovat postupně.
+        Dokumenty, úkoly, kalendář a ruční finance používají společné bezpečné
+        vytváření.
       </InlineAlert>
     </div>
   );
@@ -51,13 +66,16 @@ function PreparedActions({
 export function QuickCreateButton({ compact = false }: { compact?: boolean }) {
   const workspace = useWorkspaceNavigation();
   const auth = useCurrentUser();
+  const openCreateEvent = useCreateCalendarEventDialog();
   const canAddTask = auth.data?.activeHousehold.role !== 'VIEWER';
   const canAddFinance = auth.data?.activeHousehold.role !== 'VIEWER';
+  const canAddEvent = auth.data?.activeHousehold.role !== 'VIEWER';
   const addDocument = () =>
     workspace.navigate({ area: 'documents', screen: 'new' });
   const addTask = () => workspace.openOverlay({ kind: 'task-create' });
   const addExpense = () =>
     workspace.openOverlay({ kind: 'finance-transaction', type: 'expense' });
+  const addEvent = () => openCreateEvent({ source: 'global-add' });
   return compact ? (
     <Sheet
       side="bottom"
@@ -72,6 +90,7 @@ export function QuickCreateButton({ compact = false }: { compact?: boolean }) {
       <PreparedActions
         onAddDocument={addDocument}
         {...(canAddTask ? { onAddTask: addTask } : {})}
+        {...(canAddEvent ? { onAddEvent: addEvent } : {})}
         {...(canAddFinance ? { onAddExpense: addExpense } : {})}
       />
     </Sheet>
@@ -91,6 +110,9 @@ export function QuickCreateButton({ compact = false }: { compact?: boolean }) {
       </DropdownMenuItem>
       {canAddTask ? (
         <DropdownMenuItem onSelect={addTask}>Přidat úkol</DropdownMenuItem>
+      ) : null}
+      {canAddEvent ? (
+        <DropdownMenuItem onSelect={addEvent}>Nová událost</DropdownMenuItem>
       ) : null}
       {canAddFinance ? (
         <DropdownMenuItem onSelect={addExpense}>Přidat výdaj</DropdownMenuItem>

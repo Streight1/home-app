@@ -34,6 +34,7 @@ export function DashboardOverview({
       />
       <TodayCalendarWidget
         {...(calendarDashboard ? { initialData: calendarDashboard } : {})}
+        canWrite={role !== 'VIEWER'}
       />
       <FinanceDashboardWidget canWrite={role !== 'VIEWER'} />
       <FinanceBudgetDashboardWidget />

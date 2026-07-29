@@ -16,7 +16,10 @@ import type {
   CalendarEventRecord,
   CalendarTemplateRecord,
 } from '../src/modules/calendar/domain/calendar.types.js';
-import { getCalendarTravelTarget } from '../src/modules/calendar/domain/calendar-event-schedule.js';
+import {
+  getCalendarEventBounds,
+  getCalendarTravelTarget,
+} from '../src/modules/calendar/domain/calendar-event-schedule.js';
 import type { CalendarEventRepository } from '../src/modules/calendar/domain/ports/calendar-event.repository.js';
 import type { CalendarTemplateRepository } from '../src/modules/calendar/domain/ports/calendar-template.repository.js';
 import type { CalendarClockPort } from '../src/modules/calendar/domain/ports/clock.port.js';
@@ -237,6 +240,30 @@ describe('shared household calendar domain', () => {
       allDayEndDateExclusive: new Date('2026-08-11T00:00:00.000Z'),
     });
   });
+
+  it.each([
+    ['summer', '2026-07-29', '2026-07-30', 24],
+    ['winter', '2026-01-29', '2026-01-30', 24],
+    ['spring DST', '2026-03-29', '2026-03-30', 23],
+    ['autumn DST', '2026-10-25', '2026-10-26', 25],
+  ])(
+    'keeps one all-day Prague calendar date across %s',
+    (_label, startDate, endDateExclusive, expectedHours) => {
+      const bounds = getCalendarEventBounds(
+        eventRecord({
+          isAllDay: true,
+          startsAt: null,
+          endsAt: null,
+          allDayStartDate: startDate,
+          allDayEndDateExclusive: endDateExclusive,
+          timezone: 'Europe/Prague',
+        }),
+      );
+      expect((bounds.end.getTime() - bounds.start.getTime()) / 3_600_000).toBe(
+        expectedHours,
+      );
+    },
+  );
 
   it('uses desired arrival rather than a synthetic start for all-day travel', () => {
     const desiredArrivalAt = new Date('2026-08-10T07:00:00.000Z');

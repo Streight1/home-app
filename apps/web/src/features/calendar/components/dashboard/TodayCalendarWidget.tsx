@@ -10,13 +10,17 @@ import {
   useCalendarMutations,
 } from '../../hooks/useCalendar.js';
 import type { CalendarDashboard } from '../../types/calendar.types.js';
+import { useCreateCalendarEventDialog } from '../../hooks/useCreateCalendarEventDialog.js';
 
 export function TodayCalendarWidget({
   initialData,
+  canWrite = true,
 }: {
   initialData?: CalendarDashboard;
+  canWrite?: boolean;
 }) {
   const workspace = useWorkspaceNavigation();
+  const openCreateEvent = useCreateCalendarEventDialog();
   const query = useCalendarDashboard(initialData);
   const { recalculateTravel } = useCalendarMutations();
   return (
@@ -28,15 +32,26 @@ export function TodayCalendarWidget({
           </p>
           <h2 className="mt-1 text-section-title font-semibold">Kalendář</h2>
         </div>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() =>
-            workspace.navigate({ area: 'calendar', screen: 'calendar' })
-          }
-        >
-          Zobrazit kalendář
-        </Button>
+        <div className="flex flex-wrap justify-end gap-2">
+          {canWrite ? (
+            <Button
+              size="sm"
+              onClick={() => openCreateEvent({ source: 'dashboard' })}
+            >
+              <Plus className="size-4" aria-hidden="true" />
+              Nová událost
+            </Button>
+          ) : null}
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() =>
+              workspace.navigate({ area: 'calendar', screen: 'calendar' })
+            }
+          >
+            Zobrazit kalendář
+          </Button>
+        </div>
       </div>
       {query.isLoading ? (
         <div className="grid min-h-24 place-items-center">
@@ -55,14 +70,16 @@ export function TodayCalendarWidget({
             aria-hidden="true"
           />
           <p className="mt-2 font-medium">Dnes nemáte žádnou událost.</p>
-          <Button
-            className="mt-3"
-            size="sm"
-            onClick={() => workspace.openOverlay({ kind: 'calendar-create' })}
-          >
-            <Plus className="size-4" aria-hidden="true" />
-            Přidat událost
-          </Button>
+          {canWrite ? (
+            <Button
+              className="mt-3"
+              size="sm"
+              onClick={() => openCreateEvent({ source: 'dashboard' })}
+            >
+              <Plus className="size-4" aria-hidden="true" />
+              Nová událost
+            </Button>
+          ) : null}
         </div>
       ) : null}
       {query.data?.items.length ? (

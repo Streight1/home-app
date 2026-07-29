@@ -229,6 +229,49 @@ for (const viewport of [
   });
 }
 
+test('celodenní události používají přesný inclusive rozsah', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await openStory(page, 'screens-calendar--month-light');
+  await expect(page.getByText('Jednodenní celodenní událost')).toHaveCount(1);
+  await expect(page.getByText('Vícedenní celodenní událost')).toHaveCount(3);
+});
+
+test('dvojklik na prázdný den otevře sdílený create dialog', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await openStory(page, 'screens-calendar--quick-create-by-double-click');
+  await page
+    .getByLabel('Vytvořit událost na 29. července 2030')
+    .dblclick({ position: { x: 80, y: 80 } });
+  const dialog = page.getByRole('dialog', { name: 'Nová událost' });
+  await expect(dialog).toBeVisible();
+  await expect(
+    dialog.getByRole('button', {
+      name: 'Datum začátku: 29. července 2030',
+    }),
+  ).toBeVisible();
+  await expect(dialog.getByLabel('Čas začátku')).toHaveValue('09:00');
+  await expect(page).toHaveScreenshot('calendar-double-click-create.png');
+});
+
+test('desktopové menu lze sbalit a brand zůstává samostatný', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openStory(page, 'layouts-appshell--desktop');
+  await expect(
+    page.getByRole('button', { name: 'Přejít na domovskou stránku' }).first(),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Sbalit hlavní menu' }).click();
+  await expect(
+    page.getByRole('button', { name: 'Rozbalit hlavní menu' }),
+  ).toBeVisible();
+  await expect(page).toHaveScreenshot('app-shell-sidebar-collapsed.png');
+});
+
 test('bucket list dashboard · desktop-wide-dark', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await openStory(page, 'screens-bucket-list--dashboard-dark');

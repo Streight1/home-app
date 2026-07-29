@@ -7,13 +7,22 @@ import { DesktopSidebar } from './DesktopSidebar.js';
 import { MobileBottomNavigation } from './MobileBottomNavigation.js';
 import { MobileHeader } from './MobileHeader.js';
 import { TabletNavigationRail } from './TabletNavigationRail.js';
+import {
+  readSidebarCollapsed,
+  storeSidebarCollapsed,
+} from './sidebarPreference.js';
 
 export function AppShell({
   children,
   environmentLabel = webEnvironment.appEnvLabel,
   ...shellProps
 }: AppShellProps) {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsedState] =
+    useState(readSidebarCollapsed);
+  const setSidebarCollapsed = (collapsed: boolean) => {
+    setSidebarCollapsedState(collapsed);
+    storeSidebarCollapsed(collapsed);
+  };
   const desktopOffset = sidebarCollapsed
     ? 'xl:pl-(--navigation-rail-width)'
     : 'xl:pl-(--navigation-sidebar-width)';
@@ -34,7 +43,7 @@ export function AppShell({
         <DesktopSidebar onCollapse={() => setSidebarCollapsed(true)} />
       )}
       <div
-        className={`min-w-0 transition-[padding] duration-(--motion-standard) md:pl-(--navigation-rail-width) ${desktopOffset}`}
+        className={`min-w-0 transition-[padding] duration-(--motion-standard) motion-reduce:transition-none md:pl-(--navigation-rail-width) ${desktopOffset}`}
       >
         <AppTopBar {...shellProps} environmentLabel={environmentLabel} />
         <main

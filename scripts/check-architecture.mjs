@@ -106,9 +106,11 @@ const requiredShellFiles = [
   'HouseholdSwitcher.tsx',
   'UserMenu.tsx',
   'QuickCreateButton.tsx',
+  'HomeBrandButton.tsx',
   'EnvironmentBadge.tsx',
   'navigation.config.ts',
   'app-shell.types.ts',
+  'sidebarPreference.ts',
 ];
 for (const file of requiredShellFiles) {
   try {
@@ -263,6 +265,10 @@ const calendarPreferenceCachePath = join(
   webSource,
   'features/location/lib/calendarPreferencesCache.ts',
 );
+const sidebarPreferencePath = join(
+  webSource,
+  'layouts/AppShell/sidebarPreference.ts',
+);
 const themeStorageSource = await readFile(themeStoragePath, 'utf8');
 if (!themeStorageSource.includes("THEME_STORAGE_KEY = 'homeapp.theme'"))
   errors.push('Theme preference nepoužívá stabilní klíč homeapp.theme.');
@@ -271,10 +277,23 @@ for (const file of [...tsxFiles, ...webTsFiles]) {
   const path = relative(root, file);
   if (
     /\blocalStorage\b/.test(source) &&
-    ![themeStoragePath, calendarPreferenceCachePath].includes(file)
+    ![
+      themeStoragePath,
+      calendarPreferenceCachePath,
+      sidebarPreferencePath,
+    ].includes(file)
   )
     errors.push(`${path} přistupuje k localStorage mimo themeStorage.ts.`);
 }
+const sidebarPreferenceSource = await readFile(sidebarPreferencePath, 'utf8');
+if (
+  !sidebarPreferenceSource.includes(
+    "SIDEBAR_PREFERENCE_KEY = 'homeapp.navigation.sidebar.v1'",
+  )
+)
+  errors.push(
+    'Sbalení sidebaru nepoužívá jediný verzovaný klíč homeapp.navigation.sidebar.v1.',
+  );
 const calendarPreferenceCacheSource = await readFile(
   calendarPreferenceCachePath,
   'utf8',
@@ -510,6 +529,61 @@ for (const file of await collectFiles(calendarLocationWebDirectory, '.tsx')) {
   if (/email[^\n]*(?:color|colour)|(?:color|colour)[^\n]*email/i.test(source))
     errors.push(`${relative(root, file)} odvozuje barvu účastníka z e-mailu.`);
 }
+const calendarDateSource = await readFile(
+  join(calendarLocationWebDirectory, 'lib/calendarDate.ts'),
+  'utf8',
+);
+if (!calendarDateSource.includes('item.start <= dateKey && dateKey < item.end'))
+  errors.push(
+    'Celodenní date-only rozsah musí používat start <= den < endExclusive bez implicitního UTC Date převodu.',
+  );
+const calendarFormSource = await readFile(
+  join(calendarLocationWebDirectory, 'components/forms/CalendarEventForm.tsx'),
+  'utf8',
+);
+const scheduleFieldsSource = await readFile(
+  join(
+    calendarLocationWebDirectory,
+    'components/forms/EventScheduleFields.tsx',
+  ),
+  'utf8',
+);
+if (
+  /addDays\s*\(/.test(calendarFormSource) ||
+  /addDays\s*\(/.test(scheduleFieldsSource) ||
+  !calendarFormSource.includes('inclusiveAllDayEndToExclusive') ||
+  !scheduleFieldsSource.includes('exclusiveAllDayEndToInclusive')
+)
+  errors.push(
+    'Inclusive/exclusive all-day převod smí probíhat pouze přes centralizovaný date-only adapter.',
+  );
+const dashboardCalendarWidgetSource = await readFile(
+  join(
+    calendarLocationWebDirectory,
+    'components/dashboard/TodayCalendarWidget.tsx',
+  ),
+  'utf8',
+);
+if (
+  !dashboardCalendarWidgetSource.includes('useCreateCalendarEventDialog') ||
+  /CalendarEventForm|createCalendarEvent\s*\(/.test(
+    dashboardCalendarWidgetSource,
+  )
+)
+  errors.push(
+    'Homepage kalendář musí otevírat centrální create dialog a nesmí kopírovat formulář ani mutation logiku.',
+  );
+const desktopSidebarSource = await readFile(
+  join(shellDirectory, 'DesktopSidebar.tsx'),
+  'utf8',
+);
+if (
+  !desktopSidebarSource.includes('HomeBrandButton') ||
+  !desktopSidebarSource.includes('Sbalit hlavní menu')
+)
+  errors.push(
+    'Desktop brand a ovladač sbalení musí být oddělené přístupné click targety.',
+  );
 
 const calendarTemplateSources = (
   await Promise.all(

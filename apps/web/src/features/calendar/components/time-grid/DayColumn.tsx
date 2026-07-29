@@ -7,6 +7,11 @@ import {
   getEventVisualSegments,
   layoutOverlappingEvents,
 } from './time-grid.layout.js';
+import {
+  getTimeSlotMinutesFromPointer,
+  isCalendarInteractiveTarget,
+  timeGridSlotLabel,
+} from './time-grid.interaction.js';
 
 export function DayColumn({
   day,
@@ -14,12 +19,14 @@ export function DayColumn({
   selectionMode = false,
   selectedIds,
   onSelectEvent,
+  onCreateAt,
 }: {
   day: Date;
   items: CalendarFeedItem[];
   selectionMode?: boolean | undefined;
   selectedIds?: ReadonlySet<string> | undefined;
   onSelectEvent?: ((eventId: string) => void) | undefined;
+  onCreateAt?: ((day: Date, startTime: string) => void) | undefined;
 }) {
   const segments = layoutOverlappingEvents(
     items.flatMap((item) => getEventVisualSegments(item, day)),
@@ -34,6 +41,21 @@ export function DayColumn({
         day: 'numeric',
         month: 'long',
       })}
+      onDoubleClick={(event) => {
+        if (
+          selectionMode ||
+          !onCreateAt ||
+          isCalendarInteractiveTarget(event.target)
+        )
+          return;
+        const rect = event.currentTarget.getBoundingClientRect();
+        onCreateAt(
+          day,
+          timeGridSlotLabel(
+            getTimeSlotMinutesFromPointer(event.clientY, rect.top, rect.height),
+          ),
+        );
+      }}
     >
       <TimeGridLines />
       {segments.map((segment) => (

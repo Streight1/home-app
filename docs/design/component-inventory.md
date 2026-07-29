@@ -57,7 +57,9 @@ režim nepoužívá tabulku a empty stav nevytváří ukázková přání.
 
 `AppShell` jen skládá `DesktopSidebar`, `CollapsedSidebar`,
 `TabletNavigationRail`, `MobileHeader`, `MobileBottomNavigation`, `AppTopBar`,
-`HouseholdSwitcher`, `UserMenu` a `QuickCreateButton`. Theme provider patří do
+`HouseholdSwitcher`, `HomeBrandButton`, `UserMenu` a `QuickCreateButton`.
+Brand je samostatná homepage akce; sbalení/rozbalení má vlastní accessible
+target a používá `sidebarPreference`. Theme provider patří do
 aplikačních providerů, ne do shellu nebo stránky.
 
 Dokumentový feature skládá oddělené library, folder tree/sheet, dynamické
@@ -80,7 +82,9 @@ button/grid sémantiky a viditelný focus.
 
 Calendar feature skládá toolbar, samostatný month/week/day/list pohled, event
 item, adaptivní create/edit dialog, detail, sekundární template manager,
-day-selection a `TodayCalendarWidget`. `CalendarTimeGrid`, `TimeGutter`,
+day-selection a `TodayCalendarWidget`. `createCalendarEventDraft`,
+`useCreateCalendarEventDialog` a `useCalendarQuickCreate` sjednocují toolbar,
+dvojklik, dashboard i globální Add bez druhého formuláře. `CalendarTimeGrid`, `TimeGutter`,
 `DayColumn`, `AllDaySection`, `CurrentTimeIndicator`, `CalendarEventBlock`,
 `CalendarTravelBlock` a `OverlapEventLayer` skládají skutečnou časovou osu.
 `CalendarEventBlock` je positioning wrapper a vnitřní `CalendarEventItem`

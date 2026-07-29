@@ -7,6 +7,7 @@ import { Textarea } from '../../../../components/ui/Textarea/Textarea.js';
 import type { EventPlaceValue } from '../../../location/components/PlaceAutocomplete.js';
 import type { HouseholdMemberSummary } from '../../../household/household.public.js';
 import type {
+  CalendarEventDraft,
   CalendarEvent,
   CalendarEventInput,
   CalendarEventType,
@@ -14,7 +15,7 @@ import type {
   TravelPlan,
   TravelPlanInput,
 } from '../../types/calendar.types.js';
-import { addDays, fromIsoDate, localIsoDate } from '../../lib/calendarDate.js';
+import { inclusiveAllDayEndToExclusive } from '../../lib/calendarDate.js';
 import { CalendarEventColorPicker } from './CalendarEventColorPicker.js';
 import { EventLocationFields } from './EventLocationFields.js';
 import { EventParticipantSelector } from './EventParticipantSelector.js';
@@ -42,7 +43,7 @@ const localDateTime = (date: Date) => {
 
 export function CalendarEventForm({
   initial,
-  initialDate,
+  initialDraft,
   initialTravelPlan,
   members,
   currentUserId,
@@ -53,7 +54,7 @@ export function CalendarEventForm({
   onCancel,
 }: {
   initial?: CalendarEvent;
-  initialDate?: string;
+  initialDraft?: CalendarEventDraft;
   initialTravelPlan?: TravelPlan;
   members: HouseholdMemberSummary[];
   currentUserId: string;
@@ -68,7 +69,7 @@ export function CalendarEventForm({
   const [type, setType] = useState<CalendarEventType>(
     initial?.type ?? 'GENERAL',
   );
-  const schedule = useCalendarEventSchedule(initial, initialDate);
+  const schedule = useCalendarEventSchedule(initial, initialDraft);
   const [place, setPlace] = useState<EventPlaceValue>({
     placeId: initial?.locationPlaceId ?? null,
     label: initial?.locationLabel ?? initial?.location ?? '',
@@ -126,8 +127,8 @@ export function CalendarEventForm({
           ?.calendarColorToken ?? 'neutral');
   const submit = (event: SyntheticEvent<HTMLFormElement, SubmitEvent>) => {
     event.preventDefault();
-    const allDayEndExclusive = localIsoDate(
-      addDays(fromIsoDate(schedule.allDayEnd), 1),
+    const allDayEndExclusive = inclusiveAllDayEndToExclusive(
+      schedule.allDayEnd,
     );
     onSubmit({
       title: title.trim(),

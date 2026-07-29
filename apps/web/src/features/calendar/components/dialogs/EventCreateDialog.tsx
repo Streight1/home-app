@@ -4,15 +4,16 @@ import { useCalendarMutations } from '../../hooks/useCalendar.js';
 import { CalendarEventForm } from '../forms/CalendarEventForm.js';
 import { useCurrentUser } from '../../../auth/hooks/useCurrentUser.js';
 import { useCalendarPreferences } from '../../../location/hooks/useCalendarPreferences.js';
+import type { CalendarEventDraft } from '../../types/calendar.types.js';
 
 export function EventCreateDialog({
   open,
   onOpenChange,
-  date,
+  draft,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  date?: string;
+  draft: CalendarEventDraft;
 }) {
   const members = useHouseholdMembers();
   const current = useCurrentUser();
@@ -28,7 +29,7 @@ export function EventCreateDialog({
       mobileFullScreen
     >
       <CalendarEventForm
-        {...(date ? { initialDate: date } : {})}
+        initialDraft={draft}
         members={members.data ?? []}
         currentUserId={current.data?.user.id ?? ''}
         defaultWorkShiftParticipantId={

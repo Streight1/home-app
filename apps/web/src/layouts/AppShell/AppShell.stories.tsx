@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Card } from '../../components/ui/Card/Card.js';
 import { AppShell } from './AppShell.js';
+import { SIDEBAR_PREFERENCE_KEY } from './sidebarPreference.js';
 
 function ShellContent() {
   return (
@@ -46,6 +47,13 @@ type Story = StoryObj<typeof meta>;
 
 export const Desktop: Story = {
   parameters: { theme: 'dark', viewport: { defaultViewport: 'desktop' } },
+};
+export const DesktopCollapsed: Story = {
+  parameters: { theme: 'dark', viewport: { defaultViewport: 'desktop' } },
+  render: (args) => {
+    localStorage.setItem(SIDEBAR_PREFERENCE_KEY, 'collapsed');
+    return <AppShell {...args} />;
+  },
 };
 export const Tablet: Story = {
   parameters: { theme: 'dark', viewport: { defaultViewport: 'tablet' } },

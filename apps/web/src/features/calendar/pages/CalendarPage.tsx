@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { useWorkspaceNavigation } from '../../../app/workspace-navigation/useWorkspaceNavigation.js';
 import { InlineAlert } from '../../../components/ui/InlineAlert/InlineAlert.js';
 import { LoadingScreen } from '../../../components/ui/LoadingScreen/LoadingScreen.js';
 import type { HouseholdRole } from '../../household/household.public.js';
@@ -10,7 +9,7 @@ import { WeekCalendar } from '../components/calendar/WeekCalendar.js';
 import { CalendarTimeGrid } from '../components/time-grid/CalendarTimeGrid.js';
 import { CalendarTemplateManagerDialog } from '../components/templates/CalendarTemplateManagerDialog.js';
 import { useCalendarFeed } from '../hooks/useCalendar.js';
-import { feedRange, localIsoDate, shiftPeriod } from '../lib/calendarDate.js';
+import { feedRange, shiftPeriod } from '../lib/calendarDate.js';
 import type { CalendarViewMode } from '../types/calendar.types.js';
 import { useRememberedCalendarView } from '../../location/hooks/useRememberedCalendarView.js';
 import { useCalendarPreferences } from '../../location/hooks/useCalendarPreferences.js';
@@ -18,11 +17,12 @@ import { useHouseholdMembers } from '../../household/household.public.js';
 import { CalendarSelectionToolbar } from '../components/bulk/CalendarSelectionToolbar.js';
 import { CalendarBulkEditDialog } from '../components/bulk/CalendarBulkEditDialog.js';
 import { CalendarBulkDeleteDialog } from '../components/bulk/CalendarBulkDeleteDialog.js';
+import { useCalendarQuickCreate } from '../hooks/useCalendarQuickCreate.js';
 export function CalendarPage({ role }: { role: HouseholdRole }) {
-  const workspace = useWorkspaceNavigation();
   const rememberedView = useRememberedCalendarView();
   const preferences = useCalendarPreferences();
   const members = useHouseholdMembers();
+  const quickCreate = useCalendarQuickCreate();
   const view: CalendarViewMode = rememberedView.view;
   const [date, setDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -60,6 +60,7 @@ export function CalendarPage({ role }: { role: HouseholdRole }) {
     setSelectedDate(next);
     setDate(next);
   };
+  const canCreate = role !== 'VIEWER';
   return (
     <div className="grid gap-5">
       <CalendarToolbar
@@ -74,12 +75,7 @@ export function CalendarPage({ role }: { role: HouseholdRole }) {
         }}
         onPrevious={() => setDate((current) => shiftPeriod(current, view, -1))}
         onNext={() => setDate((current) => shiftPeriod(current, view, 1))}
-        onCreate={() =>
-          workspace.openOverlay({
-            kind: 'calendar-create',
-            date: localIsoDate(selectedDate),
-          })
-        }
+        onCreate={() => quickCreate.fromToolbar(selectedDate)}
         onTemplates={() => setTemplatesOpen(true)}
         selectionMode={selectionMode}
         onSelectionModeChange={(active) => {
@@ -121,6 +117,7 @@ export function CalendarPage({ role }: { role: HouseholdRole }) {
             selectionMode={selectionMode}
             selectedIds={selectedIds}
             onSelectEvent={toggleSelection}
+            onCreateDate={canCreate ? quickCreate.fromMonthDay : undefined}
           />
           <section className="md:hidden">
             <h2 className="mb-3 text-section-title font-semibold">
@@ -144,13 +141,11 @@ export function CalendarPage({ role }: { role: HouseholdRole }) {
         <WeekCalendar
           date={date}
           items={visibleItems}
-          onSelectDate={(next) => {
-            setSelectedDate(next);
-            setDate(next);
-          }}
+          onSelectDate={selectDate}
           selectionMode={selectionMode}
           selectedIds={selectedIds}
           onSelectEvent={toggleSelection}
+          onCreateAt={canCreate ? quickCreate.fromTimeSlot : undefined}
         />
       ) : null}
       {view === 'day' ? (
@@ -161,6 +156,7 @@ export function CalendarPage({ role }: { role: HouseholdRole }) {
           selectionMode={selectionMode}
           selectedIds={selectedIds}
           onSelectEvent={toggleSelection}
+          onCreateAt={canCreate ? quickCreate.fromTimeSlot : undefined}
         />
       ) : null}
       {view === 'agenda' ? (

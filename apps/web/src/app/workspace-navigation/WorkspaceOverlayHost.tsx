@@ -43,7 +43,7 @@ export function WorkspaceOverlayHost({ role }: { role: HouseholdRole }) {
       <EventCreateDialog
         open
         onOpenChange={(open) => !open && workspace.closeOverlay()}
-        {...(overlay.date ? { date: overlay.date } : {})}
+        draft={overlay.draft}
       />
     );
   if (overlay.kind === 'calendar-edit' && role !== 'VIEWER')

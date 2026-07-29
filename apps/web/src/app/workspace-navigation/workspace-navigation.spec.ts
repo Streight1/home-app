@@ -79,4 +79,52 @@ describe('workspace navigation state', () => {
     ).toEqual({ view: state.view });
     expect(parseWorkspaceState(state)).toEqual(state);
   });
+
+  it('validates the persisted calendar creation draft and migrates legacy dates', () => {
+    expect(
+      parseWorkspaceState({
+        view: { area: 'calendar', screen: 'calendar' },
+        overlay: {
+          kind: 'calendar-create',
+          draft: {
+            source: 'month-day-double-click',
+            date: '2026-07-29',
+            startTime: '09:00',
+            durationMinutes: 60,
+            isAllDay: false,
+          },
+        },
+      }),
+    ).toEqual({
+      view: { area: 'calendar', screen: 'calendar' },
+      overlay: {
+        kind: 'calendar-create',
+        draft: {
+          source: 'month-day-double-click',
+          date: '2026-07-29',
+          startTime: '09:00',
+          durationMinutes: 60,
+          isAllDay: false,
+        },
+      },
+    });
+    expect(
+      parseWorkspaceState({
+        view: { area: 'calendar', screen: 'calendar' },
+        overlay: { kind: 'calendar-create', date: '2026-07-29' },
+      }),
+    ).toEqual({
+      view: { area: 'calendar', screen: 'calendar' },
+      overlay: {
+        kind: 'calendar-create',
+        draft: {
+          source: 'calendar-toolbar',
+          date: '2026-07-29',
+          startTime: '09:00',
+          durationMinutes: 60,
+          isAllDay: false,
+        },
+      },
+    });
+  });
 });

@@ -39,12 +39,29 @@ export function feedRange(
   return { from: start.toISOString(), to: addDays(start, 1).toISOString() };
 }
 export function occursOnDate(item: CalendarFeedItem, date: Date): boolean {
+  if (
+    item.sourceType === 'CALENDAR_EVENT' &&
+    item.isAllDay &&
+    /^\d{4}-\d{2}-\d{2}$/.test(item.start) &&
+    /^\d{4}-\d{2}-\d{2}$/.test(item.end)
+  ) {
+    const dateKey = localIsoDate(date);
+    return item.start <= dateKey && dateKey < item.end;
+  }
   const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const end = addDays(start, 1);
   const itemEnd = item.end
     ? new Date(item.end)
     : new Date(new Date(item.start).getTime() + 1);
   return new Date(item.start) < end && itemEnd > start;
+}
+
+export function inclusiveAllDayEndToExclusive(value: string): string {
+  return localIsoDate(addDays(fromIsoDate(value), 1));
+}
+
+export function exclusiveAllDayEndToInclusive(value: string): string {
+  return localIsoDate(addDays(fromIsoDate(value), -1));
 }
 export function shiftPeriod(
   date: Date,
@@ -95,11 +112,13 @@ export function formatCalendarInterval({
   isAllDay: boolean;
 }): string {
   if (isAllDay && allDayStartDate && allDayEndDateExclusive) {
-    const inclusiveEnd = addDays(fromIsoDate(allDayEndDateExclusive), -1);
+    const inclusiveEnd = exclusiveAllDayEndToInclusive(allDayEndDateExclusive);
     const formatter = new Intl.DateTimeFormat('cs-CZ', {
       dateStyle: 'long',
     });
-    return `${formatter.format(fromIsoDate(allDayStartDate))} – ${formatter.format(inclusiveEnd)} · celý den`;
+    if (allDayStartDate === inclusiveEnd)
+      return `${formatter.format(fromIsoDate(allDayStartDate))} · celý den`;
+    return `${formatter.format(fromIsoDate(allDayStartDate))} – ${formatter.format(fromIsoDate(inclusiveEnd))} · celý den`;
   }
   if (!startsAt || !endsAt) return 'Čas není dostupný';
   const formatter = new Intl.DateTimeFormat('cs-CZ', {

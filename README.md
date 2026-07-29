@@ -41,6 +41,9 @@ jídelníček zatím nejsou implementované.
   pravdivým dashboardovým souhrnem; částky zůstávají v minor units
 - interní workspace navigace: browser zobrazuje pouze `/login` nebo `/app`,
   zatímco Back/Forward a reload bezpečně obnovují validovaný interní stav
+- kalendář lze rychle otevřít dvojklikem na prázdný desktopový den/slot nebo
+  akcí `Nová událost` na homepage a v globálním `Přidat`; levý desktopový
+  sidebar lze sbalit a HomeApp brand vrací na dashboard bez reloadu
 - volitelný single-household provisioning: nakonfigurovaný vlastník získá roli
   OWNER a ostatní allowlistované účty roli MEMBER ve stejné domácnosti
 - design systém HomeApp Aurora s motivy podle systému, světlý a tmavý
