@@ -80,6 +80,8 @@ chování má vždy přednost před zastaralým textem; při rozporu dokument op
   evidence pravidelných plateb bez bankovní automatizace.
 - [Sdílený roční Bucket list](features/bucket-list.md) — společná přání,
   účastníci, dokumenty, roční postup a bezpečný převod do dalšího roku.
+- [Údržba domácnosti](features/maintenance.md) — plány údržby, recurrence,
+  konkrétní výskyty, úkoly, dokončovací historie a nákladové vazby.
 
 ## API
 

@@ -117,9 +117,9 @@ Storybook project i skutečný Storybook server instalují stejnou
 
 ### Vizuální testy
 
-`pnpm test:visual` spouští v připnutém Playwright containeru 93 testů:
-referenční metriku lokálního Inter fontu a 92 vizuálních scénářů se
-93 screenshot baseline. Povinné kombinace dashboardu jsou 390×844 dark,
+`pnpm test:visual` spouští v připnutém Playwright containeru 104 testů:
+referenční metriku lokálního Inter fontu a 103 vizuálních scénářů se
+104 screenshot baseline. Povinné kombinace dashboardu jsou 390×844 dark,
 390×844 light, 768×1024 dark, 1280×800 light a 1440×900 dark.
 
 Další scénáře pokrývají login dark/light na telefonu a desktopu, fixture
@@ -143,6 +143,15 @@ v [dokumentaci vizuálních regresí](visual-regression.md).
 `pnpm test:accessibility` spouští axe WCAG 2.2 AA, focus return dialogu, skip
 link, 200% text, 44px targets, reduced motion a reflow na 360×800, 390×844,
 430×932 a 768×1024. Screenshot ani axe nenahrazuje úplné ruční UX posouzení.
+
+Maintenance regresní sada kryje čistou recurrence knihovnu, omezené
+generování, roli VIEWER/MEMBER, veřejné Tasks/Documents/Finance hranice,
+date-only a minor-unit validaci. Webová sada ověřuje skutečné loading, empty a
+error stavy, formulář recurrence, dashboard a interní workspace. Storybook a
+Playwright obsahují maintenance přehled, plány, detail, historii, dashboard
+widget, globální `Přidat` a create/complete/skip/reschedule dialogy v
+light/dark a compact/expanded view; snapshoty se mění pouze kanonickým
+containerovým postupem.
 
 ## Externí služby
 

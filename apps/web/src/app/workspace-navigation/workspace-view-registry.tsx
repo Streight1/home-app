@@ -9,6 +9,7 @@ import { HouseholdSettingsPage } from '../../features/household/pages/HouseholdS
 import { FinanceWorkspaceView } from '../../features/finance/navigation/FinanceWorkspaceView.js';
 import type { WorkspaceView } from './workspace-navigation.types.js';
 import { BucketListWorkspaceView } from '../../features/bucket-list/navigation/BucketListWorkspaceView.js';
+import { MaintenanceWorkspaceView } from '../../features/maintenance/navigation/MaintenanceWorkspaceView.js';
 
 interface AreaHostProps {
   view: WorkspaceView;
@@ -41,6 +42,10 @@ const hosts: Record<WorkspaceView['area'], ComponentType<AreaHostProps>> = {
   'bucket-list': ({ view, role }) =>
     view.area === 'bucket-list' ? (
       <BucketListWorkspaceView view={view} role={role} />
+    ) : null,
+  maintenance: ({ view, role }) =>
+    view.area === 'maintenance' ? (
+      <MaintenanceWorkspaceView view={view} role={role} />
     ) : null,
   finance: ({ view, role }) =>
     view.area === 'finance' ? (

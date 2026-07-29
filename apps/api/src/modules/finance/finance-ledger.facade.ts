@@ -358,4 +358,43 @@ export class FinanceLedgerFacade {
       bookedDate: dateOnlyString(transaction.bookedDate),
     };
   }
+
+  public async verifyAccessibleTransactionSummaries(
+    userId: string,
+    transactionIds: readonly string[],
+  ) {
+    const ids = [...new Set(transactionIds)];
+    if (ids.length === 0) return [];
+    const membership = await this.access.getActiveMembership(
+      userId,
+      FINANCE_READ_ROLE,
+    );
+    const transactions = await this.prisma.financialTransaction.findMany({
+      where: {
+        id: { in: ids },
+        householdId: membership.householdId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        type: true,
+        amountMinor: true,
+        currencyCode: true,
+        bookedDate: true,
+        description: true,
+        counterpartyName: true,
+      },
+    });
+    if (transactions.length !== ids.length) throw financeNotFound();
+    const byId = new Map(transactions.map((item) => [item.id, item]));
+    return ids.map((id) => {
+      const item = byId.get(id);
+      if (!item) throw financeNotFound();
+      return {
+        ...item,
+        amountMinor: item.amountMinor.toString(),
+        bookedDate: dateOnlyString(item.bookedDate),
+      };
+    });
+  }
 }

@@ -8,6 +8,7 @@ import { EventCreateDialog } from '../../features/calendar/components/dialogs/Ev
 import { EventEditDialog } from '../../features/calendar/components/dialogs/EventEditDialog.js';
 import { FinancialTransactionDialog } from '../../features/finance/components/forms/FinancialTransactionDialog.js';
 import { BucketListItemDialog } from '../../features/bucket-list/components/dialogs/BucketListItemDialog.js';
+import { MaintenancePlanDialog } from '../../features/maintenance/maintenance.public.js';
 
 function TaskCreateOverlay() {
   const workspace = useWorkspaceNavigation();
@@ -66,6 +67,13 @@ export function WorkspaceOverlayHost({ role }: { role: HouseholdRole }) {
     return (
       <BucketListItemDialog
         listId={overlay.listId}
+        open
+        onOpenChange={(open) => !open && workspace.closeOverlay()}
+      />
+    );
+  if (overlay.kind === 'maintenance-plan-create' && role !== 'VIEWER')
+    return (
+      <MaintenancePlanDialog
         open
         onOpenChange={(open) => !open && workspace.closeOverlay()}
       />

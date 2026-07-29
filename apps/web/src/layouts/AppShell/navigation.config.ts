@@ -11,6 +11,7 @@ import {
   Settings,
   Soup,
   Sparkles,
+  Wrench,
   type LucideIcon,
 } from 'lucide-react';
 import type { WorkspaceView } from '../../app/workspace-navigation/workspace-navigation.types.js';
@@ -33,6 +34,12 @@ export const desktopNavigation: readonly NavigationItem[] = [
   },
   { label: 'Dokumenty', icon: FileText, available: true, area: 'documents' },
   { label: 'Úkoly', icon: ListTodo, available: true, area: 'tasks' },
+  {
+    label: 'Údržba',
+    icon: Wrench,
+    available: true,
+    area: 'maintenance',
+  },
   {
     label: 'Bucket list',
     icon: Sparkles,
@@ -70,6 +77,7 @@ export function workspaceViewForArea(area: NavigationArea): WorkspaceView {
   if (area === 'tasks') return { area, screen: 'list' };
   if (area === 'calendar') return { area, screen: 'calendar' };
   if (area === 'bucket-list') return { area, screen: 'overview' };
+  if (area === 'maintenance') return { area, screen: 'overview' };
   if (area === 'finance') return { area, screen: 'overview' };
   if (area === 'settings') return { area, screen: 'general' };
   return { area: 'dashboard' };

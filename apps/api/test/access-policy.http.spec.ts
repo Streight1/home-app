@@ -171,6 +171,29 @@ class BucketListPolicyController {
   }
 }
 
+@Controller('maintenance')
+class MaintenancePolicyController {
+  @Get('dashboard')
+  public dashboard(): { status: 'must-be-protected' } {
+    return { status: 'must-be-protected' };
+  }
+
+  @Get('plans')
+  public plans(): { status: 'must-be-protected' } {
+    return { status: 'must-be-protected' };
+  }
+
+  @Get('tasks/:taskId')
+  public taskContext(): { status: 'must-be-protected' } {
+    return { status: 'must-be-protected' };
+  }
+
+  @Post('plans')
+  public create(): { status: 'must-be-protected' } {
+    return { status: 'must-be-protected' };
+  }
+}
+
 describe('deny-by-default HTTP access policy', () => {
   let app: INestApplication;
   const auth = {
@@ -205,6 +228,7 @@ describe('deny-by-default HTTP access policy', () => {
         LocationPolicyController,
         FinancePolicyController,
         BucketListPolicyController,
+        MaintenancePolicyController,
       ],
       providers: [
         { provide: AuthService, useValue: auth },
@@ -384,6 +408,22 @@ describe('deny-by-default HTTP access policy', () => {
       const pending = request(app.getHttpServer() as Server)[method](path);
       if (method === 'post')
         pending.set('Origin', config.webOrigin).send({ year: 2026 });
+      const response = await pending.expect(401);
+      expect(response.body).toMatchObject({ code: 'AUTH_INVALID_SESSION' });
+    },
+  );
+
+  it.each([
+    ['get', '/api/v1/maintenance/plans'],
+    ['get', '/api/v1/maintenance/dashboard'],
+    ['get', '/api/v1/maintenance/tasks/40000000-0000-4000-8000-000000000001'],
+    ['post', '/api/v1/maintenance/plans'],
+  ] as const)(
+    'returns 401 for anonymous maintenance %s',
+    async (method, path) => {
+      const pending = request(app.getHttpServer() as Server)[method](path);
+      if (method === 'post')
+        pending.set('Origin', config.webOrigin).send({ title: 'Revize' });
       const response = await pending.expect(401);
       expect(response.body).toMatchObject({ code: 'AUTH_INVALID_SESSION' });
     },

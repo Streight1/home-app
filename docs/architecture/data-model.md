@@ -272,6 +272,23 @@ nevzniká generická polymorfní tabulka. `BucketListItemCompletion` uchovává
 každé dokončení, datum, autora a krátkou plain-text poznámku. Reopen historii
 nemaže.
 
+## Údržba domácnosti
+
+`MaintenancePlan` drží household plán, date-only `startsOn`, `endsOn` a
+`nextDueOn`, validovanou JSON recurrence definici, strategii kotvy, odpovědnou
+osobu, lead time, odhad délky a volitelnou výchozí cenu jako `BigInt` minor
+units s měnou. Archivace a pozastavení jsou stavové operace.
+
+`MaintenanceOccurrence` je konkrétní date-only výskyt. Dvojice
+`maintenancePlanId + originalScheduledFor` je unikátní, takže opakované i
+souběžné generování nevytváří duplicity. Přeplánování mění `scheduledFor`,
+ale zachová původní datum; dokončení, přeskočení a zrušení zůstávají historií.
+
+`MaintenanceTaskLink`, `MaintenanceOccurrenceDocument` a
+`MaintenanceOccurrenceTransaction` jsou explicitní vazby se skutečnými FK.
+Nevzniká polymorfní `entityType/entityId`. Dokumenty a transakce zůstávají
+vlastnictvím svých modulů a Maintenance ukládá jen vztah a bezpečný typ vazby.
+
 ## Identifikátory a indexy
 
 Doménové primární klíče jsou UUID. Unikátní podmínky chrání Google identitu,

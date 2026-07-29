@@ -6,6 +6,10 @@ import process from 'node:process';
 const root = process.cwd();
 const metadataPath = join(root, 'apps/web/e2e/visual-baseline.json');
 const mode = process.argv[2] ?? '--contract';
+const isRuntimeMode = ['--runtime', '--runtime-update', '--report'].includes(
+  mode,
+);
+const isBaselineUpdate = mode === '--runtime-update';
 const errors = [];
 
 function requireCondition(condition, message) {
@@ -127,13 +131,22 @@ requireCondition(
     !/@import\s+url\(|fonts\.(?:googleapis|gstatic)\.com/.test(globalStyles),
   'Visual testy musí používat lokální Inter bez vzdáleného font CDN.',
 );
-requireCondition(
-  snapshots.length === metadata.snapshotCount &&
+if (!isBaselineUpdate) {
+  requireCondition(
+    snapshots.length === metadata.snapshotCount &&
+      snapshots.every((name) =>
+        name.endsWith(`-${metadata.snapshotPlatform}.png`),
+      ),
+    'Počet nebo platform suffix screenshot baseline neodpovídá metadata.',
+  );
+} else {
+  requireCondition(
     snapshots.every((name) =>
       name.endsWith(`-${metadata.snapshotPlatform}.png`),
     ),
-  'Počet nebo platform suffix screenshot baseline neodpovídá metadata.',
-);
+    'Platform suffix existujících screenshot baseline neodpovídá metadata.',
+  );
+}
 requireCondition(
   playwrightConfig.includes(`locale: '${metadata.browserLocale}'`) &&
     playwrightConfig.includes(`timezoneId: '${metadata.timezone}'`) &&
@@ -164,7 +177,7 @@ requireCondition(
   'CI workflow nesmí automaticky aktualizovat visual baseline.',
 );
 
-if (mode === '--runtime' || mode === '--report') {
+if (isRuntimeMode) {
   requireCondition(
     process.env.HOMEAPP_VISUAL_CANONICAL === 'true',
     'Runtime ověření lze spustit jen v kanonickém visual containeru.',

@@ -24,6 +24,7 @@ import { FinanceImportsModule } from './modules/finance-imports/finance-imports.
 import { FinanceAnalyticsModule } from './modules/finance-analytics/finance-analytics.module.js';
 import { FinanceBudgetsModule } from './modules/finance-budgets/finance-budgets.module.js';
 import { BucketListModule } from './modules/bucket-list/bucket-list.module.js';
+import { MaintenanceModule } from './modules/maintenance/maintenance.module.js';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { BucketListModule } from './modules/bucket-list/bucket-list.module.js';
     FinanceAnalyticsModule,
     FinanceBudgetsModule,
     BucketListModule,
+    MaintenanceModule,
     HealthModule,
   ],
   providers: [

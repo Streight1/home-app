@@ -67,6 +67,20 @@ function authenticatedResponse(input: RequestInfo | URL): Promise<Response> {
         items: [],
       }),
     );
+  if (url.includes('/maintenance/dashboard'))
+    return Promise.resolve(
+      jsonResponse({
+        summary: {
+          overdueTotal: 0,
+          dueTodayTotal: 0,
+          dueWithinSevenDaysTotal: 0,
+          dueWithinThirtyDaysTotal: 0,
+          pausedTotal: 0,
+        },
+        items: [],
+        recentlyCompleted: null,
+      }),
+    );
   return Promise.resolve(jsonResponse(profile));
 }
 

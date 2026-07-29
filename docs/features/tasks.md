@@ -106,3 +106,9 @@ presety délky včetně vlastní hodnoty 75 minut.
 Bezpečná podpora konkrétního výskytu recurring úkolu může využít
 `TaskCalendarLink.occurrenceDueAt`. Notifikace a Google Calendar vyžadují
 samostatný návrh a oprávnění.
+
+Údržba domácnosti vytváří navázané úkoly výhradně přes veřejný `TasksFacade`.
+Vazbu vlastní `MaintenanceTaskLink`; dokončení úkolu samo bez potvrzení
+neuzavírá servisní záznam s cenou, dodavatelem a dokumenty. Detail navázaného
+úkolu načte omezený maintenance context a nabídne přechod na konkrétní plán;
+po splnění úkolu je akce pojmenovaná `Dokončit záznam údržby`.

@@ -81,6 +81,21 @@ function parseView(value: unknown): WorkspaceView | null {
     )
       return { area: 'bucket-list', screen: 'item', itemId: value.itemId };
   }
+  if (
+    value.area === 'maintenance' &&
+    (value.screen === 'overview' ||
+      value.screen === 'plans' ||
+      value.screen === 'history' ||
+      value.screen === 'categories')
+  )
+    return { area: 'maintenance', screen: value.screen };
+  if (
+    value.area === 'maintenance' &&
+    value.screen === 'plan' &&
+    typeof value.planId === 'string' &&
+    uuid.test(value.planId)
+  )
+    return { area: 'maintenance', screen: 'plan', planId: value.planId };
   if (value.area === 'finance') {
     if (value.screen === 'transactions') {
       const filters = isRecord(value.filters)
@@ -140,6 +155,8 @@ function parseOverlay(value: unknown): WorkspaceOverlay | null {
   if (!isRecord(value) || typeof value.kind !== 'string') return null;
   if (value.kind === 'task-create' || value.kind === 'agenda-create')
     return { kind: 'task-create' };
+  if (value.kind === 'maintenance-plan-create')
+    return { kind: 'maintenance-plan-create' };
   if (value.kind === 'theme-selector') return { kind: value.kind };
   if (
     value.kind === 'finance-transaction' &&

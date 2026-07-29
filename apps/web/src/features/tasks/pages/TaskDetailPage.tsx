@@ -13,6 +13,7 @@ import { useTaskCategories } from '../hooks/useTaskCategories.js';
 import { taskErrorMessage } from '../lib/taskErrorMessage.js';
 import { TaskSchedulingDialog } from '../../scheduling/components/TaskSchedulingDialog.js';
 import { ScheduledTaskSummary } from '../../scheduling/components/ScheduledTaskSummary.js';
+import { MaintenanceTaskContextCard } from '../../maintenance/maintenance.public.js';
 
 export function TaskDetailPage({ taskId }: { taskId: string }) {
   const task = useTask(taskId);
@@ -48,6 +49,10 @@ export function TaskDetailPage({ taskId }: { taskId: string }) {
         </InlineAlert>
       ) : null}
       <TaskDetail task={data} />
+      <MaintenanceTaskContextCard
+        taskId={data.id}
+        taskCompleted={data.status === 'COMPLETED'}
+      />
       <ScheduledTaskSummary
         task={data}
         onReschedule={() => setSchedulingOpen(true)}

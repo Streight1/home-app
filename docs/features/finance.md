@@ -136,3 +136,8 @@ Samostatné iterace mohou doplnit bankovní provider port,
 AI-assisted návrhy nebo explicitní invoice-payment vazby. Tyto
 oblasti nesmějí obcházet ledger invarianty ani spojovat různé měny bez
 explicitního kurzu a auditované konverze.
+
+Údržba ověřuje vybrané finanční transakce přes veřejný `FinanceLedgerFacade` a
+ukládá pouze explicitní vazbu. Nečte bankovní metadata, importní fingerprint
+ani účty protistrany; vlastní a skutečné náklady drží v minor units a různé
+měny nesčítá.

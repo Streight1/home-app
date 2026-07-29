@@ -42,6 +42,8 @@ dokumentů.
   potvrzená analytická evidence pravidelných plateb.
 - [Sdílený roční Bucket list](bucket-list.md) — household přání po letech,
   účastníci, dokumenty, dokončovací historie, progress a explicitní rollover.
+- [Údržba domácnosti](maintenance.md) — jednorázové a opakované plány,
+  výskyty, navázané úkoly, historie, dokumenty, náklady a dashboard.
 
 ## Přidání modulu
 

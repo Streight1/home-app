@@ -7,6 +7,9 @@ Významné změny projektu jsou evidovány v tomto souboru ve formátu inspirova
 
 ### Fixed
 
+- Kanonický visual update nyní bezpečně podporuje přidání nebo odebrání
+  screenshot scénáře, sám synchronizuje metadata počtu baseline a po
+  přegenerování znovu striktně ověří celé připnuté Playwright prostředí.
 - Jednodenní celodenní událost se už kvůli implicitnímu UTC převodu
   exkluzivního data nezobrazuje v následujícím dni; jediný date-only adapter
   používá `start <= den < endExclusive` i přes DST.
@@ -39,6 +42,14 @@ Významné změny projektu jsou evidovány v tomto souboru ve formátu inspirova
 
 ### Added
 
+- Samostatný modul Údržba domácnosti s kategoriemi, sdílenou date-only
+  recurrence vrstvou, idempotentními výskyty, pozastavením, dokončením,
+  přeskočením, přeplánováním, explicitními vazbami na úkoly, dokumenty a
+  transakce, bezpečným dashboard modelem a šestihodinovým in-process
+  generátorem chráněným databázovou unikátností.
+- Workspace Údržba s přehledem, plány, historií a kategoriemi, adaptivním
+  formulářem, globální akcí `Nový plán údržby` a kanonickými Storybook,
+  accessibility a visual scénáři.
 - Centrální calendar event draft/dialog pro toolbar, dvojklik na prázdný
   month den či day/week slot, homepage a globální `Přidat`, včetně klávesové
   alternativy a ochrany interaktivních eventů před propagací.

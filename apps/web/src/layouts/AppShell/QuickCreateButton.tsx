@@ -4,6 +4,7 @@ import {
   ListPlus,
   Plus,
   ReceiptText,
+  Wrench,
 } from 'lucide-react';
 import { useWorkspaceNavigation } from '../../app/workspace-navigation/useWorkspaceNavigation.js';
 import { Button } from '../../components/ui/Button/Button.js';
@@ -23,11 +24,13 @@ function PreparedActions({
   onAddTask,
   onAddEvent,
   onAddExpense,
+  onAddMaintenance,
 }: {
   onAddDocument: () => void;
   onAddTask?: () => void;
   onAddEvent?: () => void;
   onAddExpense?: () => void;
+  onAddMaintenance?: () => void;
 }) {
   return (
     <div className="grid gap-2">
@@ -47,6 +50,12 @@ function PreparedActions({
           Nová událost
         </Button>
       ) : null}
+      {onAddMaintenance ? (
+        <Button className="justify-start" onClick={onAddMaintenance}>
+          <Wrench className="size-4" aria-hidden="true" />
+          Nový plán údržby
+        </Button>
+      ) : null}
       <Button
         disabled={!onAddExpense}
         className="justify-start"
@@ -56,8 +65,8 @@ function PreparedActions({
         Přidat výdaj
       </Button>
       <InlineAlert>
-        Dokumenty, úkoly, kalendář a ruční finance používají společné bezpečné
-        vytváření.
+        Dokumenty, úkoly, kalendář, údržba a ruční finance používají společné
+        bezpečné vytváření.
       </InlineAlert>
     </div>
   );
@@ -70,12 +79,15 @@ export function QuickCreateButton({ compact = false }: { compact?: boolean }) {
   const canAddTask = auth.data?.activeHousehold.role !== 'VIEWER';
   const canAddFinance = auth.data?.activeHousehold.role !== 'VIEWER';
   const canAddEvent = auth.data?.activeHousehold.role !== 'VIEWER';
+  const canAddMaintenance = auth.data?.activeHousehold.role !== 'VIEWER';
   const addDocument = () =>
     workspace.navigate({ area: 'documents', screen: 'new' });
   const addTask = () => workspace.openOverlay({ kind: 'task-create' });
   const addExpense = () =>
     workspace.openOverlay({ kind: 'finance-transaction', type: 'expense' });
   const addEvent = () => openCreateEvent({ source: 'global-add' });
+  const addMaintenance = () =>
+    workspace.openOverlay({ kind: 'maintenance-plan-create' });
   return compact ? (
     <Sheet
       side="bottom"
@@ -91,6 +103,7 @@ export function QuickCreateButton({ compact = false }: { compact?: boolean }) {
         onAddDocument={addDocument}
         {...(canAddTask ? { onAddTask: addTask } : {})}
         {...(canAddEvent ? { onAddEvent: addEvent } : {})}
+        {...(canAddMaintenance ? { onAddMaintenance: addMaintenance } : {})}
         {...(canAddFinance ? { onAddExpense: addExpense } : {})}
       />
     </Sheet>
@@ -113,6 +126,11 @@ export function QuickCreateButton({ compact = false }: { compact?: boolean }) {
       ) : null}
       {canAddEvent ? (
         <DropdownMenuItem onSelect={addEvent}>Nová událost</DropdownMenuItem>
+      ) : null}
+      {canAddMaintenance ? (
+        <DropdownMenuItem onSelect={addMaintenance}>
+          Nový plán údržby
+        </DropdownMenuItem>
       ) : null}
       {canAddFinance ? (
         <DropdownMenuItem onSelect={addExpense}>Přidat výdaj</DropdownMenuItem>

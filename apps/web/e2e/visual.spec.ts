@@ -1161,3 +1161,106 @@ test('otevřený mobilní sheet', async ({ page }) => {
   await expect(page.getByRole('dialog', { name: 'Filtry' })).toBeVisible();
   await expect(page).toHaveScreenshot('sheet-open.png');
 });
+
+for (const viewport of [
+  {
+    name: 'mobile-empty-dark',
+    width: 390,
+    height: 844,
+    story: 'screens-maintenance--empty-dark',
+  },
+  {
+    name: 'desktop-plans-light',
+    width: 1280,
+    height: 800,
+    story: 'screens-maintenance--plans-light',
+  },
+  {
+    name: 'desktop-overview-dark',
+    width: 1440,
+    height: 900,
+    story: 'screens-maintenance--overview-dark',
+  },
+] as const) {
+  test(`údržba domácnosti · ${viewport.name}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await openStory(page, viewport.story);
+    await expect(
+      page.getByRole('heading', { name: 'Údržba domácnosti' }),
+    ).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+    await expect(page).toHaveScreenshot(`maintenance-${viewport.name}.png`);
+  });
+}
+
+for (const scenario of [
+  {
+    name: 'history-desktop-light',
+    width: 1280,
+    height: 800,
+    story: 'screens-maintenance--history-light',
+    heading: 'Historie provedení',
+  },
+  {
+    name: 'detail-desktop-light',
+    width: 1280,
+    height: 800,
+    story: 'screens-maintenance--detail-light',
+    heading: 'Revize kotle',
+  },
+  {
+    name: 'create-plan-mobile-light',
+    width: 390,
+    height: 844,
+    story: 'screens-maintenance--create-plan-dialog',
+    heading: 'Nový plán údržby',
+  },
+  {
+    name: 'complete-mobile-light',
+    width: 390,
+    height: 844,
+    story: 'screens-maintenance--complete-occurrence-dialog',
+    heading: 'Dokončit záznam údržby',
+  },
+  {
+    name: 'skip-mobile-dark',
+    width: 390,
+    height: 844,
+    story: 'screens-maintenance--skip-occurrence-dialog',
+    heading: 'Přeskočit termín',
+  },
+  {
+    name: 'reschedule-desktop-light',
+    width: 1280,
+    height: 800,
+    story: 'screens-maintenance--reschedule-occurrence-dialog',
+    heading: 'Přeplánovat termín',
+  },
+  {
+    name: 'dashboard-widget-desktop-light',
+    width: 1280,
+    height: 800,
+    story: 'screens-maintenance--dashboard-widget-light',
+    heading: 'Údržba domácnosti',
+  },
+] as const) {
+  test(`údržba workflow · ${scenario.name}`, async ({ page }) => {
+    await page.setViewportSize(scenario);
+    await openStory(page, scenario.story);
+    await expect(
+      page.getByRole('heading', { name: scenario.heading }).first(),
+    ).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+    await expect(page).toHaveScreenshot(`maintenance-${scenario.name}.png`);
+  });
+}
+
+test('globální Přidat nabízí plán údržby', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await openStory(page, 'layouts-appshell--desktop');
+  await page.getByRole('button', { name: 'Přidat' }).click();
+  await expect(
+    page.getByRole('menuitem', { name: 'Nový plán údržby' }),
+  ).toBeVisible();
+  await expect(page).toHaveScreenshot('maintenance-global-add-desktop.png');
+});

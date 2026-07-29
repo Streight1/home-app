@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
+import type { Prisma } from '../../../generated/prisma/client.js';
 import { PrismaService } from '../../../infrastructure/database/prisma.service.js';
 import { AuditService } from '../../audit/audit.service.js';
 import type { TaskWriteInput } from '../domain/ports/task.repository.js';
@@ -132,64 +133,81 @@ export class PrismaTaskWriter {
     nextDueAt: Date | null;
     remainsOpen: boolean;
   }): Promise<boolean> {
-    return this.prisma.$transaction(async (transaction) => {
-      const task = await transaction.task.findFirst({
-        where: {
-          id: input.taskId,
-          householdId: input.householdId,
-          status: 'OPEN',
-        },
-      });
-      if (!task) return false;
-      await transaction.taskCompletion.create({
-        data: {
-          taskId: task.id,
-          householdId: input.householdId,
-          completedByUserId: input.userId,
-          occurrenceDueDate: task.dueDate,
-          occurrenceDueTimeMinutes: task.dueTimeMinutes,
-          occurrenceDueAt: task.dueAt,
-          completedAt: input.completedAt,
-          note: input.note,
-        },
-      });
-      await transaction.task.update({
-        where: { id: task.id },
-        data: input.remainsOpen
-          ? {
-              status: 'OPEN',
-              dueDate: input.nextDueDate
-                ? dateOnlyDbValue(input.nextDueDate)
-                : null,
-              dueTimeMinutes: input.nextDueTimeMinutes,
-              dueAt: input.nextDueAt,
-              isAllDay:
-                input.nextDueDate !== null && input.nextDueTimeMinutes === null,
-              nextOccurrenceAt: input.nextDueAt,
-              completedAt: null,
-              updatedByUserId: input.userId,
-            }
-          : {
-              status: 'COMPLETED',
-              completedAt: input.completedAt,
-              nextOccurrenceAt: null,
-              updatedByUserId: input.userId,
-            },
-      });
-      await this.audit.record(transaction, {
-        action: 'TASK_COMPLETED',
+    return this.prisma.$transaction((transaction) =>
+      this.completeInTransaction(transaction, input),
+    );
+  }
+
+  public async completeInTransaction(
+    transaction: Prisma.TransactionClient,
+    input: {
+      householdId: string;
+      userId: string;
+      taskId: string;
+      completedAt: Date;
+      note: string | null;
+      nextDueDate: string | null;
+      nextDueTimeMinutes: number | null;
+      nextDueAt: Date | null;
+      remainsOpen: boolean;
+    },
+  ): Promise<boolean> {
+    const task = await transaction.task.findFirst({
+      where: {
+        id: input.taskId,
         householdId: input.householdId,
-        userId: input.userId,
-        entityType: 'Task',
-        entityId: task.id,
-        metadata: {
-          taskId: task.id,
-          previousStatus: 'OPEN',
-          newStatus: input.remainsOpen ? 'OPEN' : 'COMPLETED',
-        },
-      });
-      return true;
+        status: 'OPEN',
+      },
     });
+    if (!task) return false;
+    await transaction.taskCompletion.create({
+      data: {
+        taskId: task.id,
+        householdId: input.householdId,
+        completedByUserId: input.userId,
+        occurrenceDueDate: task.dueDate,
+        occurrenceDueTimeMinutes: task.dueTimeMinutes,
+        occurrenceDueAt: task.dueAt,
+        completedAt: input.completedAt,
+        note: input.note,
+      },
+    });
+    await transaction.task.update({
+      where: { id: task.id },
+      data: input.remainsOpen
+        ? {
+            status: 'OPEN',
+            dueDate: input.nextDueDate
+              ? dateOnlyDbValue(input.nextDueDate)
+              : null,
+            dueTimeMinutes: input.nextDueTimeMinutes,
+            dueAt: input.nextDueAt,
+            isAllDay:
+              input.nextDueDate !== null && input.nextDueTimeMinutes === null,
+            nextOccurrenceAt: input.nextDueAt,
+            completedAt: null,
+            updatedByUserId: input.userId,
+          }
+        : {
+            status: 'COMPLETED',
+            completedAt: input.completedAt,
+            nextOccurrenceAt: null,
+            updatedByUserId: input.userId,
+          },
+    });
+    await this.audit.record(transaction, {
+      action: 'TASK_COMPLETED',
+      householdId: input.householdId,
+      userId: input.userId,
+      entityType: 'Task',
+      entityId: task.id,
+      metadata: {
+        taskId: task.id,
+        previousStatus: 'OPEN',
+        newStatus: input.remainsOpen ? 'OPEN' : 'COMPLETED',
+      },
+    });
+    return true;
   }
 
   public async transition(input: {

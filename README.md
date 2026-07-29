@@ -4,8 +4,8 @@ HomeApp je webová aplikace z repozitáře `life-admin` pro centrální správu
 domácnosti. Aktuální základ
 poskytuje bezpečné přihlášení přes Google, serverové relace, uživatele,
 sdílenou domácnost, chráněný český dashboard a použitelné moduly Dokumenty,
-Úkoly, Kalendář včetně chytrého plánování a ruční Finance. Majetek, vozidla a
-jídelníček zatím nejsou implementované.
+Úkoly, Kalendář včetně chytrého plánování, Údržba domácnosti a ruční Finance.
+Majetek, vozidla a jídelníček zatím nejsou implementované.
 
 ## Technologie
 
@@ -39,6 +39,9 @@ jídelníček zatím nejsou implementované.
 - Finance jako přesný ruční household ledger s účty, dvouúrovňovými kategoriemi,
   příjmy, výdaji, atomickými stejnoměnovými převody, dokumentovými vazbami a
   pravdivým dashboardovým souhrnem; částky zůstávají v minor units
+- Údržba domácnosti s jednorázovými i opakovanými plány, omezeně generovanými
+  výskyty, navázanými úkoly, historií, dokumenty, finančními vazbami a
+  dashboardovým přehledem
 - interní workspace navigace: browser zobrazuje pouze `/login` nebo `/app`,
   zatímco Back/Forward a reload bezpečně obnovují validovaný interní stav
 - kalendář lze rychle otevřít dvojklikem na prázdný desktopový den/slot nebo

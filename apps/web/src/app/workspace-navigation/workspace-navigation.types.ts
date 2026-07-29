@@ -32,6 +32,11 @@ export type WorkspaceView =
   | { area: 'bucket-list'; screen: 'overview' }
   | { area: 'bucket-list'; screen: 'item'; itemId: string }
   | {
+      area: 'maintenance';
+      screen: 'overview' | 'plans' | 'history' | 'categories';
+    }
+  | { area: 'maintenance'; screen: 'plan'; planId: string }
+  | {
       area: 'finance';
       screen:
         | 'overview'
@@ -64,6 +69,7 @@ export type WorkspaceOverlay =
   | { kind: 'calendar-edit'; eventId: string }
   | { kind: 'finance-transaction'; type: 'expense' | 'income' }
   | { kind: 'bucket-list-item-create'; listId: string }
+  | { kind: 'maintenance-plan-create' }
   | { kind: 'theme-selector' };
 
 export interface WorkspaceNavigationState {

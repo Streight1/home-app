@@ -55,11 +55,16 @@ Script standardně vyžaduje čistý working tree. Při vědomé práci v již
 rozpracované větvi lze po kontrole změn použít:
 
 ```bash
-pnpm visual:update:container --allow-dirty
+pnpm visual:container:update
 ```
 
-Příkaz pouze přegeneruje PNG v kanonickém containeru a vypíše jejich seznam.
-Nevytváří commit ani push. CI nikdy nepoužívá `--update-snapshots`.
+Příkaz pouze přegeneruje PNG v kanonickém containeru, bezpečně přepočítá
+`snapshotCount` a datum vědomé kontroly v metadata a vypíše seznam změn.
+Aktualizační režim před generováním toleruje pouze rozdíl počtu PNG způsobený
+nově přidaným nebo odebraným scénářem; verzi Playwrightu, browser, image, font,
+locale, timezone i platformu stále striktně kontroluje. Po generování proběhne
+znovu úplná striktní validace. Příkaz nevytváří commit ani push a CI nikdy
+nepoužívá `--update-snapshots`.
 
 Po aktualizaci:
 

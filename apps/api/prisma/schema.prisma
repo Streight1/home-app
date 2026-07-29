@@ -282,6 +282,50 @@ enum BucketListItemCategory {
   OTHER
 }
 
+enum MaintenancePlanStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  ARCHIVED
+}
+
+enum MaintenanceOccurrenceStatus {
+  SCHEDULED
+  TASK_CREATED
+  COMPLETED
+  SKIPPED
+  CANCELLED
+}
+
+enum MaintenancePriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum MaintenanceRecurrenceBasis {
+  FROM_SCHEDULED_DATE
+  FROM_COMPLETION_DATE
+}
+
+enum MaintenanceDocumentRelationType {
+  SERVICE_REPORT
+  INVOICE
+  RECEIPT
+  WARRANTY
+  MANUAL
+  PHOTO
+  OTHER
+}
+
+enum MaintenanceTransactionRelationType {
+  SERVICE_COST
+  MATERIAL
+  INSPECTION_FEE
+  OTHER
+}
+
 enum SpendingInsightType {
   BUDGET_THRESHOLD_REACHED
   BUDGET_EXCEEDED
@@ -394,6 +438,16 @@ model User {
   addedBucketListParticipants    BucketListItemParticipant[]           @relation("BucketListParticipantAddedBy")
   bucketListDocumentLinks        BucketListItemDocument[]              @relation("BucketListDocumentCreatedBy")
   bucketListCompletions          BucketListItemCompletion[]            @relation("BucketListCompletionUser")
+  createdMaintenancePlans        MaintenancePlan[]                      @relation("MaintenancePlanCreatedBy")
+  updatedMaintenancePlans        MaintenancePlan[]                      @relation("MaintenancePlanUpdatedBy")
+  responsibleMaintenancePlans    MaintenancePlan[]                      @relation("MaintenancePlanResponsible")
+  completedMaintenanceOccurrences MaintenanceOccurrence[]              @relation("MaintenanceOccurrenceCompletedBy")
+  skippedMaintenanceOccurrences  MaintenanceOccurrence[]               @relation("MaintenanceOccurrenceSkippedBy")
+  rescheduledMaintenanceOccurrences MaintenanceOccurrence[]             @relation("MaintenanceOccurrenceRescheduledBy")
+  createdMaintenanceTaskLinks    MaintenanceTaskLink[]                  @relation("MaintenanceTaskLinkCreatedBy")
+  maintenanceDocumentLinks       MaintenanceOccurrenceDocument[]        @relation("MaintenanceDocumentCreatedBy")
+  maintenanceTransactionLinks    MaintenanceOccurrenceTransaction[]     @relation("MaintenanceTransactionCreatedBy")
+  createdMaintenanceCategories   MaintenanceCategory[]                  @relation("MaintenanceCategoryCreatedBy")
 
   @@index([email])
   @@index([status])
@@ -434,6 +488,9 @@ model Household {
   yearlyBucketLists             YearlyBucketList[]
   bucketListItems               BucketListItem[]
   bucketListCompletions         BucketListItemCompletion[]
+  maintenancePlans              MaintenancePlan[]
+  maintenanceOccurrences        MaintenanceOccurrence[]
+  maintenanceCategories         MaintenanceCategory[]
 }
 
 model SingleHouseholdBootstrap {
@@ -522,6 +579,7 @@ model Document {
   agendaTaskLinks       TaskDocument[]
   financialTransactionLinks FinancialTransactionDocument[]
   bucketListItemLinks   BucketListItemDocument[]
+  maintenanceOccurrenceLinks MaintenanceOccurrenceDocument[]
 
   @@index([householdId, status, createdAt])
   @@index([householdId, folderId, status])
@@ -690,6 +748,8 @@ model Task {
   completions              TaskCompletion[]
   documents                TaskDocument[]
   calendarLinks            TaskCalendarLink[]
+  maintenanceOccurrences   MaintenanceOccurrence[] @relation("MaintenanceOccurrenceTask")
+  maintenanceTaskLinks     MaintenanceTaskLink[]
 
   @@index([householdId, status, dueAt])
   @@index([householdId, status, dueDate])
@@ -1116,6 +1176,7 @@ model FinancialTransaction {
   updatedBy           User                       @relation("FinancialTransactionUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   deletedBy           User?                      @relation("FinancialTransactionDeletedBy", fields: [deletedByUserId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   documents           FinancialTransactionDocument[]
+  maintenanceOccurrenceLinks MaintenanceOccurrenceTransaction[]
 
   @@index([householdId, bookedDate])
   @@index([accountId, bookedDate])
@@ -1572,4 +1633,159 @@ model BucketListItemCompletion {
   @@index([bucketListItemId, completedAt])
   @@index([householdId, completedAt])
   @@index([completedByUserId])
+}
+
+model MaintenanceCategory {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId     String    @db.Uuid
+  name            String    @db.VarChar(100)
+  normalizedName  String    @db.VarChar(100)
+  iconKey         String    @db.VarChar(40)
+  colorToken      String    @db.VarChar(30)
+  sortOrder       Int       @default(0)
+  createdByUserId String    @db.Uuid
+  archivedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  household       Household @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdBy       User      @relation("MaintenanceCategoryCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  plans           MaintenancePlan[]
+
+  @@unique([householdId, normalizedName])
+  @@index([householdId, archivedAt, sortOrder])
+  @@index([createdByUserId])
+}
+
+model MaintenancePlan {
+  id                       String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId              String                     @db.Uuid
+  categoryId               String?                    @db.Uuid
+  title                    String                     @db.VarChar(200)
+  description              String?                    @db.VarChar(5000)
+  instructions             String?                    @db.VarChar(10000)
+  priority                 MaintenancePriority        @default(NORMAL)
+  status                   MaintenancePlanStatus      @default(ACTIVE)
+  recurrenceDefinition     Json
+  recurrenceBasis          MaintenanceRecurrenceBasis @default(FROM_SCHEDULED_DATE)
+  startsOn                 DateTime                   @db.Date
+  endsOn                   DateTime?                  @db.Date
+  nextDueOn                DateTime?                  @db.Date
+  leadDays                 Int                        @default(7)
+  estimatedDurationMinutes Int?
+  preferredStartTime       Int?
+  responsibleUserId        String?                    @db.Uuid
+  locationLabel            String?                    @db.VarChar(300)
+  providerName             String?                    @db.VarChar(200)
+  defaultCostMinor         BigInt?
+  defaultCurrencyCode      String?                    @db.VarChar(3)
+  autoCreateTask           Boolean                    @default(true)
+  taskCreateDaysBefore     Int                        @default(7)
+  createdByUserId          String                     @db.Uuid
+  updatedByUserId          String                     @db.Uuid
+  pausedAt                 DateTime?
+  archivedAt               DateTime?
+  createdAt                DateTime                   @default(now())
+  updatedAt                DateTime                   @updatedAt
+  household                Household                  @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  category                 MaintenanceCategory?       @relation(fields: [categoryId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  responsible              User?                      @relation("MaintenancePlanResponsible", fields: [responsibleUserId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  createdBy                User                       @relation("MaintenancePlanCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  updatedBy                User                       @relation("MaintenancePlanUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  occurrences              MaintenanceOccurrence[]
+
+  @@index([householdId, archivedAt])
+  @@index([householdId, status])
+  @@index([householdId, nextDueOn])
+  @@index([nextDueOn])
+  @@index([categoryId])
+  @@index([responsibleUserId])
+  @@index([createdByUserId])
+  @@index([updatedByUserId])
+}
+
+model MaintenanceOccurrence {
+  id                    String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId           String                      @db.Uuid
+  maintenancePlanId     String                      @db.Uuid
+  scheduledFor          DateTime                    @db.Date
+  originalScheduledFor  DateTime                    @db.Date
+  status                MaintenanceOccurrenceStatus @default(SCHEDULED)
+  taskId                String?                     @db.Uuid
+  completedOn           DateTime?                   @db.Date
+  completedAt           DateTime?
+  completedByUserId     String?                     @db.Uuid
+  skippedAt             DateTime?
+  skippedByUserId       String?                     @db.Uuid
+  rescheduledAt         DateTime?
+  rescheduledByUserId   String?                     @db.Uuid
+  completionNotes       String?                     @db.VarChar(5000)
+  skipReason            String?                     @db.VarChar(1000)
+  providerName          String?                     @db.VarChar(200)
+  actualCostMinor       BigInt?
+  currencyCode          String?                     @db.VarChar(3)
+  createdAt             DateTime                    @default(now())
+  updatedAt             DateTime                    @updatedAt
+  household             Household                   @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  maintenancePlan       MaintenancePlan              @relation(fields: [maintenancePlanId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  task                  Task?                        @relation("MaintenanceOccurrenceTask", fields: [taskId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  completedBy           User?                        @relation("MaintenanceOccurrenceCompletedBy", fields: [completedByUserId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  skippedBy             User?                        @relation("MaintenanceOccurrenceSkippedBy", fields: [skippedByUserId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  rescheduledBy         User?                        @relation("MaintenanceOccurrenceRescheduledBy", fields: [rescheduledByUserId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  taskLinks             MaintenanceTaskLink[]
+  documents             MaintenanceOccurrenceDocument[]
+  transactions          MaintenanceOccurrenceTransaction[]
+
+  @@unique([maintenancePlanId, originalScheduledFor])
+  @@index([maintenancePlanId, scheduledFor])
+  @@index([householdId, status, scheduledFor])
+  @@index([taskId])
+  @@index([completedByUserId])
+  @@index([skippedByUserId])
+  @@index([rescheduledByUserId])
+}
+
+model MaintenanceTaskLink {
+  id                      String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  maintenanceOccurrenceId String                @db.Uuid
+  taskId                  String                @db.Uuid
+  createdByUserId         String                @db.Uuid
+  removedAt               DateTime?
+  createdAt               DateTime              @default(now())
+  maintenanceOccurrence   MaintenanceOccurrence @relation(fields: [maintenanceOccurrenceId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  task                    Task                  @relation(fields: [taskId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdBy               User                  @relation("MaintenanceTaskLinkCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([maintenanceOccurrenceId, removedAt])
+  @@index([taskId, removedAt])
+  @@index([createdByUserId])
+}
+
+model MaintenanceOccurrenceDocument {
+  maintenanceOccurrenceId String                          @db.Uuid
+  documentId              String                          @db.Uuid
+  relationType            MaintenanceDocumentRelationType
+  createdByUserId         String                          @db.Uuid
+  createdAt               DateTime                        @default(now())
+  maintenanceOccurrence   MaintenanceOccurrence           @relation(fields: [maintenanceOccurrenceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  document                Document                        @relation(fields: [documentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdBy               User                            @relation("MaintenanceDocumentCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@id([maintenanceOccurrenceId, documentId])
+  @@index([documentId])
+  @@index([createdByUserId])
+}
+
+model MaintenanceOccurrenceTransaction {
+  maintenanceOccurrenceId String                             @db.Uuid
+  transactionId           String                             @db.Uuid
+  relationType            MaintenanceTransactionRelationType
+  createdByUserId         String                             @db.Uuid
+  createdAt               DateTime                           @default(now())
+  maintenanceOccurrence   MaintenanceOccurrence              @relation(fields: [maintenanceOccurrenceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  transaction             FinancialTransaction               @relation(fields: [transactionId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdBy               User                               @relation("MaintenanceTransactionCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@id([maintenanceOccurrenceId, transactionId])
+  @@index([transactionId])
+  @@index([createdByUserId])
 }

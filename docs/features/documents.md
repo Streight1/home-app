@@ -135,3 +135,7 @@ dirty edit potvrzení, move dialog, koš, roli member a potvrzení `SMAZAT`.
 Verzování, fulltext, štítky, e-mailový import a NAS/S3 jsou samostatné iterace.
 Budoucí domény budou vlastnit explicitní vazební tabulky, nikoli polymorfní
 `entityType/entityId`.
+
+Provedená údržba používá existující document picker a veřejný
+`DocumentsFacade`. `MaintenanceOccurrenceDocument` ukládá explicitní FK a typ
+vazby; nevzniká druhý upload ani kopie document metadata.

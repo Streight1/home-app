@@ -368,6 +368,44 @@ ADMIN/OWNER spravuje účty a kategorie. Vše je household scoped; archivované
 entity zůstávají v historii, ale nelze je použít pro nový zápis. CZK a EUR se
 agregují odděleně bez konverze.
 
+### Údržba domácnosti
+
+Plány:
+
+- `GET|POST /api/v1/maintenance/plans` — stránkovaný seznam a vytvoření;
+- `GET|PATCH /api/v1/maintenance/plans/:planId` — bezpečný detail a úprava;
+- `POST /api/v1/maintenance/plans/:planId/pause|resume|archive|restore` —
+  lifecycle bez mazání historie.
+
+Výskyty:
+
+- `GET /api/v1/maintenance/occurrences` a
+  `GET /api/v1/maintenance/history` — stránkovaný aktuální a historický model;
+- `POST /api/v1/maintenance/occurrences/:occurrenceId/complete|skip|reschedule`
+  — dokončení, přeskočení a přeplánování konkrétního výskytu;
+- `POST /api/v1/maintenance/occurrences/:occurrenceId/task` — idempotentní
+  vytvoření úkolu přes `TasksFacade`;
+- `PUT /api/v1/maintenance/occurrences/:occurrenceId/documents|transactions`
+  — atomické nahrazení explicitních household vazeb.
+
+Kategorie a souhrny:
+
+- `GET|POST /api/v1/maintenance/categories`,
+  `PATCH /api/v1/maintenance/categories/:categoryId` a
+  `POST .../:categoryId/archive`;
+- `POST /api/v1/maintenance/categories/recommended` — explicitní
+  idempotentní sada doporučených kategorií;
+- `GET /api/v1/maintenance/summary` a
+  `GET /api/v1/maintenance/dashboard` — omezené prezentační modely.
+- `GET /api/v1/maintenance/tasks/:taskId` — bezpečný kontext navázaného plánu
+  pro detail úkolu; nevrací persistence entity ani servisní poznámku.
+
+Seznam plánů přijímá hledání, stav, prioritu, kategorii, odpovědnou osobu,
+date-only rozsah, overdue/paused filtr, řazení a `pageSize` 10/20/50/100.
+Výchozí jsou aktivní plány podle nejbližšího termínu. VIEWER pouze čte,
+MEMBER vytváří a provádí údržbu, ADMIN/OWNER navíc spravuje kategorie a
+archiv. Cizí household entita se mapuje na obecnou 404.
+
 ## Internal
 
 Interní endpointy nejsou pod `/api/v1`, nepřijímají běžnou session a vyžadují

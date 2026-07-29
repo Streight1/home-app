@@ -171,6 +171,21 @@ audit jsou transakční. Rollover vytváří nové položky a explicitní self-r
 nikdy nemění původní rok ani nekopíruje dokončovací historii. Dashboardový use
 case používá injektovatelný clock a vrací pouze bezpečný read model.
 
+## MaintenanceModule
+
+`MaintenanceModule` odděluje presentation controllery, plánové, completion,
+progression a occurrence aplikační služby, čistou recurrence vrstvu a malé
+Prisma read/write adaptéry. Controller nepoužívá Prisma. Přesahy vedou pouze
+přes veřejné `TasksFacade`,
+`DocumentsFacade` a `FinanceLedgerFacade`; veřejný `MaintenanceFacade`
+zpřístupňuje bezpečné summary pro budoucí Majetek a Vozidla.
+
+Generátor drží omezené plánovací okno, běží při bootstrapu a každých šest
+hodin a spoléhá na databázovou unikátnost i transakce. Recurrence používá
+stejnou čistou date-only knihovnu jako Úkoly a ClockPort, takže timezone ani
+systémový čas nejsou skrytou závislostí. Worker vybírá pouze aktivního člena s
+právem zápisu a jeho chyby ponechá k opakování v dalším omezeném běhu.
+
 ## Prisma infrastruktura
 
 Prisma klient je generován jako ESM a používá `@prisma/adapter-pg`. Prisma

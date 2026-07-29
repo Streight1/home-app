@@ -45,6 +45,9 @@ schválen k implementaci.
 - Sdílený roční Bucket list je dokončený pro household/year seznam, položky,
   více účastníků, místo, dokumenty, lifecycle, progress, dashboard a explicitní
   rollover bez kopírování dokončovací historie.
+- Údržba domácnosti je dokončená v rozsahu plánů, recurrence, omezeného
+  generování výskytů, task vazeb, dokončení, přeskočení, přeplánování,
+  historie, kategorií, dokumentových a finančních vazeb a dashboardu.
 - Single-VPS staging používá hotové GHCR image, named volumes, idempotentní init
   service, automatickou one-shot migraci, runtime public config a Compose
   secrets. Běžný start i aktualizace jsou `docker compose up -d`; bezpečný

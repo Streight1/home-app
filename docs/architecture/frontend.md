@@ -105,6 +105,19 @@ Bucket list widget importuje jen `bucket-list.public.ts`, používá vlastní
 `/bucket-lists/dashboard` model a quick complete volá stejný lifecycle endpoint
 jako detail. Rok ani progress dashboard nedopočítává v Reactu.
 
+`MaintenanceDashboardWidget` používá jediný
+`GET /api/v1/maintenance/dashboard` kontrakt a centrální
+`MaintenancePlanDialog`. Stejný dialog otevírá widget i globální `Přidat`;
+neexistuje zkrácená druhá mutační cesta.
+Detail úkolu používá veřejný `MaintenanceTaskContextCard`, který načte pouze
+bezpečný kontext vazby a naviguje na konkrétní plán v typovaném workspace.
+Neimportuje maintenance repository ani nekopíruje completion logiku.
+
+Workspace `maintenance` zůstává v interním typovaném stavu pod viditelnou URL
+`/app`. Přehled, Plány, Historie a Kategorie jsou menší kompozice feature
+`features/maintenance`; mobil používá karty a adaptivní dialogy bez široké
+tabulky.
+
 ## TanStack Query a API
 
 `useCurrentUser` vlastní query `auth/me`; login a logout vlastní mutation hooky.

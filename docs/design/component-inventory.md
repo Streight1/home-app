@@ -121,6 +121,16 @@ barvy ani hardcoded HEX.
 Workspace navigace není UI primitive: Provider, registry, feature hosty,
 `WorkspaceLink` a overlay host drží jedinou `/app` URL a interní history.
 
+## Údržba domácnosti
+
+- `MaintenanceDashboardWidget` — kompaktní summary po termínu a do sedmi dní;
+- `MaintenancePlanDialog` + `MaintenancePlanForm` — jediný create formulář;
+- `MaintenanceRecurrenceFields` — strukturovaná recurrence bez cron textu;
+- `MaintenancePlanCard`/`MaintenancePlanDetail` — adaptivní seznam a lifecycle;
+- `MaintenanceOccurrenceDialog` — dokončení, přeskočení a přeplánování;
+- `MaintenanceDocumentPicker`/`MaintenanceTransactionPicker` — veřejné summary
+  jiných modulů bez persistence importů.
+
 ## Storybook
 
 Stories pokrývají light/dark tokeny, typografii, Button, Input, IconButton,

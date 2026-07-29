@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { NextOccurrenceInput } from '../../domain/recurrence-rule.js';
 import {
-  addIsoDateDays,
   daysInMonth,
   getZonedParts,
   isoWeekday,
@@ -10,6 +9,7 @@ import {
   type ZonedDateParts,
 } from '../../domain/zoned-date.js';
 import { localIsoDate } from '../../domain/task-due-date.js';
+import { calculateNextDateOccurrence } from '../../../../common/recurrence/date-recurrence.js';
 
 function monthly(parts: ZonedDateParts, interval: number, day: number | null) {
   const monthIndex = parts.month - 1 + interval;
@@ -74,62 +74,20 @@ export class CalculateNextOccurrenceService {
   }): string | null {
     const { rule } = input;
     if (rule.frequency === 'NONE') return null;
-    const [year, month, day] = input.currentDueDate.split('-').map(Number);
-    if (!year || !month || !day) return null;
-    let next: string;
-    if (rule.frequency === 'DAILY') {
-      next = addIsoDateDays(input.currentDueDate, rule.interval);
-    } else if (rule.frequency === 'WEEKLY') {
-      next = this.nextWeeklyDate(
-        input.currentDueDate,
-        rule.interval,
-        rule.daysOfWeek,
-      );
-    } else if (rule.frequency === 'MONTHLY') {
-      const monthIndex = month - 1 + rule.interval;
-      const targetYear = year + Math.floor(monthIndex / 12);
-      const targetMonth = (monthIndex % 12) + 1;
-      next = this.isoDate(
-        targetYear,
-        targetMonth,
-        Math.min(rule.dayOfMonth ?? day, daysInMonth(targetYear, targetMonth)),
-      );
-    } else {
-      const targetYear = year + rule.interval;
-      const targetMonth = rule.monthOfYear ?? month;
-      next = this.isoDate(
-        targetYear,
-        targetMonth,
-        Math.min(day, daysInMonth(targetYear, targetMonth)),
-      );
-    }
     const endsOn = rule.endsAt
       ? localIsoDate(rule.endsAt, input.timezone)
       : null;
-    return endsOn && next > endsOn ? null : next;
-  }
-
-  private nextWeeklyDate(
-    current: string,
-    interval: number,
-    daysOfWeek: readonly number[],
-  ): string {
-    const currentWeekday = this.isoWeekday(current);
-    for (let days = 1; days <= interval * 7 + 7; days += 1) {
-      const candidate = addIsoDateDays(current, days);
-      if (!daysOfWeek.includes(this.isoWeekday(candidate))) continue;
-      const weekOffset = Math.floor((currentWeekday - 1 + days) / 7);
-      if (weekOffset === 0 || weekOffset % interval === 0) return candidate;
-    }
-    return addIsoDateDays(current, interval * 7);
-  }
-
-  private isoWeekday(value: string): number {
-    const day = new Date(`${value}T00:00:00.000Z`).getUTCDay();
-    return day === 0 ? 7 : day;
-  }
-
-  private isoDate(year: number, month: number, day: number): string {
-    return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    return calculateNextDateOccurrence({
+      currentDate: input.currentDueDate,
+      anchorDate: input.currentDueDate,
+      definition: {
+        frequency: rule.frequency,
+        interval: rule.interval,
+        weekdays: rule.daysOfWeek,
+        ...(rule.dayOfMonth ? { dayOfMonth: rule.dayOfMonth } : {}),
+        ...(rule.monthOfYear ? { monthOfYear: rule.monthOfYear } : {}),
+      },
+      endsOn,
+    });
   }
 }

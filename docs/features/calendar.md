@@ -221,3 +221,7 @@ odpojení task-linked batch.
 Další explicitní feed sources mohou přidat smluvní termíny, servis vozidel nebo
 záruky. Google Calendar vyžaduje samostatný consent/token lifecycle a nesmí být
 spojený s přihlášením.
+
+Výskyty údržby se do kalendáře nekopírují jako `CalendarEvent`. Primární cesta
+je Maintenance → navázaný úkol → stávající explicitní plánování úkolu do
+kalendáře.

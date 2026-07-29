@@ -36,6 +36,13 @@ insighty, evidencí opakovaných plateb a kompaktním dashboard widgetem.
 Sdílený roční Bucket list je samostatný modul pro společná přání, více
 účastníků, cílové datum a místo, dokumentové vazby, dokončovací historii,
 progress, dashboard a explicitní rollover do dalšího roku.
+Údržba domácnosti je samostatný modul pro jednorázové a opakované plány,
+omezené idempotentní generování výskytů, navázané úkoly, dokončení,
+přeskočení, přeplánování, historii, kategorie a explicitní vazby na dokumenty
+a finanční transakce. Dashboard i globální `Přidat` používají veřejný
+maintenance kontrakt a centrální dialog. Generování běží také při startu API
+a v šestihodinovém in-process workeru; databázové unikátní klíče chrání souběh
+více instancí.
 Projekt má také plně kontejnerový single-VPS staging. Reprodukovatelná CI
 odděluje statické, API, web, browser accessibility, browser visual a container
 joby, ověřuje migraci od prázdné PostgreSQL, runtime config bez `.env`,
@@ -95,6 +102,9 @@ GitHub Actions a Google production login vyžadují cílové externí prostřed�
   zdrojem a potvrzovacím stavem; metadata se mění jen po potvrzení uživatelem.
 - Hromadné přijetí extrakce vynechává pole s existující ručně potvrzenou
   hodnotou; její přepsání vyžaduje individuální akci.
+- `MaintenancePlan`, `MaintenanceOccurrence`, `MaintenanceCategory` a
+  explicitní task/document/transaction vazby s date-only termíny, minor units,
+  rolovou autorizací a databázovou ochranou proti duplicitám.
 - Prisma `Task` bezpečně mapovaný na původní tabulku, `TaskParticipant`,
   `TaskCompletion`, `TaskCategory` a explicitní `TaskDocument` vazby s
   household scope, rolemi, prioritami, místem, délkou a IANA timezone.
@@ -257,19 +267,19 @@ GitHub Actions a Google production login vyžadují cílové externí prostřed�
 
 - `pnpm db:generate` — prošlo s Prisma 7.8.0.
 - `pnpm db:migrate:deploy` — prošlo proti zachované lokální PostgreSQL
-  databázi; všech 18 nedestruktivních migrací včetně
-  `20260727120000_calendar_colors_all_day_bulk` je aplikováno bez resetu.
-- `pnpm env:check` a `pnpm architecture:check` — prošly pro 266 produkčních
+  databázi; všech 19 nedestruktivních migrací včetně
+  `20260729120000_household_maintenance` je aplikováno bez resetu.
+- `pnpm env:check` a `pnpm architecture:check` — prošly pro 288 produkčních
   TSX souborů, 46 centralizovaných environment proměnných a produkční
   i registry deployment kontrakt.
-- `pnpm docs:check` — 0 lint chyb, 64 Markdown a 62 povinných dokumentů.
+- `pnpm docs:check` — 0 lint chyb, 65 Markdown a 62 povinných dokumentů.
 - `pnpm lint` — prošlo bez varování; `pnpm typecheck` prošlo pro API i web.
-- `pnpm test` — API 372/372 a web 198/198 testů prošlo včetně čtyř
+- `pnpm test` — API 399/399 a web 216/216 testů prošlo včetně čtyř
   konfiguračních boundary regresí.
-- `pnpm storybook:test` — 81/81 Chromium story testů prošlo.
+- `pnpm storybook:test` — 94/94 Chromium story testů prošlo.
 - `pnpm build` — NestJS i Vite build prošly; `pnpm storybook:build` prošel.
-- `pnpm test:visual` — dva po sobě jdoucí kanonické běhy prošly 90/90
-  (fontová metrika + 89 scénářů a 91 PNG baseline) se shodným souhrnným hashem;
+- `pnpm test:visual` — dva po sobě jdoucí kanonické běhy prošly 104/104
+  (fontová metrika + 103 scénářů a 104 PNG baseline);
   sada pokrývá roční Bucket list a jeho dashboard na mobilu, tabletu
   a desktopu i finanční ledger, CSV importní review, kategorie a trend
   v light/dark režimu,
@@ -279,15 +289,16 @@ GitHub Actions a Google production login vyžadují cílové externí prostřed�
   day/week překryvů, travel bloku s oddělenou rezervou, měsíčního template
   pickeru, task-linked delete dialogu, scheduling diagnostiky, date-only
   formuláře, duration presetů, barevného výběrového režimu kalendáře,
-  all-day/custom-origin formuláře, bulk dialogů a dashboardového error/empty
-  rozlišení na 390, 768, 1280 a 1440 px v light/dark režimu.
-- `pnpm test:accessibility` — 63/63 axe, keyboard date-picker, focus, reflow,
-  touch-target a reduced-motion testů prošlo; browser sada má celkem 153
+  all-day/custom-origin formuláře, bulk dialogů, dashboardového error/empty
+  rozlišení a maintenance workflow/dashboardu na 390, 768, 1280 a 1440 px
+  v light/dark režimu.
+- `pnpm test:accessibility` — 76/76 axe, keyboard date-picker, focus, reflow,
+  touch-target a reduced-motion testů prošlo; browser sada má celkem 180
   Playwright scénářů včetně kanonického fontového kontraktu.
 - `pnpm format:check` a celý `pnpm check` prošly.
 - Storybook dev i Playwright webServer nastartovaly s `CI=true`,
-  `LANG=C.UTF-8` a bez aplikačních env hodnot; `pnpm ci:browser` prošel
-  81/81 Storybook, 63/63 accessibility a 90/90 visual testů.
+  `LANG=C.UTF-8` a bez aplikačních env hodnot; jednotlivé browser brány prošly
+  94/94 Storybook, 76/76 accessibility a 104/104 visual testů.
 - Produkční gateway Docker image se sestavil bez root `.env`; generický Vite
   build prošel kontrolou runtime-config scriptu, secret názvů a nepřítomnosti
   syntetického testovacího Google Client ID.
@@ -295,7 +306,7 @@ GitHub Actions a Google production login vyžadují cílové externí prostřed�
   Lokální GHCR-compatible API/gateway image se sestavily; API běží jako UID
   10001 a oba image neobsahují source/test fixtures ani development server.
 - Izolovaný one-command Compose smoke nad prázdnými named volumes prošel:
-  `volumes-init` a `migrate` skončily 0, všech 17 migrací se aplikovalo, DB/API
+  `volumes-init` a `migrate` skončily 0, všech 19 migrací se aplikovalo, DB/API
   byly healthy a PostgreSQL host i local auth používají SCRAM. `/`, `/login` a
   `/app` vrátily 200, anonymní `/api/v1/auth/me` 401 a gateway odmítla
   `/uploads/*` i `/internal/*` odpovědí 404.

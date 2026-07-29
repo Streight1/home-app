@@ -89,6 +89,17 @@ for (const story of [
   'screens-bucket-list--empty-dark',
   'screens-bucket-list--dashboard-light',
   'screens-bucket-list--dashboard-dark',
+  'screens-maintenance--overview-light',
+  'screens-maintenance--overview-dark',
+  'screens-maintenance--plans-light',
+  'screens-maintenance--empty-dark',
+  'screens-maintenance--history-light',
+  'screens-maintenance--detail-light',
+  'screens-maintenance--create-plan-dialog',
+  'screens-maintenance--complete-occurrence-dialog',
+  'screens-maintenance--skip-occurrence-dialog',
+  'screens-maintenance--reschedule-occurrence-dialog',
+  'screens-maintenance--dashboard-widget-light',
 ]) {
   test(`axe WCAG 2.2 AA · ${story}`, async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });

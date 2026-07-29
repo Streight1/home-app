@@ -45,11 +45,14 @@ if [[ "$mode" == "update" ]]; then
 fi
 
 if [[ "${HOMEAPP_VISUAL_CANONICAL:-false}" == "true" ]]; then
-  node scripts/visual/verify-visual-environment.mjs --runtime
   if [[ "$mode" == "update" ]]; then
+    node scripts/visual/verify-visual-environment.mjs --runtime-update
     corepack pnpm@"$pnpm_version" --filter @life-admin/web exec playwright test \
       e2e/visual.spec.ts --update-snapshots
+    node scripts/visual/update-visual-metadata.mjs
+    node scripts/visual/verify-visual-environment.mjs --runtime
   else
+    node scripts/visual/verify-visual-environment.mjs --runtime
     corepack pnpm@"$pnpm_version" --filter @life-admin/web test:visual:canonical
   fi
   exit 0
