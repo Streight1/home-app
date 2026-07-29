@@ -123,6 +123,10 @@ Workspace navigace není UI primitive: Provider, registry, feature hosty,
 
 ## Údržba domácnosti
 
+- `TasksAreaNavigation` — společný přístupný přepínač Úkoly/Údržba; tablist na
+  širším layoutu a jediný select v compact kompozici;
+- `MaintenanceWorkspaceView` — zachovává samostatné maintenance view a vkládá
+  je pod uživatelskou hlavní oblast Úkoly;
 - `MaintenanceDashboardWidget` — kompaktní summary po termínu a do sedmi dní;
 - `MaintenancePlanDialog` + `MaintenancePlanForm` — jediný create formulář;
 - `MaintenanceRecurrenceFields` — strukturovaná recurrence bez cron textu;
@@ -130,6 +134,19 @@ Workspace navigace není UI primitive: Provider, registry, feature hosty,
 - `MaintenanceOccurrenceDialog` — dokončení, přeskočení a přeplánování;
 - `MaintenanceDocumentPicker`/`MaintenanceTransactionPicker` — veřejné summary
   jiných modulů bez persistence importů.
+
+## Recepty, jídelníček a nákup
+
+- `MealsDashboardWidget` — dnešní jídla, otevřený nákup a centrální quick
+  actions;
+- `RecipeDialog` + `RecipeBasicFields`/`RecipeIngredientFields`/
+  `RecipeStepFields`/`RecipeDocumentFields` — jediný create/edit recept;
+- `MealPlannerPanel` + `MealPlanDialog` + `MealParticipantPicker` — date-only
+  týden, účastníci, editace a potvrzená kopie týdne;
+- `ShoppingListPanel` + `ShoppingItemDialog` — mobilní grouping, velké
+  checkboxy, optimistic rollback a generate preview;
+- `PantryPanel` — jednoduché zásoby bez skladového automatu;
+- `MealsCalendarSummary` — kompaktní read-only jídla u konkrétního dne.
 
 ## Storybook
 

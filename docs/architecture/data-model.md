@@ -289,14 +289,37 @@ ale zachová původní datum; dokončení, přeskočení a zrušení zůstávaj�
 Nevzniká polymorfní `entityType/entityId`. Dokumenty a transakce zůstávají
 vlastnictvím svých modulů a Maintenance ukládá jen vztah a bezpečný typ vazby.
 
+## Recepty, jídelníček, nákup a zásoby
+
+`Recipe` patří household, porce ukládá jako `Decimal(8,3)` a kroky i suroviny
+mají unikátní souvislou pozici. `Ingredient` má normalizovaný název unikátní v
+domácnosti. `RecipeCategory`, `RecipeTag`, `RecipeTagLink` a
+`RecipeDocument` jsou explicitní household metadata a vazby; archivace
+nepřepisuje historický jídelníček.
+
+`RecipeIngredient.quantityDecimal`, `MealPlanEntry.servings`,
+`ShoppingListItem.quantityDecimal` a `PantryItem.quantityDecimal` jsou Decimal,
+nikoli float. Jednotkový enum rozlišuje hmotnost, objem, kuchyňské, kusové,
+volné a custom hodnoty.
+
+`MealPlanEntry.plannedFor` je PostgreSQL `DATE`. Účastníci jsou v explicitním
+`MealPlanParticipant` joinu na aktivní členy domácnosti. Jídlo může mít
+nullable recept a současně vlastní title snapshot.
+
+`ShoppingList` má stav a částečný unikátní index pro jediný aktivní default.
+`ShoppingListItemSource` explicitně propojuje generovanou položku s jídlem,
+receptem a surovinou; ruční položky zůstávají bez source linku.
+`PantryItem` je jednoduchá aproximace dostupnosti, nikoli účetní sklad.
+
 ## Identifikátory a indexy
 
 Doménové primární klíče jsou UUID. Unikátní podmínky chrání Google identitu,
 household členství, session hash, jeden soubor na dokument, názvy sourozeneckých
 složek, jeden result na job, jedno pole v resultu a interní storage klíč. Indexy
 podporují dokumentové filtry, folder tree, job queue, termíny úkolů,
-Calendar rozsahy/účastníky/templates, místa, preference, travel plány a audit
-podle času.
+Calendar rozsahy/účastníky/templates, místa, preference, travel plány, recepty,
+ingredient normalizaci, date-only jídelníček, otevřené nákupní položky, pantry
+a audit podle času.
 
 Budoucí household entity musí obsahovat nebo bezpečně odvodit `householdId` a
 každý dotaz je musí kombinovat s ověřeným členstvím aktuálního uživatele.

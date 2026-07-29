@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -7,6 +7,7 @@ import { WorkspaceNavigationContext } from '../../app/workspace-navigation/works
 import type { WorkspaceNavigationValue } from '../../app/workspace-navigation/workspace-navigation.types.js';
 import { AUTH_QUERY_KEY } from '../../features/auth/hooks/useCurrentUser.js';
 import { TodayCalendarWidget } from '../../features/calendar/components/dashboard/TodayCalendarWidget.js';
+import { ThemeProvider } from '../../features/theme/providers/ThemeProvider.js';
 import { AppShell } from './AppShell.js';
 import {
   readSidebarCollapsed,
@@ -46,19 +47,21 @@ function renderShell(
   };
   const result = render(
     <QueryClientProvider client={client}>
-      <MemoryRouter>
-        <WorkspaceNavigationContext.Provider value={workspace}>
-          <AppShell
-            householdName="Domov"
-            displayName="Jana"
-            avatarUrl={null}
-            isLoggingOut={false}
-            onLogout={() => undefined}
-          >
-            <h1>Obsah</h1>
-          </AppShell>
-        </WorkspaceNavigationContext.Provider>
-      </MemoryRouter>
+      <ThemeProvider initialPreference="light" persist={false}>
+        <MemoryRouter>
+          <WorkspaceNavigationContext.Provider value={workspace}>
+            <AppShell
+              householdName="Domov"
+              displayName="Jana"
+              avatarUrl={null}
+              isLoggingOut={false}
+              onLogout={() => undefined}
+            >
+              <h1>Obsah</h1>
+            </AppShell>
+          </WorkspaceNavigationContext.Provider>
+        </MemoryRouter>
+      </ThemeProvider>
     </QueryClientProvider>,
   );
   return { ...result, workspace, client };
@@ -120,6 +123,39 @@ describe('application shell navigation', () => {
         durationMinutes: 60,
       }),
     });
+  });
+
+  it('keeps Tasks active while a maintenance workspace is open', () => {
+    renderShell({ area: 'maintenance', screen: 'history' });
+    const tasksActions = screen.getAllByRole('button', { name: 'Úkoly' });
+    expect(tasksActions.length).toBeGreaterThan(0);
+    for (const action of tasksActions) {
+      expect(action).toHaveAttribute('aria-current', 'page');
+    }
+    expect(
+      screen.queryByRole('button', { name: 'Údržba' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not expose maintenance as a separate item in the mobile More sheet', async () => {
+    renderShell({ area: 'maintenance', screen: 'overview' });
+    await userEvent.click(screen.getByRole('button', { name: 'Více oblastí' }));
+    const sheet = screen.getByRole('dialog', { name: 'Další oblasti' });
+    expect(
+      within(sheet).queryByRole('button', { name: 'Údržba' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('opens maintenance quick create without changing the current workspace', async () => {
+    const { workspace } = renderShell({ area: 'finance', screen: 'overview' });
+    await userEvent.click(screen.getByRole('button', { name: 'Přidat' }));
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'Nový plán údržby' }),
+    );
+    expect(workspace.openOverlay).toHaveBeenCalledWith({
+      kind: 'maintenance-plan-create',
+    });
+    expect(workspace.navigate).not.toHaveBeenCalled();
   });
 
   it('opens the same event overlay from the homepage calendar widget', async () => {

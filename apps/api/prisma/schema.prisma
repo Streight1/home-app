@@ -326,6 +326,65 @@ enum MaintenanceTransactionRelationType {
   OTHER
 }
 
+enum RecipeDifficulty {
+  EASY
+  MEDIUM
+  ADVANCED
+  UNSPECIFIED
+}
+
+enum IngredientUnit {
+  G
+  KG
+  ML
+  L
+  TSP
+  TBSP
+  CUP
+  PIECE
+  PACKAGE
+  SLICE
+  PINCH
+  AS_NEEDED
+  CUSTOM
+}
+
+enum RecipeDocumentRelationType {
+  PHOTO
+  SOURCE
+  PRINTED_RECIPE
+  OTHER
+}
+
+enum MealType {
+  BREAKFAST
+  MORNING_SNACK
+  LUNCH
+  AFTERNOON_SNACK
+  DINNER
+  OTHER
+}
+
+enum ShoppingListStatus {
+  OPEN
+  COMPLETED
+  ARCHIVED
+}
+
+enum ShoppingItemSource {
+  MANUAL
+  RECIPE
+  MEAL_PLAN
+  PANTRY_LOW_STOCK
+}
+
+enum PantryStatus {
+  AVAILABLE
+  LOW
+  OUT
+  UNKNOWN
+}
+
 enum SpendingInsightType {
   BUDGET_THRESHOLD_REACHED
   BUDGET_EXCEEDED
@@ -448,6 +507,21 @@ model User {
   maintenanceDocumentLinks       MaintenanceOccurrenceDocument[]        @relation("MaintenanceDocumentCreatedBy")
   maintenanceTransactionLinks    MaintenanceOccurrenceTransaction[]     @relation("MaintenanceTransactionCreatedBy")
   createdMaintenanceCategories   MaintenanceCategory[]                  @relation("MaintenanceCategoryCreatedBy")
+  createdRecipes                 Recipe[]                               @relation("RecipeCreatedBy")
+  updatedRecipes                 Recipe[]                               @relation("RecipeUpdatedBy")
+  createdIngredients             Ingredient[]                           @relation("IngredientCreatedBy")
+  createdRecipeCategories        RecipeCategory[]                       @relation("RecipeCategoryCreatedBy")
+  createdRecipeTags              RecipeTag[]                            @relation("RecipeTagCreatedBy")
+  createdRecipeDocumentLinks     RecipeDocument[]                       @relation("RecipeDocumentCreatedBy")
+  createdMealPlanEntries         MealPlanEntry[]                        @relation("MealPlanEntryCreatedBy")
+  updatedMealPlanEntries         MealPlanEntry[]                        @relation("MealPlanEntryUpdatedBy")
+  mealPlanParticipations         MealPlanParticipant[]                  @relation("MealPlanParticipantUser")
+  addedMealPlanParticipants      MealPlanParticipant[]                  @relation("MealPlanParticipantCreatedBy")
+  createdShoppingCategories      ShoppingCategory[]                     @relation("ShoppingCategoryCreatedBy")
+  createdShoppingLists           ShoppingList[]                         @relation("ShoppingListCreatedBy")
+  createdShoppingListItems       ShoppingListItem[]                     @relation("ShoppingListItemCreatedBy")
+  checkedShoppingListItems       ShoppingListItem[]                     @relation("ShoppingListItemCheckedBy")
+  updatedPantryItems             PantryItem[]                           @relation("PantryItemUpdatedBy")
 
   @@index([email])
   @@index([status])
@@ -491,6 +565,14 @@ model Household {
   maintenancePlans              MaintenancePlan[]
   maintenanceOccurrences        MaintenanceOccurrence[]
   maintenanceCategories         MaintenanceCategory[]
+  recipes                       Recipe[]
+  ingredients                   Ingredient[]
+  recipeCategories              RecipeCategory[]
+  recipeTags                    RecipeTag[]
+  mealPlanEntries               MealPlanEntry[]
+  shoppingCategories            ShoppingCategory[]
+  shoppingLists                 ShoppingList[]
+  pantryItems                   PantryItem[]
 }
 
 model SingleHouseholdBootstrap {
@@ -580,6 +662,7 @@ model Document {
   financialTransactionLinks FinancialTransactionDocument[]
   bucketListItemLinks   BucketListItemDocument[]
   maintenanceOccurrenceLinks MaintenanceOccurrenceDocument[]
+  recipeLinks                RecipeDocument[]
 
   @@index([householdId, status, createdAt])
   @@index([householdId, folderId, status])
@@ -1788,4 +1871,325 @@ model MaintenanceOccurrenceTransaction {
   @@id([maintenanceOccurrenceId, transactionId])
   @@index([transactionId])
   @@index([createdByUserId])
+}
+
+model RecipeCategory {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId     String    @db.Uuid
+  name            String    @db.VarChar(100)
+  normalizedName  String    @db.VarChar(100)
+  iconKey         String    @default("utensils") @db.VarChar(50)
+  colorToken      String    @default("violet") @db.VarChar(20)
+  sortOrder       Int       @default(0)
+  createdByUserId String    @db.Uuid
+  archivedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  household       Household @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdBy       User      @relation("RecipeCategoryCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  recipes         Recipe[]
+
+  @@unique([householdId, normalizedName])
+  @@index([householdId, archivedAt, sortOrder])
+  @@index([createdByUserId])
+}
+
+model RecipeTag {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId     String    @db.Uuid
+  name            String    @db.VarChar(80)
+  normalizedName  String    @db.VarChar(80)
+  createdByUserId String    @db.Uuid
+  archivedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  household       Household @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdBy       User      @relation("RecipeTagCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  recipes         RecipeTagLink[]
+
+  @@unique([householdId, normalizedName])
+  @@index([householdId, archivedAt])
+  @@index([createdByUserId])
+}
+
+model Recipe {
+  id                 String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId        String           @db.Uuid
+  title              String           @db.VarChar(200)
+  normalizedTitle    String           @db.VarChar(200)
+  description        String?          @db.VarChar(2000)
+  servings           Decimal          @db.Decimal(8, 3)
+  preparationMinutes Int?
+  cookingMinutes     Int?
+  restingMinutes     Int?
+  difficulty         RecipeDifficulty @default(UNSPECIFIED)
+  categoryId         String?          @db.Uuid
+  sourceLabel        String?          @db.VarChar(200)
+  sourceUrl          String?          @db.VarChar(2000)
+  notes              String?          @db.VarChar(10000)
+  isFavorite         Boolean          @default(false)
+  createdByUserId    String           @db.Uuid
+  updatedByUserId    String           @db.Uuid
+  archivedAt         DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  household          Household        @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  category           RecipeCategory?  @relation(fields: [categoryId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  createdBy          User             @relation("RecipeCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  updatedBy          User             @relation("RecipeUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  ingredients        RecipeIngredient[]
+  steps              RecipeStep[]
+  tags               RecipeTagLink[]
+  documents          RecipeDocument[]
+  mealPlanEntries    MealPlanEntry[]
+  shoppingItemSources ShoppingListItemSource[]
+
+  @@index([householdId, archivedAt])
+  @@index([householdId, normalizedTitle])
+  @@index([categoryId])
+  @@index([createdByUserId])
+  @@index([updatedByUserId])
+}
+
+model Ingredient {
+  id                 String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId        String          @db.Uuid
+  name               String          @db.VarChar(120)
+  normalizedName     String          @db.VarChar(120)
+  defaultUnit        IngredientUnit?
+  shoppingCategoryId String?         @db.Uuid
+  createdByUserId    String          @db.Uuid
+  archivedAt         DateTime?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  household          Household       @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  shoppingCategory   ShoppingCategory? @relation(fields: [shoppingCategoryId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  createdBy          User            @relation("IngredientCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  recipeIngredients  RecipeIngredient[]
+  shoppingListItems  ShoppingListItem[]
+  pantryItems        PantryItem[]
+
+  @@unique([householdId, normalizedName])
+  @@index([householdId, archivedAt])
+  @@index([shoppingCategoryId])
+  @@index([createdByUserId])
+}
+
+model RecipeIngredient {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  recipeId        String         @db.Uuid
+  ingredientId    String         @db.Uuid
+  position        Int
+  quantityDecimal Decimal?       @db.Decimal(12, 3)
+  unit            IngredientUnit
+  customUnitLabel String?        @db.VarChar(50)
+  preparationNote String?        @db.VarChar(300)
+  isOptional      Boolean        @default(false)
+  groupLabel      String?        @db.VarChar(100)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  recipe          Recipe         @relation(fields: [recipeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ingredient      Ingredient     @relation(fields: [ingredientId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  shoppingItemSources ShoppingListItemSource[]
+
+  @@unique([recipeId, position])
+  @@index([ingredientId])
+}
+
+model RecipeStep {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  recipeId        String   @db.Uuid
+  position        Int
+  title           String?  @db.VarChar(120)
+  instruction     String   @db.VarChar(5000)
+  durationMinutes Int?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  recipe          Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([recipeId, position])
+}
+
+model RecipeTagLink {
+  recipeId String    @db.Uuid
+  tagId    String    @db.Uuid
+  recipe   Recipe    @relation(fields: [recipeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  tag      RecipeTag @relation(fields: [tagId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@id([recipeId, tagId])
+  @@index([tagId])
+}
+
+model RecipeDocument {
+  recipeId       String                     @db.Uuid
+  documentId     String                     @db.Uuid
+  relationType   RecipeDocumentRelationType
+  isCover        Boolean                    @default(false)
+  createdByUserId String                    @db.Uuid
+  createdAt      DateTime                   @default(now())
+  recipe         Recipe                     @relation(fields: [recipeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  document       Document                   @relation(fields: [documentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdBy      User                       @relation("RecipeDocumentCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@id([recipeId, documentId])
+  @@index([documentId])
+  @@index([createdByUserId])
+}
+
+model MealPlanEntry {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId         String    @db.Uuid
+  plannedFor          DateTime  @db.Date
+  mealType            MealType
+  customMealTypeLabel String?   @db.VarChar(80)
+  recipeId            String?   @db.Uuid
+  title               String    @db.VarChar(200)
+  servings            Decimal   @db.Decimal(8, 3)
+  notes               String?   @db.VarChar(2000)
+  createdByUserId     String    @db.Uuid
+  updatedByUserId     String    @db.Uuid
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  household           Household @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  recipe              Recipe?   @relation(fields: [recipeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  createdBy           User      @relation("MealPlanEntryCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  updatedBy           User      @relation("MealPlanEntryUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  participants        MealPlanParticipant[]
+  shoppingItemSources ShoppingListItemSource[]
+
+  @@index([householdId, plannedFor])
+  @@index([recipeId])
+  @@index([createdByUserId])
+  @@index([updatedByUserId])
+}
+
+model MealPlanParticipant {
+  mealPlanEntryId String        @db.Uuid
+  userId          String        @db.Uuid
+  createdByUserId String        @db.Uuid
+  createdAt       DateTime      @default(now())
+  mealPlanEntry   MealPlanEntry @relation(fields: [mealPlanEntryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  user            User          @relation("MealPlanParticipantUser", fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdBy       User          @relation("MealPlanParticipantCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@id([mealPlanEntryId, userId])
+  @@index([userId])
+  @@index([createdByUserId])
+}
+
+model ShoppingCategory {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId     String    @db.Uuid
+  name            String    @db.VarChar(100)
+  normalizedName  String    @db.VarChar(100)
+  iconKey         String    @default("shopping-basket") @db.VarChar(50)
+  colorToken      String    @default("cyan") @db.VarChar(20)
+  sortOrder       Int       @default(0)
+  createdByUserId String    @db.Uuid
+  archivedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  household       Household @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdBy       User      @relation("ShoppingCategoryCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  ingredients     Ingredient[]
+  shoppingListItems ShoppingListItem[]
+
+  @@unique([householdId, normalizedName])
+  @@index([householdId, archivedAt, sortOrder])
+  @@index([createdByUserId])
+}
+
+model ShoppingList {
+  id              String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId     String             @db.Uuid
+  title           String             @db.VarChar(160)
+  status          ShoppingListStatus @default(OPEN)
+  isDefault       Boolean            @default(false)
+  createdByUserId String             @db.Uuid
+  archivedAt      DateTime?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  household       Household          @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdBy       User               @relation("ShoppingListCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  items           ShoppingListItem[]
+  itemSources     ShoppingListItemSource[]
+
+  @@index([householdId, status])
+  @@index([createdByUserId])
+}
+
+model ShoppingListItem {
+  id                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  shoppingListId     String             @db.Uuid
+  ingredientId       String?            @db.Uuid
+  text               String             @db.VarChar(200)
+  normalizedText     String             @db.VarChar(200)
+  quantityDecimal    Decimal?           @db.Decimal(12, 3)
+  unit               IngredientUnit?
+  customUnitLabel    String?            @db.VarChar(50)
+  shoppingCategoryId String?            @db.Uuid
+  note               String?            @db.VarChar(1000)
+  source             ShoppingItemSource @default(MANUAL)
+  checkedAt          DateTime?
+  checkedByUserId    String?            @db.Uuid
+  createdByUserId    String             @db.Uuid
+  sortOrder          Int                @default(0)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  shoppingList       ShoppingList       @relation(fields: [shoppingListId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ingredient         Ingredient?        @relation(fields: [ingredientId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  shoppingCategory   ShoppingCategory?  @relation(fields: [shoppingCategoryId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  checkedBy          User?              @relation("ShoppingListItemCheckedBy", fields: [checkedByUserId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  createdBy          User               @relation("ShoppingListItemCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  sources            ShoppingListItemSource[]
+
+  @@index([shoppingListId, checkedAt])
+  @@index([ingredientId])
+  @@index([shoppingCategoryId])
+  @@index([createdByUserId])
+  @@index([checkedByUserId])
+}
+
+model ShoppingListItemSource {
+  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  shoppingListId     String            @db.Uuid
+  shoppingListItemId String            @db.Uuid
+  mealPlanEntryId    String?           @db.Uuid
+  recipeId           String?           @db.Uuid
+  recipeIngredientId String?           @db.Uuid
+  createdAt          DateTime          @default(now())
+  shoppingList       ShoppingList      @relation(fields: [shoppingListId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  shoppingListItem   ShoppingListItem  @relation(fields: [shoppingListItemId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  mealPlanEntry      MealPlanEntry?    @relation(fields: [mealPlanEntryId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  recipe             Recipe?           @relation(fields: [recipeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  recipeIngredient   RecipeIngredient? @relation(fields: [recipeIngredientId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@unique([shoppingListId, mealPlanEntryId, recipeIngredientId])
+  @@index([shoppingListItemId])
+  @@index([mealPlanEntryId])
+  @@index([recipeId])
+  @@index([recipeIngredientId])
+}
+
+model PantryItem {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  householdId     String         @db.Uuid
+  ingredientId    String         @db.Uuid
+  quantityDecimal Decimal?       @db.Decimal(12, 3)
+  unit            IngredientUnit?
+  status          PantryStatus   @default(UNKNOWN)
+  expiresOn       DateTime?      @db.Date
+  locationLabel   String?        @db.VarChar(120)
+  note            String?        @db.VarChar(1000)
+  updatedByUserId String         @db.Uuid
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  household       Household      @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  ingredient      Ingredient     @relation(fields: [ingredientId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  updatedBy       User           @relation("PantryItemUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([householdId, ingredientId])
+  @@index([householdId, ingredientId])
+  @@index([expiresOn])
+  @@index([updatedByUserId])
 }

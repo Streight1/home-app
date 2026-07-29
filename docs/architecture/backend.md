@@ -186,6 +186,25 @@ stejnou čistou date-only knihovnu jako Úkoly a ClockPort, takže timezone ani
 systémový čas nejsou skrytou závislostí. Worker vybírá pouze aktivního člena s
 právem zápisu a jeho chyby ponechá k opakování v dalším omezeném běhu.
 
+## MealsModule
+
+`MealsModule` je modulární hranice pro recipes, planning, shopping a pantry.
+Controllery mapují HTTP na aplikační služby; Decimal/measurement logika je
+čistá společná doménová knihovna a nevzniká v controlleru ani Reactu.
+
+`RecipesService` atomicky ukládá recept, ordered ingredients/steps, tagy a
+ověřené `RecipeDocument` vazby přes `DocumentsFacade`.
+`MealPlanningService` ověřuje date-only období a aktivní household účastníky.
+`ShoppingGenerationService` odděluje read-only preview od potvrzeného zápisu,
+slučuje pouze kompatibilní jednotky a používá source links proti duplicitám.
+`PantryService` poskytuje pouze jednoduchou dostupnost a žádný automatický
+skladový pohyb.
+
+Veřejný `MealsFacade` vrací omezený date-only calendar summary. Calendar ani
+dashboard neimportují Meals Prisma repository. Role a household izolace se
+ověřují v každém use case přes `HouseholdAccessService`; audit neobsahuje
+recept, nákupní obsah ani pantry množství.
+
 ## Prisma infrastruktura
 
 Prisma klient je generován jako ESM a používá `@prisma/adapter-pg`. Prisma

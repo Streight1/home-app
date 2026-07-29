@@ -57,6 +57,51 @@ describe('workspace navigation state', () => {
     expect(stateFromHistory(window.history.state)).toEqual(state);
   });
 
+  it('persists maintenance detail for refresh and keeps history states valid', () => {
+    const maintenanceDetail = {
+      view: {
+        area: 'maintenance' as const,
+        screen: 'plan' as const,
+        planId: documentId,
+      },
+    };
+    storeWorkspaceState(maintenanceDetail);
+    writeWorkspaceHistory({ view: { area: 'tasks', screen: 'list' } }, true);
+    writeWorkspaceHistory(maintenanceDetail, false);
+
+    expect(window.location.pathname).toBe('/app');
+    expect(loadWorkspaceState()).toEqual(maintenanceDetail);
+    expect(stateFromHistory(window.history.state)).toEqual(maintenanceDetail);
+  });
+
+  it('supports browser Back and Forward between Tasks and Maintenance', async () => {
+    const tasksState = {
+      view: { area: 'tasks' as const, screen: 'list' as const },
+    };
+    const maintenanceState = {
+      view: { area: 'maintenance' as const, screen: 'overview' as const },
+    };
+    writeWorkspaceHistory(tasksState, true);
+    writeWorkspaceHistory(maintenanceState, false);
+
+    const back = new Promise<PopStateEvent>((resolve) =>
+      window.addEventListener('popstate', (event) => resolve(event), {
+        once: true,
+      }),
+    );
+    window.history.back();
+    expect(stateFromHistory((await back).state)).toEqual(tasksState);
+
+    const forward = new Promise<PopStateEvent>((resolve) =>
+      window.addEventListener('popstate', (event) => resolve(event), {
+        once: true,
+      }),
+    );
+    window.history.forward();
+    expect(stateFromHistory((await forward).state)).toEqual(maintenanceState);
+    expect(window.location.pathname).toBe('/app');
+  });
+
   it('rejects unknown history state and clears navigation on logout', () => {
     expect(
       stateFromHistory({ homeAppWorkspace: { view: { area: 'admin' } } }),

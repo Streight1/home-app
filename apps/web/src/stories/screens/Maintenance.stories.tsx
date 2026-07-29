@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { AppShell } from '../../layouts/AppShell/AppShell.js';
 import { MaintenanceDashboardWidget } from '../../features/maintenance/components/dashboard/MaintenanceDashboardWidget.js';
-import { MaintenancePlanDetail } from '../../features/maintenance/components/detail/MaintenancePlanDetail.js';
 import { MaintenanceOccurrenceDialog } from '../../features/maintenance/components/dialogs/MaintenanceOccurrenceDialog.js';
 import { MaintenancePlanDialog } from '../../features/maintenance/components/dialogs/MaintenancePlanDialog.js';
-import { MaintenancePage } from '../../features/maintenance/pages/MaintenancePage.js';
+import { MaintenanceWorkspaceView } from '../../features/maintenance/navigation/MaintenanceWorkspaceView.js';
+import { TasksAreaNavigation } from '../../features/tasks/components/navigation/TasksAreaNavigation.js';
 import type {
   MaintenanceDashboard,
   MaintenanceOccurrence,
@@ -213,11 +213,9 @@ function MaintenanceScreen({
       isLoggingOut={false}
       onLogout={() => undefined}
     >
-      <MaintenancePage
+      <MaintenanceWorkspaceView
         role="OWNER"
-        screen={screen}
-        onScreenChange={() => undefined}
-        onCreate={() => undefined}
+        view={{ area: 'maintenance', screen }}
       />
     </AppShell>
   );
@@ -233,7 +231,10 @@ function MaintenanceDetailScreen() {
       isLoggingOut={false}
       onLogout={() => undefined}
     >
-      <MaintenancePlanDetail planId={plan.id} onAction={() => undefined} />
+      <MaintenanceWorkspaceView
+        role="OWNER"
+        view={{ area: 'maintenance', screen: 'plan', planId: plan.id }}
+      />
     </AppShell>
   );
 }
@@ -252,8 +253,11 @@ function MaintenanceDialogScreen({
       isLoggingOut={false}
       onLogout={() => undefined}
     >
-      <div className="rounded-lg border border-border bg-surface-raised p-6">
-        <h1 className="text-page-title font-semibold">Údržba domácnosti</h1>
+      <div className="grid gap-5">
+        <TasksAreaNavigation />
+        <div className="rounded-lg border border-border bg-surface-raised p-6">
+          <h1 className="text-page-title font-semibold">Údržba domácnosti</h1>
+        </div>
       </div>
       {action === 'plan' ? (
         <MaintenancePlanDialog open onOpenChange={() => undefined} />
@@ -343,5 +347,5 @@ export const RescheduleOccurrenceDialog: Story = {
 
 export const DashboardWidgetLight: Story = {
   render: () => <MaintenanceDashboardScreen />,
-  parameters: { theme: 'light' },
+  parameters: { theme: 'light', workspace: 'dashboard' },
 };

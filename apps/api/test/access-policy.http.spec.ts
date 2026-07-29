@@ -194,6 +194,39 @@ class MaintenancePolicyController {
   }
 }
 
+@Controller()
+class MealsPolicyController {
+  @Get('recipes')
+  public recipes(): { status: 'must-be-protected' } {
+    return { status: 'must-be-protected' };
+  }
+
+  @Post('recipes')
+  public createRecipe(): { status: 'must-be-protected' } {
+    return { status: 'must-be-protected' };
+  }
+
+  @Get('meal-plan')
+  public mealPlan(): { status: 'must-be-protected' } {
+    return { status: 'must-be-protected' };
+  }
+
+  @Get('shopping-lists')
+  public shoppingLists(): { status: 'must-be-protected' } {
+    return { status: 'must-be-protected' };
+  }
+
+  @Get('pantry')
+  public pantry(): { status: 'must-be-protected' } {
+    return { status: 'must-be-protected' };
+  }
+
+  @Get('meals/dashboard')
+  public dashboard(): { status: 'must-be-protected' } {
+    return { status: 'must-be-protected' };
+  }
+}
+
 describe('deny-by-default HTTP access policy', () => {
   let app: INestApplication;
   const auth = {
@@ -229,6 +262,7 @@ describe('deny-by-default HTTP access policy', () => {
         FinancePolicyController,
         BucketListPolicyController,
         MaintenancePolicyController,
+        MealsPolicyController,
       ],
       providers: [
         { provide: AuthService, useValue: auth },
@@ -412,6 +446,21 @@ describe('deny-by-default HTTP access policy', () => {
       expect(response.body).toMatchObject({ code: 'AUTH_INVALID_SESSION' });
     },
   );
+
+  it.each([
+    ['get', '/api/v1/recipes'],
+    ['post', '/api/v1/recipes'],
+    ['get', '/api/v1/meal-plan'],
+    ['get', '/api/v1/shopping-lists'],
+    ['get', '/api/v1/pantry'],
+    ['get', '/api/v1/meals/dashboard'],
+  ] as const)('returns 401 for anonymous meals %s', async (method, path) => {
+    const pending = request(app.getHttpServer() as Server)[method](path);
+    if (method === 'post')
+      pending.set('Origin', config.webOrigin).send({ title: 'Polévka' });
+    const response = await pending.expect(401);
+    expect(response.body).toMatchObject({ code: 'AUTH_INVALID_SESSION' });
+  });
 
   it.each([
     ['get', '/api/v1/maintenance/plans'],

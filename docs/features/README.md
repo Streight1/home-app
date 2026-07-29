@@ -44,6 +44,14 @@ dokumentů.
   účastníci, dokumenty, dokončovací historie, progress a explicitní rollover.
 - [Údržba domácnosti](maintenance.md) — jednorázové a opakované plány,
   výskyty, navázané úkoly, historie, dokumenty, náklady a dashboard.
+- [Recepty](recipes.md) — household kuchařka, Decimal množství, jednotky,
+  porce, kroky, tagy a dokumentové vazby.
+- [Jídelníček](meal-planning.md) — date-only týdenní plán, typy jídel,
+  účastníci, kopírování týdne a kalendářní souhrn.
+- [Nákupní seznamy](shopping-lists.md) — ruční i generované položky,
+  preview, kompatibilní agregace a optimistic odškrtávání.
+- [Domácí zásoby](pantry.md) — jednoduchý přehled dostupnosti a potvrzovaný
+  odečet při generování nákupu.
 
 ## Přidání modulu
 

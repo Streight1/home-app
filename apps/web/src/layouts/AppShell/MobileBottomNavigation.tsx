@@ -5,12 +5,14 @@ import { Sheet } from '../../components/ui/Sheet/Sheet.js';
 import { ThemeSelector } from '../../features/theme/components/ThemeSelector.js';
 import {
   desktopNavigation,
+  getPrimaryNavigationArea,
   mobileNavigation,
   workspaceViewForArea,
 } from './navigation.config.js';
 
 export function MobileBottomNavigation() {
   const workspace = useWorkspaceNavigation();
+  const activeArea = getPrimaryNavigationArea(workspace.view);
   const [moreOpen, setMoreOpen] = useState(false);
   return (
     <nav
@@ -20,7 +22,7 @@ export function MobileBottomNavigation() {
       <ul className="grid h-(--navigation-mobile-bottom-height) grid-cols-5 px-1">
         {mobileNavigation.map((item) => {
           const Icon = item.icon;
-          const active = item.area === workspace.view.area;
+          const active = item.area === activeArea;
           const content = (
             <span
               className={`flex min-h-11 flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors ${active ? 'text-primary-emphasis' : 'text-text-muted'}`}
@@ -48,7 +50,7 @@ export function MobileBottomNavigation() {
                     {desktopNavigation.slice(3).map((navigationItem) => {
                       const NavigationIcon = navigationItem.icon;
                       const navigationActive =
-                        navigationItem.area === workspace.view.area;
+                        navigationItem.area === activeArea;
                       return (
                         <li key={navigationItem.label}>
                           <button

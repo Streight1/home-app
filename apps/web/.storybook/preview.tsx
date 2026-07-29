@@ -82,7 +82,11 @@ const withAppProviders: Decorator = (Story, context) => {
             ? ({ area: 'finance', screen: 'overview' } as const)
             : requestedWorkspace === 'bucket-list'
               ? ({ area: 'bucket-list', screen: 'overview' } as const)
-              : ({ area: 'dashboard' } as const);
+              : requestedWorkspace === 'maintenance'
+                ? ({ area: 'maintenance', screen: 'overview' } as const)
+                : requestedWorkspace === 'meals'
+                  ? ({ area: 'meals', screen: 'planner' } as const)
+                  : ({ area: 'dashboard' } as const);
   return (
     <ThemeProvider
       initialPreference={initialPreference}

@@ -48,6 +48,10 @@ schválen k implementaci.
 - Údržba domácnosti je dokončená v rozsahu plánů, recurrence, omezeného
   generování výskytů, task vazeb, dokončení, přeskočení, přeplánování,
   historie, kategorií, dokumentových a finančních vazeb a dashboardu.
+- Recepty, jídelníček a nákup jsou dokončené v rozsahu household receptů,
+  Decimal množství, přesného scalingu, date-only týdenního plánu, účastníků,
+  potvrzené kopie týdne, nákupního preview/agregace, jednoduchých zásob,
+  dashboardu a kalendářního summary.
 - Single-VPS staging používá hotové GHCR image, named volumes, idempotentní init
   service, automatickou one-shot migraci, runtime public config a Compose
   secrets. Běžný start i aktualizace jsou `docker compose up -d`; bezpečný
@@ -76,7 +80,7 @@ schválen k implementaci.
 - Image OCR provider, další anonymizovaně testované supplier profily, durable
   extraction queue, štítky, fulltext, Office
   preview, importy a verzování pouze jako samostatně schválené iterace.
-- Majetek, vozidla a jídelníček jako samostatné feature moduly.
+- Majetek a vozidla jako samostatné feature moduly.
 - Drag-and-drop kalendáře, Google Calendar/CalDAV a výpočet pracovní doby pouze
   jako samostatně schválené iterace.
 - Veřejná doprava, mapový route náhled, live poloha a turn-by-turn navigace

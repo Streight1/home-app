@@ -11,7 +11,6 @@ import {
   Settings,
   Soup,
   Sparkles,
-  Wrench,
   type LucideIcon,
 } from 'lucide-react';
 import type { WorkspaceView } from '../../app/workspace-navigation/workspace-navigation.types.js';
@@ -35,12 +34,6 @@ export const desktopNavigation: readonly NavigationItem[] = [
   { label: 'Dokumenty', icon: FileText, available: true, area: 'documents' },
   { label: 'Úkoly', icon: ListTodo, available: true, area: 'tasks' },
   {
-    label: 'Údržba',
-    icon: Wrench,
-    available: true,
-    area: 'maintenance',
-  },
-  {
     label: 'Bucket list',
     icon: Sparkles,
     available: true,
@@ -55,7 +48,7 @@ export const desktopNavigation: readonly NavigationItem[] = [
   { label: 'Majetek', icon: Package, available: false },
   { label: 'Vozidla', icon: Car, available: false },
   { label: 'Kalendář', icon: CalendarDays, available: true, area: 'calendar' },
-  { label: 'Jídelníček', icon: Soup, available: false },
+  { label: 'Jídelníček', icon: Soup, available: true, area: 'meals' },
   { label: 'Nastavení', icon: Settings, available: true, area: 'settings' },
 ];
 
@@ -78,7 +71,17 @@ export function workspaceViewForArea(area: NavigationArea): WorkspaceView {
   if (area === 'calendar') return { area, screen: 'calendar' };
   if (area === 'bucket-list') return { area, screen: 'overview' };
   if (area === 'maintenance') return { area, screen: 'overview' };
+  if (area === 'meals') return { area, screen: 'planner' };
   if (area === 'finance') return { area, screen: 'overview' };
   if (area === 'settings') return { area, screen: 'general' };
   return { area: 'dashboard' };
+}
+
+/**
+ * Maps technical workspace areas to the primary application navigation item
+ * that represents them. Maintenance keeps independent workspace history while
+ * being presented as a section of Tasks.
+ */
+export function getPrimaryNavigationArea(view: WorkspaceView): NavigationArea {
+  return view.area === 'maintenance' ? 'tasks' : view.area;
 }

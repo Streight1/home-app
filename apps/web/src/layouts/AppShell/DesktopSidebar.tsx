@@ -5,11 +5,13 @@ import { IconButton } from '../../components/ui/IconButton/IconButton.js';
 import { HomeBrandButton } from './HomeBrandButton.js';
 import {
   desktopNavigation,
+  getPrimaryNavigationArea,
   workspaceViewForArea,
 } from './navigation.config.js';
 
 export function DesktopSidebar({ onCollapse }: { onCollapse: () => void }) {
   const workspace = useWorkspaceNavigation();
+  const activeArea = getPrimaryNavigationArea(workspace.view);
   return (
     <aside className="fixed inset-y-0 left-0 z-(--z-sticky) hidden w-(--navigation-sidebar-width) border-r border-border bg-sidebar xl:flex xl:flex-col">
       <div className="flex h-(--navigation-topbar-height) items-center gap-3 border-b border-border px-4">
@@ -27,7 +29,7 @@ export function DesktopSidebar({ onCollapse }: { onCollapse: () => void }) {
         <ul className="space-y-1">
           {desktopNavigation.map((item) => {
             const Icon = item.icon;
-            const active = item.area === workspace.view.area;
+            const active = item.area === activeArea;
             const className = `flex min-h-11 w-full items-center gap-3 rounded-md px-3 text-left text-body-sm font-medium transition-colors ${active ? 'aurora-active-indicator bg-selected text-primary-emphasis' : 'text-text-muted hover:bg-surface-hover hover:text-text'} disabled:cursor-not-allowed disabled:text-text-subtle disabled:opacity-70`;
             return (
               <li key={item.label}>

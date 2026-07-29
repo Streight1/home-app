@@ -225,3 +225,8 @@ spojený s přihlášením.
 Výskyty údržby se do kalendáře nekopírují jako `CalendarEvent`. Primární cesta
 je Maintenance → navázaný úkol → stávající explicitní plánování úkolu do
 kalendáře.
+
+Jídelníček používá jinou bezpečnou projekci: Calendar načte přes veřejný
+`MealsFacade` kompaktní date-only summary vybraného dne. Jídla nejsou
+persistované `CalendarEvent`, nemají travel plan a kliknutí zůstává v interním
+workspace při viditelné URL `/app`.

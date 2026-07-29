@@ -9,6 +9,9 @@ import { EventEditDialog } from '../../features/calendar/components/dialogs/Even
 import { FinancialTransactionDialog } from '../../features/finance/components/forms/FinancialTransactionDialog.js';
 import { BucketListItemDialog } from '../../features/bucket-list/components/dialogs/BucketListItemDialog.js';
 import { MaintenancePlanDialog } from '../../features/maintenance/maintenance.public.js';
+import { RecipeDialog } from '../../features/meals/components/dialogs/RecipeDialog.js';
+import { MealPlanDialog } from '../../features/meals/components/dialogs/MealPlanDialog.js';
+import { ShoppingItemDialog } from '../../features/meals/components/dialogs/ShoppingItemDialog.js';
 
 function TaskCreateOverlay() {
   const workspace = useWorkspaceNavigation();
@@ -75,6 +78,47 @@ export function WorkspaceOverlayHost({ role }: { role: HouseholdRole }) {
     return (
       <MaintenancePlanDialog
         open
+        onOpenChange={(open) => !open && workspace.closeOverlay()}
+      />
+    );
+  if (overlay.kind === 'recipe-create' && role !== 'VIEWER')
+    return (
+      <RecipeDialog
+        open
+        onOpenChange={(open) => !open && workspace.closeOverlay()}
+      />
+    );
+  if (overlay.kind === 'recipe-edit' && role !== 'VIEWER')
+    return (
+      <RecipeDialog
+        open
+        recipeId={overlay.recipeId}
+        onOpenChange={(open) => !open && workspace.closeOverlay()}
+      />
+    );
+  if (overlay.kind === 'meal-plan-create' && role !== 'VIEWER')
+    return (
+      <MealPlanDialog
+        open
+        {...(overlay.plannedFor ? { plannedFor: overlay.plannedFor } : {})}
+        {...(overlay.recipeId ? { recipeId: overlay.recipeId } : {})}
+        onOpenChange={(open) => !open && workspace.closeOverlay()}
+      />
+    );
+  if (overlay.kind === 'meal-plan-edit' && role !== 'VIEWER')
+    return (
+      <MealPlanDialog
+        open
+        entryId={overlay.entryId}
+        plannedFor={overlay.plannedFor}
+        onOpenChange={(open) => !open && workspace.closeOverlay()}
+      />
+    );
+  if (overlay.kind === 'shopping-item-create' && role !== 'VIEWER')
+    return (
+      <ShoppingItemDialog
+        open
+        {...(overlay.listId ? { listId: overlay.listId } : {})}
         onOpenChange={(open) => !open && workspace.closeOverlay()}
       />
     );

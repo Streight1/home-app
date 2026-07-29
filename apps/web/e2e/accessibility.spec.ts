@@ -100,6 +100,14 @@ for (const story of [
   'screens-maintenance--skip-occurrence-dialog',
   'screens-maintenance--reschedule-occurrence-dialog',
   'screens-maintenance--dashboard-widget-light',
+  'screens-meals--planner-light',
+  'screens-meals--planner-dark',
+  'screens-meals--recipes-light',
+  'screens-meals--shopping-light',
+  'screens-meals--pantry-dark',
+  'screens-meals--recipe-create-dialog',
+  'screens-meals--meal-create-dialog',
+  'screens-meals--dashboard-widget-light',
 ]) {
   test(`axe WCAG 2.2 AA · ${story}`, async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });

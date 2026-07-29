@@ -4,6 +4,9 @@ import {
   ListPlus,
   Plus,
   ReceiptText,
+  ShoppingBasket,
+  Soup,
+  Utensils,
   Wrench,
 } from 'lucide-react';
 import { useWorkspaceNavigation } from '../../app/workspace-navigation/useWorkspaceNavigation.js';
@@ -25,12 +28,18 @@ function PreparedActions({
   onAddEvent,
   onAddExpense,
   onAddMaintenance,
+  onAddRecipe,
+  onAddMeal,
+  onAddShoppingItem,
 }: {
   onAddDocument: () => void;
   onAddTask?: () => void;
   onAddEvent?: () => void;
   onAddExpense?: () => void;
   onAddMaintenance?: () => void;
+  onAddRecipe?: () => void;
+  onAddMeal?: () => void;
+  onAddShoppingItem?: () => void;
 }) {
   return (
     <div className="grid gap-2">
@@ -56,6 +65,24 @@ function PreparedActions({
           Nový plán údržby
         </Button>
       ) : null}
+      {onAddRecipe ? (
+        <Button className="justify-start" onClick={onAddRecipe}>
+          <Utensils className="size-4" aria-hidden="true" />
+          Nový recept
+        </Button>
+      ) : null}
+      {onAddMeal ? (
+        <Button className="justify-start" onClick={onAddMeal}>
+          <Soup className="size-4" aria-hidden="true" />
+          Naplánovat jídlo
+        </Button>
+      ) : null}
+      {onAddShoppingItem ? (
+        <Button className="justify-start" onClick={onAddShoppingItem}>
+          <ShoppingBasket className="size-4" aria-hidden="true" />
+          Přidat položku nákupu
+        </Button>
+      ) : null}
       <Button
         disabled={!onAddExpense}
         className="justify-start"
@@ -65,8 +92,7 @@ function PreparedActions({
         Přidat výdaj
       </Button>
       <InlineAlert>
-        Dokumenty, úkoly, kalendář, údržba a ruční finance používají společné
-        bezpečné vytváření.
+        Každá oblast používá svůj centrální a bezpečně validovaný formulář.
       </InlineAlert>
     </div>
   );
@@ -80,6 +106,7 @@ export function QuickCreateButton({ compact = false }: { compact?: boolean }) {
   const canAddFinance = auth.data?.activeHousehold.role !== 'VIEWER';
   const canAddEvent = auth.data?.activeHousehold.role !== 'VIEWER';
   const canAddMaintenance = auth.data?.activeHousehold.role !== 'VIEWER';
+  const canAddMeals = auth.data?.activeHousehold.role !== 'VIEWER';
   const addDocument = () =>
     workspace.navigate({ area: 'documents', screen: 'new' });
   const addTask = () => workspace.openOverlay({ kind: 'task-create' });
@@ -88,6 +115,10 @@ export function QuickCreateButton({ compact = false }: { compact?: boolean }) {
   const addEvent = () => openCreateEvent({ source: 'global-add' });
   const addMaintenance = () =>
     workspace.openOverlay({ kind: 'maintenance-plan-create' });
+  const addRecipe = () => workspace.openOverlay({ kind: 'recipe-create' });
+  const addMeal = () => workspace.openOverlay({ kind: 'meal-plan-create' });
+  const addShoppingItem = () =>
+    workspace.openOverlay({ kind: 'shopping-item-create' });
   return compact ? (
     <Sheet
       side="bottom"
@@ -104,6 +135,13 @@ export function QuickCreateButton({ compact = false }: { compact?: boolean }) {
         {...(canAddTask ? { onAddTask: addTask } : {})}
         {...(canAddEvent ? { onAddEvent: addEvent } : {})}
         {...(canAddMaintenance ? { onAddMaintenance: addMaintenance } : {})}
+        {...(canAddMeals
+          ? {
+              onAddRecipe: addRecipe,
+              onAddMeal: addMeal,
+              onAddShoppingItem: addShoppingItem,
+            }
+          : {})}
         {...(canAddFinance ? { onAddExpense: addExpense } : {})}
       />
     </Sheet>
@@ -131,6 +169,17 @@ export function QuickCreateButton({ compact = false }: { compact?: boolean }) {
         <DropdownMenuItem onSelect={addMaintenance}>
           Nový plán údržby
         </DropdownMenuItem>
+      ) : null}
+      {canAddMeals ? (
+        <>
+          <DropdownMenuItem onSelect={addRecipe}>Nový recept</DropdownMenuItem>
+          <DropdownMenuItem onSelect={addMeal}>
+            Naplánovat jídlo
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={addShoppingItem}>
+            Přidat položku nákupu
+          </DropdownMenuItem>
+        </>
       ) : null}
       {canAddFinance ? (
         <DropdownMenuItem onSelect={addExpense}>Přidat výdaj</DropdownMenuItem>

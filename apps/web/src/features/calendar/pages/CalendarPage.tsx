@@ -18,6 +18,7 @@ import { CalendarSelectionToolbar } from '../components/bulk/CalendarSelectionTo
 import { CalendarBulkEditDialog } from '../components/bulk/CalendarBulkEditDialog.js';
 import { CalendarBulkDeleteDialog } from '../components/bulk/CalendarBulkDeleteDialog.js';
 import { useCalendarQuickCreate } from '../hooks/useCalendarQuickCreate.js';
+import { MealsCalendarSummary } from '../../meals/meals.public.js';
 export function CalendarPage({ role }: { role: HouseholdRole }) {
   const rememberedView = useRememberedCalendarView();
   const preferences = useCalendarPreferences();
@@ -104,6 +105,7 @@ export function CalendarPage({ role }: { role: HouseholdRole }) {
           návštěvu.
         </InlineAlert>
       ) : null}
+      <MealsCalendarSummary date={view === 'month' ? selectedDate : date} />
       {view === 'month' ? (
         <>
           <MonthCalendar

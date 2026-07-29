@@ -42,6 +42,14 @@ Významné změny projektu jsou evidovány v tomto souboru ve formátu inspirova
 
 ### Added
 
+- Samostatný Meals modul s household recepty, normalizovaným katalogem
+  surovin, ordered kroky, přesným Decimal scalingem a explicitními
+  dokumentovými vazbami přes Documents public API.
+- Date-only týdenní jídelníček s více účastníky, centrálním create/edit
+  dialogem, potvrzenou kopií týdne, dashboardem a kompaktním Calendar summary.
+- Sdílené nákupní seznamy s mobilním odškrtáváním, preview generováním,
+  kompatibilní agregací `g ↔ kg`/`ml ↔ l`, source-link deduplikací a
+  potvrzovaným odečtem jednoduchých pantry zásob.
 - Samostatný modul Údržba domácnosti s kategoriemi, sdílenou date-only
   recurrence vrstvou, idempotentními výskyty, pozastavením, dokončením,
   přeskočením, přeplánováním, explicitními vazbami na úkoly, dokumenty a
@@ -212,6 +220,12 @@ Významné změny projektu jsou evidovány v tomto souboru ve formátu inspirova
 
 ### Changed
 
+- Údržba domácnosti se v informační architektuře přesunula pod hlavní oblast
+  Úkoly. Samostatná položka zmizela z desktopové, sbalené, tabletové i mobilní
+  navigace; společný responzivní přepínač zpřístupňuje Úkoly/Údržbu a
+  centralizovaný mapper udržuje Úkoly aktivní ve všech maintenance views.
+  Maintenance backend, API, workspace historie, data, dashboard i globální
+  quick create zůstávají samostatné a beze změny.
 - Produkční web build je deployment-agnostický; Vite build/test už nevyžaduje
   build-time veřejné hodnoty a gateway je doplní až při startu.
 - GHCR publish nyní na PR vůbec neběží, na `main` vytváří `staging` a SHA a

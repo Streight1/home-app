@@ -96,6 +96,14 @@ function parseView(value: unknown): WorkspaceView | null {
     uuid.test(value.planId)
   )
     return { area: 'maintenance', screen: 'plan', planId: value.planId };
+  if (
+    value.area === 'meals' &&
+    (value.screen === 'planner' ||
+      value.screen === 'recipes' ||
+      value.screen === 'shopping' ||
+      value.screen === 'pantry')
+  )
+    return { area: 'meals', screen: value.screen };
   if (value.area === 'finance') {
     if (value.screen === 'transactions') {
       const filters = isRecord(value.filters)
@@ -157,6 +165,47 @@ function parseOverlay(value: unknown): WorkspaceOverlay | null {
     return { kind: 'task-create' };
   if (value.kind === 'maintenance-plan-create')
     return { kind: 'maintenance-plan-create' };
+  if (value.kind === 'recipe-create') return { kind: 'recipe-create' };
+  if (
+    value.kind === 'recipe-edit' &&
+    typeof value.recipeId === 'string' &&
+    uuid.test(value.recipeId)
+  )
+    return { kind: 'recipe-edit', recipeId: value.recipeId };
+  if (value.kind === 'meal-plan-create') {
+    const plannedFor =
+      typeof value.plannedFor === 'string' && date.test(value.plannedFor)
+        ? value.plannedFor
+        : undefined;
+    const recipeId =
+      typeof value.recipeId === 'string' && uuid.test(value.recipeId)
+        ? value.recipeId
+        : undefined;
+    return {
+      kind: 'meal-plan-create',
+      ...(plannedFor ? { plannedFor } : {}),
+      ...(recipeId ? { recipeId } : {}),
+    };
+  }
+  if (
+    value.kind === 'meal-plan-edit' &&
+    typeof value.entryId === 'string' &&
+    uuid.test(value.entryId) &&
+    typeof value.plannedFor === 'string' &&
+    date.test(value.plannedFor)
+  )
+    return {
+      kind: 'meal-plan-edit',
+      entryId: value.entryId,
+      plannedFor: value.plannedFor,
+    };
+  if (value.kind === 'shopping-item-create')
+    return {
+      kind: 'shopping-item-create',
+      ...(typeof value.listId === 'string' && uuid.test(value.listId)
+        ? { listId: value.listId }
+        : {}),
+    };
   if (value.kind === 'theme-selector') return { kind: value.kind };
   if (
     value.kind === 'finance-transaction' &&

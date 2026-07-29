@@ -4,12 +4,14 @@ import { IconButton } from '../../components/ui/IconButton/IconButton.js';
 import { Tooltip } from '../../components/ui/Tooltip/Tooltip.js';
 import {
   desktopNavigation,
+  getPrimaryNavigationArea,
   workspaceViewForArea,
 } from './navigation.config.js';
 import { HomeBrandButton } from './HomeBrandButton.js';
 
 export function CollapsedSidebar({ onExpand }: { onExpand: () => void }) {
   const workspace = useWorkspaceNavigation();
+  const activeArea = getPrimaryNavigationArea(workspace.view);
   return (
     <aside className="fixed inset-y-0 left-0 z-(--z-sticky) hidden w-(--navigation-rail-width) border-r border-border bg-sidebar xl:flex xl:flex-col xl:items-center">
       <div className="grid gap-1 border-b border-border py-2">
@@ -29,7 +31,7 @@ export function CollapsedSidebar({ onExpand }: { onExpand: () => void }) {
         <ul className="space-y-1">
           {desktopNavigation.map((item) => {
             const Icon = item.icon;
-            const active = item.area === workspace.view.area;
+            const active = item.area === activeArea;
             return (
               <li key={item.label}>
                 <Tooltip

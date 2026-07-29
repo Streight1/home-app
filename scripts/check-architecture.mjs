@@ -120,6 +120,42 @@ for (const file of requiredShellFiles) {
   }
 }
 
+const navigationConfigSource = await readFile(
+  join(shellDirectory, 'navigation.config.ts'),
+  'utf8',
+);
+const primaryNavigationSource = navigationConfigSource.slice(
+  navigationConfigSource.indexOf('export const desktopNavigation'),
+  navigationConfigSource.indexOf('export function workspaceViewForArea'),
+);
+if (/area:\s*['"]maintenance['"]/.test(primaryNavigationSource))
+  errors.push(
+    'Údržba nesmí být samostatná položka hlavní navigace; patří pod Úkoly.',
+  );
+if (
+  !/getPrimaryNavigationArea[\s\S]*view\.area\s*===\s*['"]maintenance['"][\s\S]*['"]tasks['"]/.test(
+    navigationConfigSource,
+  )
+)
+  errors.push(
+    'Hlavní navigace musí centralizovaně mapovat maintenance view na Úkoly.',
+  );
+for (const navigationComponent of [
+  'DesktopSidebar.tsx',
+  'CollapsedSidebar.tsx',
+  'TabletNavigationRail.tsx',
+  'MobileBottomNavigation.tsx',
+]) {
+  const source = await readFile(
+    join(shellDirectory, navigationComponent),
+    'utf8',
+  );
+  if (!source.includes('getPrimaryNavigationArea'))
+    errors.push(
+      `${navigationComponent} obchází centrální mapování aktivní hlavní oblasti.`,
+    );
+}
+
 const shellPath = join(shellDirectory, 'AppShell.tsx');
 const shellLines = await readLines(shellPath);
 const shellSource = shellLines.join('\n');
@@ -754,6 +790,43 @@ for (const file of await collectFiles(tasksDirectory, '.ts')) {
     errors.push(
       `${relative(root, file)} kopíruje kalendářní události do Tasks modulu.`,
     );
+  if (
+    /modules\/maintenance\/(?:application|domain|infrastructure|presentation)\//.test(
+      source,
+    )
+  )
+    errors.push(
+      `${relative(root, file)} importuje interní Maintenance vrstvu místo veřejného rozhraní.`,
+    );
+}
+
+const tasksWebDirectory = join(webSource, 'features/tasks');
+for (const file of [
+  ...(await collectFiles(tasksWebDirectory, '.ts')),
+  ...(await collectFiles(tasksWebDirectory, '.tsx')),
+]) {
+  const source = await readFile(file, 'utf8');
+  if (
+    /(?:features\/maintenance|\.\.\/maintenance)\/(?!maintenance\.public)/.test(
+      source,
+    )
+  )
+    errors.push(
+      `${relative(root, file)} importuje interní Maintenance feature místo veřejného rozhraní.`,
+    );
+}
+for (const workspaceViewPath of [
+  join(tasksWebDirectory, 'navigation/TasksWorkspaceView.tsx'),
+  join(
+    webSource,
+    'features/maintenance/navigation/MaintenanceWorkspaceView.tsx',
+  ),
+]) {
+  const source = await readFile(workspaceViewPath, 'utf8');
+  if (!source.includes('TasksAreaNavigation'))
+    errors.push(
+      `${relative(root, workspaceViewPath)} postrádá společnou sekundární navigaci Úkoly/Údržba.`,
+    );
 }
 
 if (await directoryExists(join(apiSource, 'modules/agenda')))
@@ -790,7 +863,6 @@ try {
   errors.push('Chybí samostatná TasksPage.tsx.');
 }
 
-const tasksWebDirectory = join(webSource, 'features/tasks');
 for (const file of [
   ...(await collectFiles(tasksWebDirectory, '.ts')),
   ...(await collectFiles(tasksWebDirectory, '.tsx')),

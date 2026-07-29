@@ -14,6 +14,7 @@ import type { CalendarDashboard } from '../../calendar/calendar.public.js';
 import { FinanceBudgetDashboardWidget } from '../../finance-budgets/finance-budgets.public.js';
 import { BucketListDashboardWidget } from '../../bucket-list/bucket-list.public.js';
 import { MaintenanceDashboardWidget } from '../../maintenance/maintenance.public.js';
+import { MealsDashboardWidget } from '../../meals/meals.public.js';
 
 export function DashboardOverview({
   data,
@@ -41,6 +42,7 @@ export function DashboardOverview({
       <FinanceBudgetDashboardWidget />
       <BucketListDashboardWidget />
       <MaintenanceDashboardWidget canWrite={role !== 'VIEWER'} />
+      <MealsDashboardWidget canWrite={role !== 'VIEWER'} />
       {data.recentDocuments.length > 0 ? (
         <RecentDocuments items={data.recentDocuments} />
       ) : null}

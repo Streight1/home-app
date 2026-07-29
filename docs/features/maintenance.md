@@ -14,14 +14,24 @@ upload. Primární propojení s kalendářem vede přes Úkoly a současný work
 
 ## Uživatelské rozhraní
 
-Interní workspace `maintenance` zůstává pod jedinou viditelnou URL `/app` a má
-sekce Přehled, Plány, Historie a Kategorie. Přehled rozlišuje po termínu, dnes,
-sedm a třicet dní a pozastavené plány. Desktop zobrazuje karty plánů ve dvou
-sloupcích, compact layout jeden sloupec bez horizontální tabulky.
+Interní workspace `maintenance` zůstává pod jedinou viditelnou URL `/app`, ale
+v hlavní navigaci je uživatelsky součástí oblasti `Úkoly`. Společná sekundární
+navigace přepíná mezi běžnými Úkoly a Údržbou; při libovolném maintenance view
+zůstává v shellu aktivní hlavní položka Úkoly. Samostatná hlavní položka
+Údržba neexistuje. Na telefonu používá tento přepínač jeden kompaktní select,
+na širším layoutu přístupnou tabovou skupinu.
+
+Uvnitř Údržby zůstávají sekce Přehled, Plány, Historie a Kategorie. Přehled
+rozlišuje po termínu, dnes, sedm a třicet dní a pozastavené plány. Desktop
+zobrazuje karty plánů ve dvou sloupcích, compact layout jeden sloupec bez
+horizontální tabulky.
 
 Centrální `MaintenancePlanDialog` používá jak oblast Údržba, tak dashboardový
 widget a globální nabídka `Přidat → Nový plán údržby`. Viewer create ovládání
 nevidí. Loading, skutečný empty state a API error jsou oddělené.
+Dashboardové `Zobrazit údržbu` otevře interní maintenance přehled, takže shell
+zvýrazní Úkoly a sekundární navigace Údržbu. Quick create přitom nemění
+současný workspace.
 
 Dokončovací dialog znovu používá veřejný document picker a bezpečný finance
 transaction summary. API chyba dialog nezavře a nezahodí rozepsané hodnoty.
@@ -83,8 +93,10 @@ Dokončení navázaného úkolu samo nepotvrdí servisní údaje. Uživatel doko
 záznam údržby samostatně; modul pak idempotentně dokončí stále otevřený úkol.
 Detail úkolu načte přes veřejný maintenance kontrakt bezpečný kontext plánu a
 po splnění nabídne `Dokončit záznam údržby`. Akce otevře konkrétní plán v
-interním workspace bez změny URL. Při přeskočení se task zruší přes stejnou
-veřejnou hranici.
+interním workspace pod aktivní hlavní oblastí Úkoly a bez změny URL. Při
+přeskočení se task zruší přes stejnou veřejnou hranici. Sdružená navigace
+nemění vlastnictví dat: plány, výskyty, historie, náklady ani dokumenty se
+nemapují na běžné řádky úkolů.
 
 ## Dokumenty a finance
 
@@ -131,7 +143,10 @@ každé tři měsíce, mobilní kartu bez tabulky, skutečný dashboard/empty st
 viewer režim a validovaný workspace stav. Storybook, Playwright a axe pokrývají
 přehled, plány, prázdný stav, detail, historii, dashboard widget, globální
 `Přidat` a create/complete/skip/reschedule dialogy v compact i desktop
-kompozici a light/dark motivu.
+kompozici a light/dark motivu. Navigační regrese navíc ověřují, že hlavní
+desktopové ani mobilní menu neobsahuje samostatnou Údržbu, Maintenance aktivuje
+Úkoly, sekundární přepínač je použitelný a Back/Forward i reload zachovají
+validovaný maintenance view pod `/app`.
 
 ## Známá omezení
 

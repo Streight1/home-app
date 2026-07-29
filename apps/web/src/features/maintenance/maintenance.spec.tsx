@@ -3,7 +3,9 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { WorkspaceView } from '../../app/workspace-navigation/workspace-navigation.types.js';
 import { parseWorkspaceState } from '../../app/workspace-navigation/workspace-storage.js';
+import { TasksAreaNavigation } from '../tasks/components/navigation/TasksAreaNavigation.js';
 import { MaintenanceDashboardWidget } from './components/dashboard/MaintenanceDashboardWidget.js';
 import { MaintenanceTaskContextCard } from './components/task-context/MaintenanceTaskContextCard.js';
 import { MaintenancePlanCard } from './components/list/MaintenancePlanCard.js';
@@ -21,7 +23,7 @@ const workspace = vi.hoisted(() => ({
   navigate: vi.fn(),
   openOverlay: vi.fn(),
   closeOverlay: vi.fn(),
-  view: { area: 'dashboard' as const },
+  view: { area: 'dashboard' } as WorkspaceView,
 }));
 
 vi.mock('../../app/workspace-navigation/useWorkspaceNavigation.js', () => ({
@@ -103,6 +105,7 @@ describe('maintenance UI', () => {
   beforeEach(() => {
     workspace.navigate.mockReset();
     workspace.openOverlay.mockReset();
+    workspace.view = { area: 'dashboard' };
     vi.stubGlobal('fetch', vi.fn());
   });
 
@@ -155,6 +158,38 @@ describe('maintenance UI', () => {
     await user.click(screen.getByRole('button', { name: 'Přidat plán' }));
     expect(workspace.openOverlay).toHaveBeenCalledWith({
       kind: 'maintenance-plan-create',
+    });
+    await user.click(screen.getByRole('button', { name: 'Zobrazit údržbu' }));
+    expect(workspace.navigate).toHaveBeenCalledWith({
+      area: 'maintenance',
+      screen: 'overview',
+    });
+  });
+
+  it('switches between Tasks and Maintenance inside one secondary navigation', async () => {
+    workspace.view = { area: 'maintenance', screen: 'history' };
+    const user = userEvent.setup();
+    renderClient(<TasksAreaNavigation />);
+
+    expect(screen.getByRole('tab', { name: 'Údržba' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.getByLabelText('Oblast Úkolů')).toHaveValue('maintenance');
+
+    await user.click(screen.getByRole('tab', { name: 'Úkoly' }));
+    expect(workspace.navigate).toHaveBeenCalledWith({
+      area: 'tasks',
+      screen: 'list',
+    });
+
+    await user.selectOptions(
+      screen.getByLabelText('Oblast Úkolů'),
+      'maintenance',
+    );
+    expect(workspace.navigate).toHaveBeenLastCalledWith({
+      area: 'maintenance',
+      screen: 'overview',
     });
   });
 
@@ -229,6 +264,39 @@ describe('maintenance UI', () => {
       name: 'Dokončit záznam údržby',
     });
     await user.click(action);
+    expect(workspace.navigate).toHaveBeenCalledWith(navigationTarget);
+  });
+
+  it('opens a maintenance plan from the linked task context', async () => {
+    const user = userEvent.setup();
+    const navigationTarget = {
+      area: 'maintenance' as const,
+      screen: 'plan' as const,
+      planId: plan.id,
+    };
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          occurrenceId: '10000000-0000-4000-8000-000000000004',
+          planId: plan.id,
+          planTitle: plan.title,
+          planStatus: 'ACTIVE',
+          occurrenceStatus: 'TASK_CREATED',
+          scheduledFor: plan.startsOn,
+          permissions: { canComplete: true },
+          navigationTarget,
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+    renderClient(
+      <MaintenanceTaskContextCard taskId={plan.id} taskCompleted={false} />,
+    );
+    await user.click(
+      await screen.findByRole('button', {
+        name: 'Zobrazit plán údržby',
+      }),
+    );
     expect(workspace.navigate).toHaveBeenCalledWith(navigationTarget);
   });
 });

@@ -52,8 +52,9 @@ udržuje stejný kontrakt. Autentizační data se lokálně neukládají.
 ## Router, workspace navigace a ochrana
 
 `router.tsx` definuje pouze `/login`, `/app`, kořenové přesměrování a fallback.
-Interní obrazovky Dokumentů, Úkolů, Kalendáře, Bucket listu a Nastavení používají
-diskriminovaný `WorkspaceView`, area registry a feature-owned host komponenty.
+Interní obrazovky Dokumentů, Úkolů, Údržby, Kalendáře, Bucket listu, Meals a
+Nastavení používají diskriminovaný `WorkspaceView`, area registry a
+feature-owned host komponenty.
 `pushState`/`replaceState` drží viditelnou URL `/app`; Back/Forward obnovuje
 view nebo důležitý overlay přes `popstate`. Reload načte nejprve bezpečně
 validovaný `history.state`, potom `homeapp.workspace.navigation` v
@@ -90,6 +91,14 @@ ThemeSelector je radio menu v user menu a radio group v mobilním sheetu Více.
 Dokumenty jsou první aktivní business položka ve všech shell režimech; compact
 layout renderuje kartový seznam, medium/expanded tabulku.
 
+Hlavní navigace nezobrazuje samostatnou Údržbu. Jediný
+`getPrimaryNavigationArea(view)` mapuje technické `maintenance` view na
+uživatelskou hlavní oblast `tasks`; stejný mapper používá desktop, collapsed
+sidebar, tablet rail i mobile bottom navigation. `TasksAreaNavigation` uvnitř
+obou workspace hostů rozlišuje Úkoly a Údržbu, na telefonu jako select a na
+širším layoutu jako tablist. History state zůstává typově přesné
+`maintenance`, takže Back/Forward ani reload nepotřebují převod nebo novou URL.
+
 ## Dashboard
 
 `DashboardPage` vlastní auth/query napojení a skládá `DashboardView`. Produkce
@@ -108,15 +117,28 @@ jako detail. Rok ani progress dashboard nedopočítává v Reactu.
 `MaintenanceDashboardWidget` používá jediný
 `GET /api/v1/maintenance/dashboard` kontrakt a centrální
 `MaintenancePlanDialog`. Stejný dialog otevírá widget i globální `Přidat`;
-neexistuje zkrácená druhá mutační cesta.
+neexistuje zkrácená druhá mutační cesta. Dashboardové otevření přechází na
+maintenance přehled, který shell prezentuje pod aktivní položkou Úkoly.
 Detail úkolu používá veřejný `MaintenanceTaskContextCard`, který načte pouze
 bezpečný kontext vazby a naviguje na konkrétní plán v typovaném workspace.
 Neimportuje maintenance repository ani nekopíruje completion logiku.
 
 Workspace `maintenance` zůstává v interním typovaném stavu pod viditelnou URL
-`/app`. Přehled, Plány, Historie a Kategorie jsou menší kompozice feature
-`features/maintenance`; mobil používá karty a adaptivní dialogy bez široké
-tabulky.
+`/app` a doménově mimo Tasks. Přehled, Plány, Historie a Kategorie jsou menší
+kompozice feature `features/maintenance`; mobil používá karty, jediný
+sekundární select a adaptivní dialogy bez široké tabulky.
+
+Workspace `meals` stejným způsobem skládá Jídelníček, Recepty, Nákup a Zásoby
+pod `/app`. `RecipeDialog`, `MealPlanDialog` a `ShoppingItemDialog` jsou jediné
+centrální formuláře pro workspace, dashboard i globální `Přidat`. Recipe form
+je rozdělen na basic, ingredients, steps a document fields; pořadí má
+klávesově ovladatelná tlačítka.
+
+`useMeals` vlastní query namespace, API chyby a invalidaci. Optimistic
+odškrtnutí položky ukládá předchozí cache a při chybě ji obnoví. Decimal helper
+používá fixed-scale BigInt aritmetiku. Planner používá sedm sloupců pouze v
+expanded layoutu; compact zobrazuje dny pod sebou. Calendar skládá jen veřejný
+`MealsCalendarSummary`, nikoli `CalendarEvent`.
 
 ## TanStack Query a API
 

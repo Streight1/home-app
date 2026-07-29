@@ -153,6 +153,13 @@ widget, globální `Přidat` a create/complete/skip/reschedule dialogy v
 light/dark a compact/expanded view; snapshoty se mění pouze kanonickým
 containerovým postupem.
 
+Meals regresní sada testuje Decimal scaling, kompatibilní a nekompatibilní
+jednotky, pantry odečet, normalizaci surovin, ordered recipe data, date-only
+jídelníček, role a nedestruktivní migraci. Web ověřuje centrální dialogy,
+více účastníků, quick actions, skutečný dashboard/empty/error a optimistic
+shopping rollback. Storybook a Playwright pokrývají planner, recepty, nákup,
+zásoby, dashboard a formuláře v light/dark a compact/expanded view.
+
 ## Externí služby
 
 Testy nevolají Google servery, nevyžadují reálný účet ani neukládají skutečný

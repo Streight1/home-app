@@ -81,6 +81,15 @@ function authenticatedResponse(input: RequestInfo | URL): Promise<Response> {
         recentlyCompleted: null,
       }),
     );
+  if (url.includes('/meals/dashboard'))
+    return Promise.resolve(
+      jsonResponse({
+        today: '2026-07-29',
+        todayMeals: [],
+        tomorrowMeal: null,
+        shoppingList: null,
+      }),
+    );
   return Promise.resolve(jsonResponse(profile));
 }
 

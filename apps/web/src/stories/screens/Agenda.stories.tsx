@@ -5,6 +5,7 @@ import { TasksToolbar } from '../../features/tasks/components/list/TasksToolbar.
 import { TaskList } from '../../features/tasks/components/list/TaskList.js';
 import { TaskCreateDialog } from '../../features/tasks/components/dialogs/TaskCreateDialog.js';
 import { TaskSchedulingDialog } from '../../features/scheduling/components/TaskSchedulingDialog.js';
+import { TasksAreaNavigation } from '../../features/tasks/components/navigation/TasksAreaNavigation.js';
 import {
   agendaCategories,
   agendaMembers,
@@ -21,6 +22,7 @@ function TasksScreen({ empty = false }: { empty?: boolean }) {
       onLogout={() => undefined}
     >
       <div className="grid gap-6">
+        <TasksAreaNavigation />
         <TasksToolbar
           view="today"
           query=""

@@ -34,6 +34,14 @@ Desktop skládá kompaktní seznam a Dialog, mobil samostatné karty a full-scre
 Dialog. Účastníci jsou viditelní jako avatary i jména; barva není jediný
 nositel informace. Formulář znovu používá veřejný `PlaceAutocomplete` Location
 feature a nevolá Mapy.com přímo.
+
+Hlavní položka Úkoly zastřešuje dvě uživatelské oblasti: běžné Úkoly a
+samostatnou doménu Údržba. `TasksAreaNavigation` je na širším layoutu
+přístupná tabová skupina a v compact layoutu select bez horizontálního
+overflow. Údržba si ponechává vlastní typované workspace view, API, modely,
+historii a podsekce; centrální mapper pouze prezentuje `maintenance` jako
+aktivní hlavní položku `tasks`.
+
 Přístupný český calendar picker má přepínání měsíců a akce Dnes, Bez času a
 Vymazat termín. Číselné pole délky doplňují nezávazné presety 30, 60, 90 a 120
 minut; vlastní celá hodnota zůstává možná.
@@ -111,4 +119,6 @@ samostatný návrh a oprávnění.
 Vazbu vlastní `MaintenanceTaskLink`; dokončení úkolu samo bez potvrzení
 neuzavírá servisní záznam s cenou, dodavatelem a dokumenty. Detail navázaného
 úkolu načte omezený maintenance context a nabídne přechod na konkrétní plán;
-po splnění úkolu je akce pojmenovaná `Dokončit záznam údržby`.
+po splnění úkolu je akce pojmenovaná `Dokončit záznam údržby`. Přechod otevře
+sekundární oblast Údržba, přitom shell stále označuje Úkoly a URL zůstává
+`/app`.

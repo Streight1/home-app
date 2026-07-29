@@ -25,6 +25,7 @@ import { FinanceAnalyticsModule } from './modules/finance-analytics/finance-anal
 import { FinanceBudgetsModule } from './modules/finance-budgets/finance-budgets.module.js';
 import { BucketListModule } from './modules/bucket-list/bucket-list.module.js';
 import { MaintenanceModule } from './modules/maintenance/maintenance.module.js';
+import { MealsModule } from './modules/meals/meals.module.js';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { MaintenanceModule } from './modules/maintenance/maintenance.module.js';
     FinanceBudgetsModule,
     BucketListModule,
     MaintenanceModule,
+    MealsModule,
     HealthModule,
   ],
   providers: [

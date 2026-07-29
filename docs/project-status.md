@@ -42,7 +42,16 @@ přeskočení, přeplánování, historii, kategorie a explicitní vazby na doku
 a finanční transakce. Dashboard i globální `Přidat` používají veřejný
 maintenance kontrakt a centrální dialog. Generování běží také při startu API
 a v šestihodinovém in-process workeru; databázové unikátní klíče chrání souběh
-více instancí.
+více instancí. V uživatelské informační architektuře je Údržba sekundární
+oblast pod hlavní položkou Úkoly; technický workspace, backend, API a data
+zůstávají samostatné. Centrální mapper udržuje Úkoly aktivní na desktopu,
+tabletu i telefonu a compact layout přepíná oblast bez horizontálního overflow.
+Recepty, jídelníček a nákup tvoří samostatný Meals modul s household katalogem
+surovin, Decimal množstvím, ordered recepty, date-only týdenním plánem a více
+účastníky. Generování nákupu má read-only preview, slučuje jen kompatibilní
+jednotky, chrání ruční položky source linky a pantry odečítá pouze po potvrzení.
+Dashboard, kalendářní summary a globální `Přidat` používají veřejné kontrakty a
+centrální dialogy pod `/app`.
 Projekt má také plně kontejnerový single-VPS staging. Reprodukovatelná CI
 odděluje statické, API, web, browser accessibility, browser visual a container
 joby, ověřuje migraci od prázdné PostgreSQL, runtime config bez `.env`,
@@ -105,6 +114,9 @@ GitHub Actions a Google production login vyžadují cílové externí prostřed�
 - `MaintenancePlan`, `MaintenanceOccurrence`, `MaintenanceCategory` a
   explicitní task/document/transaction vazby s date-only termíny, minor units,
   rolovou autorizací a databázovou ochranou proti duplicitám.
+- `Recipe`, `Ingredient`, `MealPlanEntry`, `ShoppingList`, `ShoppingListItem`
+  a `PantryItem` s household scope, Decimal množstvím, date-only plánem,
+  explicitními participants/source/document vazbami a kompatibilními jednotkami.
 - Prisma `Task` bezpečně mapovaný na původní tabulku, `TaskParticipant`,
   `TaskCompletion`, `TaskCategory` a explicitní `TaskDocument` vazby s
   household scope, rolemi, prioritami, místem, délkou a IANA timezone.
@@ -215,7 +227,7 @@ GitHub Actions a Google production login vyžadují cílové externí prostřed�
 
 - OCR obrázků, štítky, fulltext obsahu, Office preview a verzování dokumentů.
 - Přímé bankovní API, AI kategorizace a automatické fakturové párování.
-- Majetek, vozidla, notifikační centrum a jídelníček.
+- Majetek, vozidla a notifikační centrum.
 - Pozvánky a změny rolí domácnosti.
 - Výběr aktivní domácnosti uživatelem.
 - Google Calendar, Gmail, Drive nebo jiné Google API integrace.

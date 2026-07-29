@@ -406,6 +406,48 @@ Výchozí jsou aktivní plány podle nejbližšího termínu. VIEWER pouze čte,
 MEMBER vytváří a provádí údržbu, ADMIN/OWNER navíc spravuje kategorie a
 archiv. Cizí household entita se mapuje na obecnou 404.
 
+### Recepty, jídelníček, nákup a zásoby
+
+Recepty:
+
+- `GET|POST /api/v1/recipes` — filtrovaný seznam a atomické vytvoření receptu;
+- `GET|PATCH /api/v1/recipes/:recipeId` — detail a úprava;
+- `POST /api/v1/recipes/:recipeId/archive|restore` — lifecycle bez ztráty
+  historického jídelníčku;
+- `GET /api/v1/recipes/:recipeId/scaled?servings=...` — přesný Decimal
+  přepočet bez změny uložených hodnot.
+
+Jídelníček:
+
+- `GET|POST /api/v1/meal-plan` — date-only období a vytvoření jídla;
+- `PATCH|DELETE /api/v1/meal-plan/:entryId` — editace nebo odstranění;
+- `POST /api/v1/meal-plan/copy-week` — potvrzená transakční kopie týdne.
+
+Nákup:
+
+- `GET|POST /api/v1/shopping-lists`,
+  `GET|PATCH /api/v1/shopping-lists/:listId` a `POST .../:listId/complete`;
+- `POST /api/v1/shopping-lists/:listId/items`,
+  `PATCH|DELETE /api/v1/shopping-list-items/:itemId` a
+  `POST .../:itemId/check|uncheck`;
+- `POST /api/v1/shopping-lists/:listId/generate-preview` — read-only Decimal
+  agregace a návrh odečtu zásob;
+- `POST /api/v1/shopping-lists/:listId/generate-confirm` — explicitní zápis
+  vybraných položek a source links.
+
+Zásoby a metadata:
+
+- `GET|POST /api/v1/pantry` a `PATCH|DELETE /api/v1/pantry/:itemId`;
+- `GET /api/v1/ingredients`, `/recipe-categories` a `/shopping-categories`;
+- `POST /api/v1/recipe-categories/recommended` a
+  `/shopping-categories/recommended` — explicitní idempotentní doporučená sada;
+- `GET /api/v1/meals/dashboard` a `/meals/calendar-summary` — omezené
+  prezentační souhrny.
+
+Množství jsou decimal stringy. Date-only filtry nepoužívají UTC timestamp.
+VIEWER pouze čte, MEMBER a vyšší mutuje, správu kategorií a archivaci má
+ADMIN/OWNER. Všechny entity jsou household scoped a cizí ID vrací obecnou 404.
+
 ## Internal
 
 Interní endpointy nejsou pod `/api/v1`, nepřijímají běžnou session a vyžadují

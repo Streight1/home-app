@@ -167,6 +167,19 @@ async function installTasksDashboardErrorMock(page: Page): Promise<void> {
       });
       return;
     }
+    if (path.endsWith('/meals/dashboard')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          today: '2026-07-29',
+          todayMeals: [],
+          tomorrowMeal: null,
+          shoppingList: null,
+        }),
+      });
+      return;
+    }
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -197,6 +210,55 @@ for (const viewport of dashboardViewports) {
     await expect(page).toHaveScreenshot(`dashboard-empty-${viewport.name}.png`);
   });
 }
+
+for (const viewport of [
+  {
+    name: 'planner-desktop-light',
+    width: 1280,
+    height: 800,
+    story: 'screens-meals--planner-light',
+    heading: 'Týdenní jídelníček',
+  },
+  {
+    name: 'planner-tablet-dark',
+    width: 768,
+    height: 1024,
+    story: 'screens-meals--planner-dark',
+    heading: 'Týdenní jídelníček',
+  },
+  {
+    name: 'shopping-mobile-light',
+    width: 390,
+    height: 844,
+    story: 'screens-meals--shopping-light',
+    heading: 'Nákupní seznamy',
+  },
+  {
+    name: 'recipes-desktop-light',
+    width: 1440,
+    height: 900,
+    story: 'screens-meals--recipes-light',
+    heading: 'Recepty',
+  },
+] as const) {
+  test(`jídla a nákup · ${viewport.name}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await openStory(page, viewport.story);
+    await expect(
+      page.getByRole('heading', { name: viewport.heading, exact: true }),
+    ).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+    await expect(page).toHaveScreenshot(`meals-${viewport.name}.png`);
+  });
+}
+
+test('formulář receptu používá centrální dialog', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await openStory(page, 'screens-meals--recipe-create-dialog');
+  await expect(page.getByRole('dialog', { name: 'Nový recept' })).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+  await expect(page).toHaveScreenshot('meals-recipe-dialog.png');
+});
 
 for (const viewport of [
   {

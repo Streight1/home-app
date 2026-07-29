@@ -37,6 +37,10 @@ export type WorkspaceView =
     }
   | { area: 'maintenance'; screen: 'plan'; planId: string }
   | {
+      area: 'meals';
+      screen: 'planner' | 'recipes' | 'shopping' | 'pantry';
+    }
+  | {
       area: 'finance';
       screen:
         | 'overview'
@@ -70,6 +74,11 @@ export type WorkspaceOverlay =
   | { kind: 'finance-transaction'; type: 'expense' | 'income' }
   | { kind: 'bucket-list-item-create'; listId: string }
   | { kind: 'maintenance-plan-create' }
+  | { kind: 'recipe-create' }
+  | { kind: 'recipe-edit'; recipeId: string }
+  | { kind: 'meal-plan-create'; plannedFor?: string; recipeId?: string }
+  | { kind: 'meal-plan-edit'; entryId: string; plannedFor: string }
+  | { kind: 'shopping-item-create'; listId?: string }
   | { kind: 'theme-selector' };
 
 export interface WorkspaceNavigationState {

@@ -82,6 +82,10 @@ chování má vždy přednost před zastaralým textem; při rozporu dokument op
   účastníci, dokumenty, roční postup a bezpečný převod do dalšího roku.
 - [Údržba domácnosti](features/maintenance.md) — plány údržby, recurrence,
   konkrétní výskyty, úkoly, dokončovací historie a nákladové vazby.
+- [Recepty](features/recipes.md), [jídelníček](features/meal-planning.md),
+  [nákupní seznamy](features/shopping-lists.md) a
+  [zásoby](features/pantry.md) — přesná množství, týdenní plán, household
+  nákup a potvrzovaný pantry odečet.
 
 ## API
 
