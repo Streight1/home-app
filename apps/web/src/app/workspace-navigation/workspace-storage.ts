@@ -104,6 +104,21 @@ function parseView(value: unknown): WorkspaceView | null {
       value.screen === 'pantry')
   )
     return { area: 'meals', screen: value.screen };
+  if (
+    value.area === 'expeditions' &&
+    (value.screen === 'overview' ||
+      value.screen === 'trips' ||
+      value.screen === 'templates' ||
+      value.screen === 'gear')
+  )
+    return { area: 'expeditions', screen: value.screen };
+  if (
+    value.area === 'expeditions' &&
+    value.screen === 'trip' &&
+    typeof value.tripId === 'string' &&
+    uuid.test(value.tripId)
+  )
+    return { area: 'expeditions', screen: 'trip', tripId: value.tripId };
   if (value.area === 'finance') {
     if (value.screen === 'transactions') {
       const filters = isRecord(value.filters)
@@ -206,6 +221,8 @@ function parseOverlay(value: unknown): WorkspaceOverlay | null {
         ? { listId: value.listId }
         : {}),
     };
+  if (value.kind === 'trip-create') return { kind: 'trip-create' };
+  if (value.kind === 'gear-item-create') return { kind: 'gear-item-create' };
   if (value.kind === 'theme-selector') return { kind: value.kind };
   if (
     value.kind === 'finance-transaction' &&

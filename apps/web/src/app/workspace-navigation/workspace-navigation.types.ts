@@ -41,6 +41,11 @@ export type WorkspaceView =
       screen: 'planner' | 'recipes' | 'shopping' | 'pantry';
     }
   | {
+      area: 'expeditions';
+      screen: 'overview' | 'trips' | 'templates' | 'gear';
+    }
+  | { area: 'expeditions'; screen: 'trip'; tripId: string }
+  | {
       area: 'finance';
       screen:
         | 'overview'
@@ -79,6 +84,8 @@ export type WorkspaceOverlay =
   | { kind: 'meal-plan-create'; plannedFor?: string; recipeId?: string }
   | { kind: 'meal-plan-edit'; entryId: string; plannedFor: string }
   | { kind: 'shopping-item-create'; listId?: string }
+  | { kind: 'trip-create' }
+  | { kind: 'gear-item-create' }
   | { kind: 'theme-selector' };
 
 export interface WorkspaceNavigationState {

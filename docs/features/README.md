@@ -52,6 +52,12 @@ dokumentů.
   preview, kompatibilní agregace a optimistic odškrtávání.
 - [Domácí zásoby](pantry.md) — jednoduchý přehled dostupnosti a potvrzovaný
   odečet při generování nákupu.
+- [Výpravy](expeditions.md) — trekkingové výpravy, účastníci, balení,
+  připravenost, hmotnostní souhrn a vyhodnocení.
+- [Výbava](gear.md) — household katalog v gramech, kategorie, dokumentové
+  fotografie a bezpečný import obrázku.
+- [Gearlisty](pack-lists.md) — opakovaně použitelné snapshotové šablony a
+  konkrétní mobilní checklist výpravy.
 
 ## Přidání modulu
 

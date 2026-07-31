@@ -52,6 +52,10 @@ schválen k implementaci.
   Decimal množství, přesného scalingu, date-only týdenního plánu, účastníků,
   potvrzené kopie týdne, nákupního preview/agregace, jednoduchých zásob,
   dashboardu a kalendářního summary.
+- Výpravy jsou dokončené v rozsahu household katalogu výbavy, gramových
+  hmotností, fotografií přes Documents, znovupoužitelných gearlistů,
+  snapshotovaných seznamů konkrétních výprav, účastníků, mobilního balení,
+  readiness pravidel, váhových přehledů, post-trip review a dashboardu.
 - Single-VPS staging používá hotové GHCR image, named volumes, idempotentní init
   service, automatickou one-shot migraci, runtime public config a Compose
   secrets. Běžný start i aktualizace jsou `docker compose up -d`; bezpečný
@@ -71,6 +75,8 @@ schválen k implementaci.
   současný read-only members panel a root konfigurace jsou záměrné.
 - Přímé bankovní API a automatické párování faktur až jako
   samostatné finance iterace s provider portem a explicitní privacy policy.
+- Volitelný provider hledání fotografií výbavy, počasí, GPX a navigace až v
+  samostatných integracích s vlastní privacy, licenční a provozní kontrolou.
 - Off-site backup transport a monitoring/alerting až jako samostatná provozní
   iterace po prvním staging deployi. GHCR workflow je připravené, ale jeho
   skutečný běh a registry visibility je nutné ověřit v GitHub repozitáři.

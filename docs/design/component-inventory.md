@@ -148,6 +148,24 @@ Workspace navigace není UI primitive: Provider, registry, feature hosty,
 - `PantryPanel` — jednoduché zásoby bez skladového automatu;
 - `MealsCalendarSummary` — kompaktní read-only jídla u konkrétního dne.
 
+## Výpravy
+
+- `ExpeditionsPage` — sekundární Přehled/Výpravy/Gearlisty/Výbava bez nové URL;
+- `ExpeditionsDashboardWidget` — pravdivý nejbližší trip, packing stav a quick
+  create;
+- `TripDialog`/`GearItemDialog`/`PackTemplateDialog` — centrální adaptivní
+  formuláře;
+- `PackingMode` + `PackingBulkActions` — mobilní checklist, filtry, výběr,
+  potvrzovaný reset a optimistic rollback;
+- `TripPackEditorDialog` + `TripPackItemEditorRow` — snapshot editace, nositel
+  a klávesové pořadí;
+- `TripWeightSummary` — textový rozpad base/worn/consumable, kategorií,
+  účastníků a nejtěžších položek;
+- `TripReviewPanel` + `TripTemplateReviewSuggestions` — výsledky po návratu,
+  úkoly a potvrzené návrhy změny gearlistu;
+- `GearImageFields` — Documents upload, SSRF-safe URL a volitelný potvrzovaný
+  image search.
+
 ## Storybook
 
 Stories pokrývají light/dark tokeny, typografii, Button, Input, IconButton,
@@ -155,5 +173,7 @@ Badge, Avatar, EmptyState, InlineAlert, Dialog, Sheet, ThemeSelector, tři reži
 AppShellu, LoginPage desktop/mobile a DashboardPage empty light/dark i fixture.
 Bucket list stories pokrývají prázdný i naplněný roční seznam, dashboard a
 compact/expanded layout.
+Výpravy mají přehled, výbavu, gearlisty, mobilní i desktopové balení, create
+dialogy a dashboard v light/dark scénářích.
 Story fixture nejsou importované produkčním entrypointem. Build končí v
 ignorované složce `apps/web/storybook-static/`.

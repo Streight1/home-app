@@ -1,4 +1,7 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { createDocument } from './api/documentsApi.js';
 import { useDocuments } from './hooks/useDocuments.js';
+import { DOCUMENTS_QUERY_KEY } from './hooks/useDocuments.js';
 export { useDocumentNavigation } from './navigation/useDocumentNavigation.js';
 
 export function useDocumentPickerOptions() {
@@ -12,4 +15,19 @@ export function useDocumentPickerOptions() {
       canPreview: document.canPreview,
     })),
   };
+}
+
+export function useUploadDocumentImage() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ file, title }: { file: File; title: string }) =>
+      createDocument({
+        title,
+        documentType: 'GENERAL',
+        metadata: {},
+        file,
+      }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: DOCUMENTS_QUERY_KEY }),
+  });
 }

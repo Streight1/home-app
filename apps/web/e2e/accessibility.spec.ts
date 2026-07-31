@@ -108,6 +108,15 @@ for (const story of [
   'screens-meals--recipe-create-dialog',
   'screens-meals--meal-create-dialog',
   'screens-meals--dashboard-widget-light',
+  'screens-expeditions--overview-light',
+  'screens-expeditions--overview-dark',
+  'screens-expeditions--gear-light',
+  'screens-expeditions--templates-dark',
+  'screens-expeditions--packing-mobile',
+  'screens-expeditions--packing-dark',
+  'screens-expeditions--trip-create-dialog',
+  'screens-expeditions--gear-create-dialog',
+  'screens-expeditions--dashboard-widget',
 ]) {
   test(`axe WCAG 2.2 AA · ${story}`, async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });

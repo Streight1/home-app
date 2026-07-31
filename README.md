@@ -5,7 +5,7 @@ domácnosti. Aktuální základ
 poskytuje bezpečné přihlášení přes Google, serverové relace, uživatele,
 sdílenou domácnost, chráněný český dashboard a použitelné moduly Dokumenty,
 Úkoly, Kalendář včetně chytrého plánování, Údržba domácnosti, Recepty,
-Jídelníček, Nákupy a ruční Finance. Majetek a vozidla zatím nejsou
+Jídelníček, Nákupy, Výpravy a ruční Finance. Majetek a vozidla zatím nejsou
 implementované.
 
 ## Technologie
@@ -45,6 +45,9 @@ implementované.
   výskyty, navázanými úkoly, historií, dokumenty, finančními vazbami a
   dashboardovým přehledem; v UI je dostupná pod Úkoly, backend a data zůstávají
   oddělené
+- Výpravy s household katalogem výbavy v gramech, snapshotovými gearlisty,
+  účastníky a nositeli, mobilním balením, base/worn/consumable souhrnem,
+  kontrolou povinných položek a vyhodnocením po návratu
 - interní workspace navigace: browser zobrazuje pouze `/login` nebo `/app`,
   zatímco Back/Forward a reload bezpečně obnovují validovaný interní stav
 - kalendář lze rychle otevřít dvojklikem na prázdný desktopový den/slot nebo

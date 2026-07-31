@@ -42,6 +42,20 @@ Významné změny projektu jsou evidovány v tomto souboru ve formátu inspirova
 
 ### Added
 
+- Samostatný modul Výpravy s katalogem výbavy v celých gramech, household
+  kategoriemi, Decimal množstvím, gearlist šablonami a date-only trekkingovými
+  výpravami s více účastníky.
+- Snapshotované seznamy výprav s rozlišením nesené, oblečené a spotřební
+  hmotnosti, přidělením sdílené výbavy, cílovou base weight, kategoriálním a
+  osobním rozpadem a deseti nejtěžšími položkami.
+- Mobilní packing režim s optimistic rollbackem, filtry, hromadnými akcemi,
+  vysvětlitelnou readiness kontrolou a post-trip hodnocením
+  `USED`/`UNUSED`/`MISSING_DURING_TRIP`/`BROKEN`.
+- Fotografie výbavy přes Documents public API, ruční upload a chráněný import
+  HTTPS obrázku s DNS/IP SSRF kontrolou, limitem, ověřením MIME a odstraněním
+  nebezpečných metadat; image search zůstává volitelný provider port.
+- Výpravy na dashboardu a v globálním `Přidat`, bezpečný read-only search
+  provider a explicitně potvrzované návrhy změn zdrojové šablony po návratu.
 - Samostatný Meals modul s household recepty, normalizovaným katalogem
   surovin, ordered kroky, přesným Decimal scalingem a explicitními
   dokumentovými vazbami přes Documents public API.

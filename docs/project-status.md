@@ -52,6 +52,15 @@ surovin, Decimal množstvím, ordered recepty, date-only týdenním plánem a v�
 jednotky, chrání ruční položky source linky a pantry odečítá pouze po potvrzení.
 Dashboard, kalendářní summary a globální `Přidat` používají veřejné kontrakty a
 centrální dialogy pod `/app`.
+Výpravy tvoří samostatný modul pro katalog outdoorové výbavy, opakovaně
+použitelné gearlisty a konkrétní trekkingové výpravy. Hmotnost je uložená v
+celých gramech, množství používá Decimal a výprava zachovává snapshot názvu,
+kategorie a jednotkové hmotnosti. Mobilní packing režim, readiness přehled,
+rozpad hmotnosti, rozdělení sdílené výbavy, vyhodnocení po návratu a návrhy změn
+šablony zůstávají vysvětlitelné a vyžadují explicitní potvrzení. Fotografie
+procházejí Documents veřejným rozhraním; import z HTTPS URL chrání SSRF,
+velikost i skutečný typ obrázku a volitelné hledání je bez provideru poctivě
+nedostupné.
 Projekt má také plně kontejnerový single-VPS staging. Reprodukovatelná CI
 odděluje statické, API, web, browser accessibility, browser visual a container
 joby, ověřuje migraci od prázdné PostgreSQL, runtime config bez `.env`,
@@ -117,6 +126,13 @@ GitHub Actions a Google production login vyžadují cílové externí prostřed�
 - `Recipe`, `Ingredient`, `MealPlanEntry`, `ShoppingList`, `ShoppingListItem`
   a `PantryItem` s household scope, Decimal množstvím, date-only plánem,
   explicitními participants/source/document vazbami a kompatibilními jednotkami.
+- `GearItem`, `PackTemplate`, `Trip` a jejich položky/účastníci s household
+  scope, celočíselnými gramy, Decimal množstvím, date-only rozsahem, snapshoty,
+  packing lifecycle, readiness potvrzeními a explicitními document/task
+  vazbami.
+- Workspace Výpravy s přehledem, výpravami, gearlisty a výbavou, centrálními
+  create dialogy, editorem konkrétního seznamu, mobilním packing režimem,
+  post-trip review, dashboard widgetem a globálními quick actions pod `/app`.
 - Prisma `Task` bezpečně mapovaný na původní tabulku, `TaskParticipant`,
   `TaskCompletion`, `TaskCategory` a explicitní `TaskDocument` vazby s
   household scope, rolemi, prioritami, místem, délkou a IANA timezone.

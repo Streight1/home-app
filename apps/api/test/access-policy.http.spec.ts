@@ -227,6 +227,34 @@ class MealsPolicyController {
   }
 }
 
+@Controller()
+class ExpeditionsPolicyController {
+  @Get('gear')
+  public gear(): { status: 'must-be-protected' } {
+    return { status: 'must-be-protected' };
+  }
+
+  @Post('gear')
+  public createGear(): { status: 'must-be-protected' } {
+    return { status: 'must-be-protected' };
+  }
+
+  @Get('pack-templates')
+  public templates(): { status: 'must-be-protected' } {
+    return { status: 'must-be-protected' };
+  }
+
+  @Get('trips')
+  public trips(): { status: 'must-be-protected' } {
+    return { status: 'must-be-protected' };
+  }
+
+  @Get('trips/dashboard')
+  public dashboard(): { status: 'must-be-protected' } {
+    return { status: 'must-be-protected' };
+  }
+}
+
 describe('deny-by-default HTTP access policy', () => {
   let app: INestApplication;
   const auth = {
@@ -263,6 +291,7 @@ describe('deny-by-default HTTP access policy', () => {
         BucketListPolicyController,
         MaintenancePolicyController,
         MealsPolicyController,
+        ExpeditionsPolicyController,
       ],
       providers: [
         { provide: AuthService, useValue: auth },
@@ -461,6 +490,23 @@ describe('deny-by-default HTTP access policy', () => {
     const response = await pending.expect(401);
     expect(response.body).toMatchObject({ code: 'AUTH_INVALID_SESSION' });
   });
+
+  it.each([
+    ['get', '/api/v1/gear'],
+    ['post', '/api/v1/gear'],
+    ['get', '/api/v1/pack-templates'],
+    ['get', '/api/v1/trips'],
+    ['get', '/api/v1/trips/dashboard'],
+  ] as const)(
+    'returns 401 for anonymous expeditions %s',
+    async (method, path) => {
+      const pending = request(app.getHttpServer() as Server)[method](path);
+      if (method === 'post')
+        pending.set('Origin', config.webOrigin).send({ name: 'Batoh' });
+      const response = await pending.expect(401);
+      expect(response.body).toMatchObject({ code: 'AUTH_INVALID_SESSION' });
+    },
+  );
 
   it.each([
     ['get', '/api/v1/maintenance/plans'],

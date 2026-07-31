@@ -448,6 +448,57 @@ Množství jsou decimal stringy. Date-only filtry nepoužívají UTC timestamp.
 VIEWER pouze čte, MEMBER a vyšší mutuje, správu kategorií a archivaci má
 ADMIN/OWNER. Všechny entity jsou household scoped a cizí ID vrací obecnou 404.
 
+### Výpravy, výbava a gearlisty
+
+Výbava:
+
+- `GET|POST /api/v1/gear` — stránkovaný katalog a vytvoření položky;
+- `GET|PATCH /api/v1/gear/:gearItemId` — detail a úplná validovaná úprava;
+- `POST /api/v1/gear/:gearItemId/archive|restore` — katalogový lifecycle bez
+  změny historických snapshotů;
+- `PUT /api/v1/gear/:gearItemId/documents` — explicitní vazby na bezpečné
+  summaries z `DocumentsFacade`;
+- `POST /api/v1/gear/:gearItemId/image-from-url` — potvrzený SSRF-safe import
+  HTTPS JPEG/PNG do Documents storage;
+- `POST /api/v1/gear/image-search` — volitelný provider; bez konfigurace vrací
+  bezpečný fallback upload/HTTPS URL;
+- `GET|POST /api/v1/gear-categories`, `PATCH .../:categoryId`,
+  `POST .../:categoryId/archive` a `POST .../recommended`.
+
+Gearlisty:
+
+- `GET|POST /api/v1/pack-templates`;
+- `GET|PATCH /api/v1/pack-templates/:templateId`;
+- `POST .../:templateId/duplicate|archive`;
+- `PUT .../:templateId/items` — atomické nahrazení ordered snapshotů;
+- `GET .../:templateId/catalog-update-preview` a
+  `POST .../:templateId/catalog-update` — read-only rozdíl a potvrzený update
+  z katalogu.
+
+Výpravy:
+
+- `GET|POST /api/v1/trips`, `GET|PATCH /api/v1/trips/:tripId` a
+  `POST .../:tripId/archive`;
+- `POST .../:tripId/create-from-template` — potvrzené nahrazení seznamu
+  snapshotem šablony;
+- `PUT .../:tripId/participants|pack-items` — atomická účast a ordered seznam;
+- `POST .../:tripId/packing-status|ready|complete|review` — balení,
+  vysvětlitelná připravenost a vyhodnocení;
+- `GET .../:tripId/weight-summary` — centrálně spočítané gramové součty podle
+  zatížení, kategorií a účastníků;
+- `POST .../:tripId/readiness-acknowledgements` — vědomé potvrzení
+  nerelevantního advisory pravidla;
+- `POST .../:tripId/tasks` — explicitní task vazba přes `TasksFacade`;
+- `GET .../:tripId/catalog-update-preview` a `POST .../:tripId/catalog-update`;
+- `GET .../:tripId/template-review-preview` a
+  `POST .../:tripId/template-review` — potvrzované návrhy úprav původního
+  gearlistu bez změny historie;
+- `GET /api/v1/trips/dashboard` — omezený model nejbližší výpravy.
+
+Množství jsou decimal stringy a hmotnosti celé gramy. VIEWER čte, MEMBER
+mutuje běžné záznamy a ADMIN/OWNER spravuje kategorie a archivaci. Vše je
+household scoped; cizí UUID se mapuje na obecnou 404.
+
 ## Internal
 
 Interní endpointy nejsou pod `/api/v1`, nepřijímají běžnou session a vyžadují

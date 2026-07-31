@@ -1707,6 +1707,111 @@ for (const required of [
     errors.push(`Prisma schema postrádá Bucket list prvek ${required}.`);
 }
 
+const expeditionsApiDirectory = join(apiSource, 'modules/expeditions');
+const expeditionsWebDirectory = join(webSource, 'features/expeditions');
+for (const required of [
+  'expeditions.module.ts',
+  'expeditions.facade.ts',
+  'expeditions-search.provider.ts',
+  'application/gear.service.ts',
+  'application/pack-templates.service.ts',
+  'application/trips.service.ts',
+  'application/trip-packing.service.ts',
+  'domain/expedition-weight.service.ts',
+  'domain/trip-readiness.service.ts',
+  'images/gear-image-search.port.ts',
+  'images/node-gear-image-http.adapter.ts',
+  'presentation/gear.controller.ts',
+  'presentation/pack-templates.controller.ts',
+  'presentation/trips.controller.ts',
+]) {
+  try {
+    await readFile(join(expeditionsApiDirectory, required), 'utf8');
+  } catch {
+    errors.push(`Expeditions modul postrádá samostatný soubor ${required}.`);
+  }
+}
+for (const file of await collectFiles(expeditionsApiDirectory, '.ts')) {
+  const source = await readFile(file, 'utf8');
+  const path = relative(root, file);
+  if (
+    path.endsWith('.controller.ts') &&
+    /Prisma(?:Service|Client)|@PublicEndpoint\(/.test(source)
+  )
+    errors.push(`${path} porušuje chráněnou HTTP hranici Expeditions modulu.`);
+  if (
+    /modules\/documents\/(?:application|domain|infrastructure|presentation)\//.test(
+      source,
+    )
+  )
+    errors.push(`${path} obchází veřejný DocumentsFacade.`);
+  if (
+    /modules\/tasks\/(?!tasks\.facade)/.test(source) &&
+    !path.endsWith('expeditions.module.ts')
+  )
+    errors.push(`${path} obchází veřejný TasksFacade.`);
+  if (
+    path.includes('/images/') &&
+    /\b(?:readFile|writeFile|createWriteStream|createReadStream)\b/.test(source)
+  )
+    errors.push(
+      `${path} zavádí vlastní file storage místo DocumentsFacade/StoragePort.`,
+    );
+  if (
+    path !==
+      'apps/api/src/modules/expeditions/domain/expedition-weight.service.ts' &&
+    /\.(?:mul|times)\s*\(\s*item\.unitWeightGrams|unitWeightGrams\s*\*\s*(?:quantity|item\.)/.test(
+      source,
+    )
+  )
+    errors.push(`${path} počítá hmotnost mimo centrální doménovou službu.`);
+}
+for (const file of [
+  ...(await collectFiles(expeditionsWebDirectory, '.ts')),
+  ...(await collectFiles(expeditionsWebDirectory, '.tsx')),
+]) {
+  const source = await readFile(file, 'utf8');
+  const path = relative(root, file);
+  if (
+    /(?:features\/documents|\.\.\/documents)\/(?!documents\.public)/.test(
+      source,
+    )
+  )
+    errors.push(`${path} importuje interní Documents feature.`);
+  if (/['"`]\/app\/(?:trips|gear|expeditions|pack)/.test(source))
+    errors.push(`${path} vytváří zakázanou browser URL Výprav.`);
+  if (
+    /unitWeightGrams\s*\*\s*(?:Number|parseFloat|\w+\.quantity)|(?:Number|parseFloat)\([^)]*quantity[^)]*\)\s*\*\s*unitWeightGrams/.test(
+      source,
+    )
+  )
+    errors.push(`${path} počítá gramovou geometrii přímo v Reactu.`);
+}
+const expeditionDashboardSource = await readFile(
+  join(webSource, 'features/dashboard/components/DashboardOverview.tsx'),
+  'utf8',
+);
+if (
+  !expeditionDashboardSource.includes('../../expeditions/expeditions.public.js')
+)
+  errors.push(
+    'Dashboard musí Výpravy používat přes explicitní expeditions.public API.',
+  );
+for (const required of [
+  'model GearCategory',
+  'model GearItem',
+  'model GearItemDocument',
+  'model PackTemplate',
+  'model PackTemplateItem',
+  'model Trip',
+  'model TripParticipant',
+  'model TripPackItem',
+  'model TripTaskLink',
+]) {
+  if (!prismaSchema.includes(required))
+    errors.push(`Prisma schema postrádá Expeditions prvek ${required}.`);
+}
+
 const gitignore = await readFile(join(root, '.gitignore'), 'utf8');
 for (const required of [
   '/database/*',

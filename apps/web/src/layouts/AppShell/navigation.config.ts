@@ -6,6 +6,7 @@ import {
   House,
   LayoutDashboard,
   ListTodo,
+  Mountain,
   MoreHorizontal,
   Package,
   Settings,
@@ -49,6 +50,7 @@ export const desktopNavigation: readonly NavigationItem[] = [
   { label: 'Vozidla', icon: Car, available: false },
   { label: 'Kalendář', icon: CalendarDays, available: true, area: 'calendar' },
   { label: 'Jídelníček', icon: Soup, available: true, area: 'meals' },
+  { label: 'Výpravy', icon: Mountain, available: true, area: 'expeditions' },
   { label: 'Nastavení', icon: Settings, available: true, area: 'settings' },
 ];
 
@@ -72,6 +74,7 @@ export function workspaceViewForArea(area: NavigationArea): WorkspaceView {
   if (area === 'bucket-list') return { area, screen: 'overview' };
   if (area === 'maintenance') return { area, screen: 'overview' };
   if (area === 'meals') return { area, screen: 'planner' };
+  if (area === 'expeditions') return { area, screen: 'overview' };
   if (area === 'finance') return { area, screen: 'overview' };
   if (area === 'settings') return { area, screen: 'general' };
   return { area: 'dashboard' };

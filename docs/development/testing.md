@@ -160,6 +160,16 @@ více účastníků, quick actions, skutečný dashboard/empty/error a optimisti
 shopping rollback. Storybook a Playwright pokrývají planner, recepty, nákup,
 zásoby, dashboard a formuláře v light/dark a compact/expanded view.
 
+Expeditions regresní sada testuje Decimal množství a deterministické
+zaokrouhlení gramů, oddělení base/worn/consumable, missing/excluded položky,
+participant součty, readiness blokace, advisory potvrzení, snapshotové schema,
+household role a search scope. Image testy pokrývají HTTPS, privátní IP/SSRF,
+MIME/signaturu, limit velikosti a odstranění PNG metadat před
+`DocumentsFacade`. Web ověřuje dashboard empty/error, mobilní checklist,
+optimistic rollback, trip-only editor snapshotu, globální dialogy a zachování
+`/app`. Storybook, axe a kanonické screenshoty pokrývají light/dark přehled,
+katalog, dialogy a compact/expanded packing.
+
 ## Externí služby
 
 Testy nevolají Google servery, nevyžadují reálný účet ani neukládají skutečný

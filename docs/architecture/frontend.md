@@ -52,7 +52,8 @@ udržuje stejný kontrakt. Autentizační data se lokálně neukládají.
 ## Router, workspace navigace a ochrana
 
 `router.tsx` definuje pouze `/login`, `/app`, kořenové přesměrování a fallback.
-Interní obrazovky Dokumentů, Úkolů, Údržby, Kalendáře, Bucket listu, Meals a
+Interní obrazovky Dokumentů, Úkolů, Údržby, Kalendáře, Bucket listu, Meals,
+Výprav a
 Nastavení používají diskriminovaný `WorkspaceView`, area registry a
 feature-owned host komponenty.
 `pushState`/`replaceState` drží viditelnou URL `/app`; Back/Forward obnovuje
@@ -139,6 +140,23 @@ odškrtnutí položky ukládá předchozí cache a při chybě ji obnoví. Decim
 používá fixed-scale BigInt aritmetiku. Planner používá sedm sloupců pouze v
 expanded layoutu; compact zobrazuje dny pod sebou. Calendar skládá jen veřejný
 `MealsCalendarSummary`, nikoli `CalendarEvent`.
+
+Workspace `expeditions` skládá Přehled, Výpravy, Gearlisty a Výbavu při stále
+stejné `/app`. `TripDialog` a `GearItemDialog` jsou jediné create dialogy pro
+workspace, dashboard a globální `Přidat`. `useExpeditions` vlastní oddělený
+query namespace, invalidaci a optimistic packing rollback; React nepřepočítává
+gramové součty a používá `GET /trips/:id/weight-summary`.
+
+`PackingMode` je kartový compact-first checklist s textovými filtry,
+44px ovládáním a hromadnými akcemi. `TripPackEditorDialog` mění pouze snapshot
+konkrétní výpravy a nabízí tlačítka pořadí jako klávesovou alternativu k
+drag-and-drop. `TripWeightSummary` kombinuje textové součty s category a
+participant přehledem, takže graf ani barva nejsou jediným nositelem významu.
+
+Gear fotografie se přidávají přes veřejný `documents.public.ts`; frontend
+nezná storage key. Internetové vyhledávání zobrazuje poskytovatelem vrácený
+náhled a zdroj, ale URL se použije až po explicitním výběru. Dashboard
+importuje pouze `expeditions.public.ts` a rozlišuje loading, empty a API error.
 
 ## TanStack Query a API
 

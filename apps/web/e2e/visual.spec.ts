@@ -262,6 +262,57 @@ test('formulář receptu používá centrální dialog', async ({ page }) => {
 
 for (const viewport of [
   {
+    name: 'overview-desktop-light',
+    width: 1280,
+    height: 800,
+    story: 'screens-expeditions--overview-light',
+    heading: 'Přehled přípravy',
+  },
+  {
+    name: 'packing-mobile-light',
+    width: 390,
+    height: 844,
+    story: 'screens-expeditions--packing-mobile',
+    heading: 'Režim Balit',
+  },
+  {
+    name: 'packing-desktop-dark',
+    width: 1440,
+    height: 900,
+    story: 'screens-expeditions--packing-dark',
+    heading: 'Režim Balit',
+  },
+  {
+    name: 'gear-tablet-light',
+    width: 768,
+    height: 1024,
+    story: 'screens-expeditions--gear-light',
+    heading: 'Katalog výbavy',
+  },
+] as const) {
+  test(`výpravy · ${viewport.name}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await openStory(page, viewport.story);
+    await expect(
+      page.getByRole('heading', { name: viewport.heading, exact: true }),
+    ).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+    await expect(page).toHaveScreenshot(`expeditions-${viewport.name}.png`);
+  });
+}
+
+test('výpravy používají centrální dialog nové výpravy', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await openStory(page, 'screens-expeditions--trip-create-dialog');
+  await expect(
+    page.getByRole('dialog', { name: 'Nová výprava' }),
+  ).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+  await expect(page).toHaveScreenshot('expeditions-trip-dialog.png');
+});
+
+for (const viewport of [
+  {
     name: 'mobile-dark',
     width: 390,
     height: 844,

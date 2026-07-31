@@ -205,6 +205,31 @@ dashboard neimportují Meals Prisma repository. Role a household izolace se
 ověřují v každém use case přes `HouseholdAccessService`; audit neobsahuje
 recept, nákupní obsah ani pantry množství.
 
+## ExpeditionsModule
+
+`ExpeditionsModule` je samostatná hranice katalogu výbavy, gearlistů,
+konkrétních výprav, balení, reportingu a image providerů. Controllery pouze
+validují HTTP DTO a volají aplikační služby. `ExpeditionWeightService` je
+jediný výpočet Decimal množství a gramových součtů;
+`TripReadinessService` odděluje blokující povinné položky od potvrditelných
+advisory pravidel.
+
+Přesahy vedou pouze přes `DocumentsFacade` a `TasksFacade`.
+`GearItemDocument` a `TripTaskLink` jsou explicitní FK vazby; modul nepoužívá
+Documents ani Tasks repository. `ExpeditionsFacade` a read-only
+`ExpeditionsSearchProvider` tvoří veřejné kontrakty pro budoucí konzumenty.
+
+Import fotografie je za `GearImageHttpPort` a `GearImageSearchPort`. HTTPS
+adapter ověřuje DNS adresy, blokuje privátní a rezervované sítě i po redirectu,
+připíná ověřenou IP, omezuje čas/velikost/redirecty a před uložením přes
+Documents odstraňuje bitmapová metadata. Search adapter je bezpečně
+nenakonfigurovaný, dokud není přidán schválený provider.
+
+Trip a template položky drží snapshot. Běžná editace katalogu je nemění;
+catalog update i review návrhy používají read-only preview a potvrzenou
+transakci. Household access se ověřuje před každým dotazem a audit ukládá jen
+agregované počty/stavy.
+
 ## Prisma infrastruktura
 
 Prisma klient je generován jako ESM a používá `@prisma/adapter-pg`. Prisma

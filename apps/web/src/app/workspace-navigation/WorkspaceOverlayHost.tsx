@@ -12,6 +12,8 @@ import { MaintenancePlanDialog } from '../../features/maintenance/maintenance.pu
 import { RecipeDialog } from '../../features/meals/components/dialogs/RecipeDialog.js';
 import { MealPlanDialog } from '../../features/meals/components/dialogs/MealPlanDialog.js';
 import { ShoppingItemDialog } from '../../features/meals/components/dialogs/ShoppingItemDialog.js';
+import { GearItemDialog } from '../../features/expeditions/components/dialogs/GearItemDialog.js';
+import { TripDialog } from '../../features/expeditions/components/dialogs/TripDialog.js';
 
 function TaskCreateOverlay() {
   const workspace = useWorkspaceNavigation();
@@ -119,6 +121,20 @@ export function WorkspaceOverlayHost({ role }: { role: HouseholdRole }) {
       <ShoppingItemDialog
         open
         {...(overlay.listId ? { listId: overlay.listId } : {})}
+        onOpenChange={(open) => !open && workspace.closeOverlay()}
+      />
+    );
+  if (overlay.kind === 'trip-create' && role !== 'VIEWER')
+    return (
+      <TripDialog
+        open
+        onOpenChange={(open) => !open && workspace.closeOverlay()}
+      />
+    );
+  if (overlay.kind === 'gear-item-create' && role !== 'VIEWER')
+    return (
+      <GearItemDialog
+        open
         onOpenChange={(open) => !open && workspace.closeOverlay()}
       />
     );

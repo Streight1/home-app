@@ -203,4 +203,31 @@ export class TasksFacade {
     if (task.status !== 'OPEN') return;
     await this.cancelTask.execute(userId, taskId);
   }
+
+  public async createForExpedition(input: {
+    userId: string;
+    title: string;
+    description: string | null;
+    assignedToUserId: string | null;
+    dueDate: string | null;
+  }): Promise<{ id: string }> {
+    const task = await this.createTask.execute(input.userId, {
+      title: input.title,
+      description: input.description,
+      priority: 'NORMAL',
+      assignedToUserId: input.assignedToUserId,
+      participantUserIds: [input.assignedToUserId ?? input.userId],
+      estimatedDurationMinutes: null,
+      locationLabel: null,
+      locationNotes: null,
+      dueDate: input.dueDate,
+      dueTimeMinutes: null,
+      timezone: 'Europe/Prague',
+      recurrenceFrequency: 'NONE',
+      recurrenceInterval: 1,
+      recurrenceDaysOfWeek: [],
+      documentIds: [],
+    });
+    return { id: task.id };
+  }
 }

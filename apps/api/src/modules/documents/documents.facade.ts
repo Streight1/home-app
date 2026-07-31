@@ -17,6 +17,8 @@ import {
 import { mapDocumentResponse } from './application/mappers/document-response.mapper.js';
 import { ValidateDocumentMetadataService } from './application/metadata/validate-document-metadata.service.js';
 import { DocumentListPresentationService } from './application/presentation/document-list-presentation.service.js';
+import { CreateDocumentService } from './application/commands/create-document.service.js';
+import { randomUUID } from 'node:crypto';
 
 export interface SafeDocumentSummary {
   id: string;
@@ -33,7 +35,43 @@ export class DocumentsFacade {
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
     private readonly metadataValidator: ValidateDocumentMetadataService,
     private readonly presentation: DocumentListPresentationService,
+    private readonly createDocument: CreateDocumentService,
   ) {}
+
+  public async createImportedImage(input: {
+    userId: string;
+    title: string;
+    buffer: Buffer;
+    mimeType: 'image/jpeg' | 'image/png';
+    extension: 'jpg' | 'png';
+  }): Promise<SafeDocumentSummary> {
+    const filename = `${randomUUID()}.${input.extension}`;
+    const document = await this.createDocument.execute(
+      input.userId,
+      {
+        title: input.title,
+        documentType: 'GENERAL',
+        metadata: {},
+      },
+      {
+        originalname: filename,
+        mimetype: input.mimeType,
+        size: input.buffer.length,
+        buffer: input.buffer,
+      },
+    );
+    return {
+      id: document.id,
+      type: document.type,
+      primaryLabel: document.title,
+      canPreview: Boolean(
+        document.file &&
+        ['image/jpeg', 'image/png', 'application/pdf', 'text/plain'].includes(
+          document.file.detectedMimeType,
+        ),
+      ),
+    };
+  }
 
   public async getSafeSummary(userId: string, documentId: string) {
     const membership = await this.access.getActiveMembership(

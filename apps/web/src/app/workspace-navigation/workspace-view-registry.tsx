@@ -11,6 +11,7 @@ import type { WorkspaceView } from './workspace-navigation.types.js';
 import { BucketListWorkspaceView } from '../../features/bucket-list/navigation/BucketListWorkspaceView.js';
 import { MaintenanceWorkspaceView } from '../../features/maintenance/navigation/MaintenanceWorkspaceView.js';
 import { MealsWorkspaceView } from '../../features/meals/workspace/MealsWorkspaceView.js';
+import { ExpeditionsWorkspaceView } from '../../features/expeditions/navigation/ExpeditionsWorkspaceView.js';
 
 interface AreaHostProps {
   view: WorkspaceView;
@@ -51,6 +52,10 @@ const hosts: Record<WorkspaceView['area'], ComponentType<AreaHostProps>> = {
   meals: ({ view, role }) =>
     view.area === 'meals' ? (
       <MealsWorkspaceView view={view} role={role} />
+    ) : null,
+  expeditions: ({ view, role }) =>
+    view.area === 'expeditions' ? (
+      <ExpeditionsWorkspaceView view={view} role={role} />
     ) : null,
   finance: ({ view, role }) =>
     view.area === 'finance' ? (

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "snapshotCount": 109,
+  "snapshotCount": 114,
   "playwrightVersion": "1.61.1",
   "chromiumRevision": "1228",
   "chromiumVersion": "149.0.7827.55",
@@ -27,5 +27,5 @@
   "deviceScaleFactor": 1,
   "reducedMotion": "reduce",
   "snapshotPlatform": "linux",
-  "lastReviewedAt": "2026-07-29"
+  "lastReviewedAt": "2026-07-31"
 }

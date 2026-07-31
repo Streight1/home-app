@@ -15,6 +15,7 @@ import { FinanceBudgetDashboardWidget } from '../../finance-budgets/finance-budg
 import { BucketListDashboardWidget } from '../../bucket-list/bucket-list.public.js';
 import { MaintenanceDashboardWidget } from '../../maintenance/maintenance.public.js';
 import { MealsDashboardWidget } from '../../meals/meals.public.js';
+import { ExpeditionsDashboardWidget } from '../../expeditions/expeditions.public.js';
 
 export function DashboardOverview({
   data,
@@ -43,6 +44,7 @@ export function DashboardOverview({
       <BucketListDashboardWidget />
       <MaintenanceDashboardWidget canWrite={role !== 'VIEWER'} />
       <MealsDashboardWidget canWrite={role !== 'VIEWER'} />
+      <ExpeditionsDashboardWidget canWrite={role !== 'VIEWER'} />
       {data.recentDocuments.length > 0 ? (
         <RecentDocuments items={data.recentDocuments} />
       ) : null}

@@ -2,7 +2,9 @@ import {
   CalendarPlus,
   FilePlus2,
   ListPlus,
+  Mountain,
   Plus,
+  Backpack,
   ReceiptText,
   ShoppingBasket,
   Soup,
@@ -31,6 +33,8 @@ function PreparedActions({
   onAddRecipe,
   onAddMeal,
   onAddShoppingItem,
+  onAddTrip,
+  onAddGear,
 }: {
   onAddDocument: () => void;
   onAddTask?: () => void;
@@ -40,6 +44,8 @@ function PreparedActions({
   onAddRecipe?: () => void;
   onAddMeal?: () => void;
   onAddShoppingItem?: () => void;
+  onAddTrip?: () => void;
+  onAddGear?: () => void;
 }) {
   return (
     <div className="grid gap-2">
@@ -83,6 +89,18 @@ function PreparedActions({
           Přidat položku nákupu
         </Button>
       ) : null}
+      {onAddTrip ? (
+        <Button className="justify-start" onClick={onAddTrip}>
+          <Mountain className="size-4" aria-hidden="true" />
+          Nová výprava
+        </Button>
+      ) : null}
+      {onAddGear ? (
+        <Button className="justify-start" onClick={onAddGear}>
+          <Backpack className="size-4" aria-hidden="true" />
+          Nová položka výbavy
+        </Button>
+      ) : null}
       <Button
         disabled={!onAddExpense}
         className="justify-start"
@@ -107,6 +125,7 @@ export function QuickCreateButton({ compact = false }: { compact?: boolean }) {
   const canAddEvent = auth.data?.activeHousehold.role !== 'VIEWER';
   const canAddMaintenance = auth.data?.activeHousehold.role !== 'VIEWER';
   const canAddMeals = auth.data?.activeHousehold.role !== 'VIEWER';
+  const canAddExpeditions = auth.data?.activeHousehold.role !== 'VIEWER';
   const addDocument = () =>
     workspace.navigate({ area: 'documents', screen: 'new' });
   const addTask = () => workspace.openOverlay({ kind: 'task-create' });
@@ -119,6 +138,8 @@ export function QuickCreateButton({ compact = false }: { compact?: boolean }) {
   const addMeal = () => workspace.openOverlay({ kind: 'meal-plan-create' });
   const addShoppingItem = () =>
     workspace.openOverlay({ kind: 'shopping-item-create' });
+  const addTrip = () => workspace.openOverlay({ kind: 'trip-create' });
+  const addGear = () => workspace.openOverlay({ kind: 'gear-item-create' });
   return compact ? (
     <Sheet
       side="bottom"
@@ -141,6 +162,9 @@ export function QuickCreateButton({ compact = false }: { compact?: boolean }) {
               onAddMeal: addMeal,
               onAddShoppingItem: addShoppingItem,
             }
+          : {})}
+        {...(canAddExpeditions
+          ? { onAddTrip: addTrip, onAddGear: addGear }
           : {})}
         {...(canAddFinance ? { onAddExpense: addExpense } : {})}
       />
@@ -178,6 +202,14 @@ export function QuickCreateButton({ compact = false }: { compact?: boolean }) {
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={addShoppingItem}>
             Přidat položku nákupu
+          </DropdownMenuItem>
+        </>
+      ) : null}
+      {canAddExpeditions ? (
+        <>
+          <DropdownMenuItem onSelect={addTrip}>Nová výprava</DropdownMenuItem>
+          <DropdownMenuItem onSelect={addGear}>
+            Nová položka výbavy
           </DropdownMenuItem>
         </>
       ) : null}

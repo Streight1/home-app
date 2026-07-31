@@ -86,6 +86,9 @@ chování má vždy přednost před zastaralým textem; při rozporu dokument op
   [nákupní seznamy](features/shopping-lists.md) a
   [zásoby](features/pantry.md) — přesná množství, týdenní plán, household
   nákup a potvrzovaný pantry odečet.
+- [Výpravy](features/expeditions.md), [výbava](features/gear.md) a
+  [gearlisty](features/pack-lists.md) — trekkingové plánování, gramové
+  snapshoty, účastníci, mobilní balení a vyhodnocení.
 
 ## API
 

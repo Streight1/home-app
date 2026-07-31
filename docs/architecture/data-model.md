@@ -311,6 +311,31 @@ nullable recept a současně vlastní title snapshot.
 receptem a surovinou; ruční položky zůstávají bez source linku.
 `PantryItem` je jednoduchá aproximace dostupnosti, nikoli účetní sklad.
 
+## Výpravy, výbava a gearlisty
+
+`GearCategory` a `GearItem` patří household. Normalizovaný název kategorie je
+unikátní, katalogová hmotnost je nezáporný integer v gramech a výchozí
+množství je `Decimal(12,3)`. `GearItemDocument` je explicitní M:N vazba na
+`Document`; částečný unikátní index dovoluje právě jednu cover fotografii na
+položku.
+
+`PackTemplate` drží typ, sezónu a volitelný cílový base weight.
+`PackTemplateItem` má unikátní `packTemplateId + sortOrder`, volitelný FK na
+`GearItem` a snapshot názvu, kategorie a jednotkové hmotnosti. Katalogová
+archivace ani úprava snapshot nepřepíše.
+
+`Trip.startsOn` a `endsOn` jsou PostgreSQL `DATE`. `TripParticipant` je
+explicitní join na aktivního člena household. `TripPackItem` kopíruje snapshot,
+Decimal množství, typ zatížení, kritičnost, shared/assignee a packing/review
+stav. Unikátní `tripId + sortOrder` chrání atomické pořadí. Chybějící položka
+zůstává v plánované hmotnosti, vyloučená ne.
+
+`TripTaskLink` je explicitní vazba na `Task`;
+`TripReadinessAcknowledgement` uchovává pouze kód vědomě potvrzeného advisory
+pravidla, autora a čas. Žádný model nepoužívá polymorfní
+`entityType/entityId`. Indexy pokrývají household archiv/stav/datum, kategorie,
+vlastníka, assignee, packing status a všechny vazby.
+
 ## Identifikátory a indexy
 
 Doménové primární klíče jsou UUID. Unikátní podmínky chrání Google identitu,
@@ -319,7 +344,7 @@ složek, jeden result na job, jedno pole v resultu a interní storage klíč. In
 podporují dokumentové filtry, folder tree, job queue, termíny úkolů,
 Calendar rozsahy/účastníky/templates, místa, preference, travel plány, recepty,
 ingredient normalizaci, date-only jídelníček, otevřené nákupní položky, pantry
-a audit podle času.
+, výpravy podle stavu/data, gear snapshoty a audit podle času.
 
 Budoucí household entity musí obsahovat nebo bezpečně odvodit `householdId` a
 každý dotaz je musí kombinovat s ověřeným členstvím aktuálního uživatele.

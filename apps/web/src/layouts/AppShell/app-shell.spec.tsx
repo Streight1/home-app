@@ -158,6 +158,24 @@ describe('application shell navigation', () => {
     expect(workspace.navigate).not.toHaveBeenCalled();
   });
 
+  it('opens expedition and gear creation from the shared Add action', async () => {
+    const { workspace } = renderShell({ area: 'finance', screen: 'overview' });
+    await userEvent.click(screen.getByRole('button', { name: 'Přidat' }));
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'Nová výprava' }),
+    );
+    expect(workspace.openOverlay).toHaveBeenCalledWith({ kind: 'trip-create' });
+    expect(workspace.navigate).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Přidat' }));
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'Nová položka výbavy' }),
+    );
+    expect(workspace.openOverlay).toHaveBeenCalledWith({
+      kind: 'gear-item-create',
+    });
+  });
+
   it('opens the same event overlay from the homepage calendar widget', async () => {
     const { workspace, client } = renderShell({ area: 'dashboard' });
     render(
