@@ -1,11 +1,11 @@
 import type { Task } from '../types/task.types.js';
+import { dateOnlyToLocalDate } from '../../../lib/date/dateOnly.js';
 
 export function formatTaskDue(
   task: Pick<Task, 'dueDate' | 'dueTimeMinutes' | 'timing'>,
 ): string {
   if (!task.dueDate) return 'Bez termínu';
-  const [year = 0, month = 1, day = 1] = task.dueDate.split('-').map(Number);
-  const date = new Date(year, month - 1, day);
+  const date = dateOnlyToLocalDate(task.dueDate);
   const today = new Date();
   const tomorrow = new Date(today);
   tomorrow.setDate(today.getDate() + 1);

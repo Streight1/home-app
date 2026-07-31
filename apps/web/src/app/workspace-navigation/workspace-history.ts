@@ -17,7 +17,10 @@ export function writeWorkspaceHistory(
   state: WorkspaceNavigationState,
   replace: boolean,
 ): void {
-  const historyState = { [HISTORY_KEY]: state };
+  const safeState = parseWorkspaceState(state) ?? {
+    view: { area: 'dashboard' as const },
+  };
+  const historyState = { [HISTORY_KEY]: safeState };
   if (replace) window.history.replaceState(historyState, '', '/app');
   else window.history.pushState(historyState, '', '/app');
 }

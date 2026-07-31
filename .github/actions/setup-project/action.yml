@@ -2,6 +2,10 @@ name: Setup HomeApp project
 description: Install the pinned Node and pnpm toolchain and optionally generate Prisma artifacts.
 
 inputs:
+  install-dependencies:
+    description: Install the frozen workspace dependencies after activating pnpm.
+    required: false
+    default: 'true'
   generate-prisma:
     description: Generate and verify the Prisma Client after dependency installation.
     required: false
@@ -32,6 +36,7 @@ runs:
         pnpm --version
 
     - name: Install locked dependencies
+      if: inputs.install-dependencies == 'true'
       shell: bash
       run: pnpm install --frozen-lockfile
 

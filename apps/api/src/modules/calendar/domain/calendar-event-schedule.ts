@@ -3,28 +3,31 @@ import {
   type ZonedDateParts,
   zonedPartsToInstant,
 } from '../../../common/time/zoned-date.js';
+import {
+  dateOnlyToDatabase,
+  parseDateOnly,
+} from '../../../common/time/date-only.js';
 import type { CalendarEventRecord } from './calendar.types.js';
 
-const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
-
 export function parseCalendarDate(value: string): Date | null {
-  const match = ISO_DATE.exec(value);
-  if (!match) return null;
-  const date = new Date(
-    Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])),
-  );
-  return date.toISOString().slice(0, 10) === value ? date : null;
+  try {
+    return dateOnlyToDatabase(value);
+  } catch {
+    return null;
+  }
 }
 
 function dateAtStartOfDay(value: string, timezone: string): Date {
   const candidate = localDateTimeCandidates(value, '00:00', timezone)[0];
   if (candidate) return candidate;
-  const match = ISO_DATE.exec(value);
-  if (!match) throw new Error('CALENDAR_INVALID_ALL_DAY_DATE');
+  let date: ReturnType<typeof parseDateOnly>;
+  try {
+    date = parseDateOnly(value);
+  } catch {
+    throw new Error('CALENDAR_INVALID_ALL_DAY_DATE');
+  }
   const parts: ZonedDateParts = {
-    year: Number(match[1]),
-    month: Number(match[2]),
-    day: Number(match[3]),
+    ...date,
     hour: 0,
     minute: 0,
     second: 0,

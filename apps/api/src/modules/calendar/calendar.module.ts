@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APPLICATION_SEARCH_PROVIDER_TOKENS } from '../../common/search/application-search-provider.js';
 import { TasksModule } from '../tasks/tasks.module.js';
 import { AuditModule } from '../audit/audit.module.js';
 import { HouseholdsModule } from '../households/households.module.js';
@@ -94,6 +95,10 @@ import { CalendarSearchProvider } from './search/calendar-search.provider.js';
     BulkUpdateCalendarEventsService,
     BulkDeleteCalendarEventsService,
     CalendarSearchProvider,
+    {
+      provide: APPLICATION_SEARCH_PROVIDER_TOKENS.calendar,
+      useExisting: CalendarSearchProvider,
+    },
     CalendarTemplateValidationService,
     ListCalendarTemplatesService,
     CreateCalendarTemplateService,
@@ -112,7 +117,7 @@ import { CalendarSearchProvider } from './search/calendar-search.provider.js';
   exports: [
     CalendarAvailabilityFacade,
     CalendarEventCreationFacade,
-    CalendarSearchProvider,
+    APPLICATION_SEARCH_PROVIDER_TOKENS.calendar,
   ],
 })
 export class CalendarModule {}

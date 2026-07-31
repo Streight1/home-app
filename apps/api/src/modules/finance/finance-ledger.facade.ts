@@ -175,12 +175,40 @@ export class FinanceLedgerFacade {
     rows: readonly ImportedLedgerRow[];
   }): Promise<number> {
     const account = await this.getAccount(input.userId, input.accountId, true);
+    const categoryRequirements = new Map<string, Set<'EXPENSE' | 'INCOME'>>();
     for (const row of input.rows) {
       if (row.currencyCode !== account.currencyCode) {
         throw financeInvalid('Měna importovaného řádku neodpovídá účtu.');
       }
-      if (row.categoryId)
-        await this.verifyCategory(input.userId, row.categoryId, row.type);
+      if (row.categoryId) {
+        const expected = row.type === 'INCOME' ? 'INCOME' : 'EXPENSE';
+        const requirements = categoryRequirements.get(row.categoryId);
+        if (requirements) requirements.add(expected);
+        else categoryRequirements.set(row.categoryId, new Set([expected]));
+      }
+    }
+    if (categoryRequirements.size > 0) {
+      const categories = await this.prisma.financialCategory.findMany({
+        where: {
+          householdId: account.householdId,
+          id: { in: [...categoryRequirements.keys()] },
+          archivedAt: null,
+        },
+        select: { id: true, kind: true },
+      });
+      if (categories.length !== categoryRequirements.size)
+        throw financeNotFound();
+      for (const category of categories) {
+        const requirements = categoryRequirements.get(category.id);
+        if (
+          !requirements ||
+          [...requirements].some(
+            (expected) =>
+              category.kind !== 'BOTH' && category.kind !== expected,
+          )
+        )
+          throw financeInvalid('Kategorie neodpovídá typu transakce.');
+      }
     }
     const result = await this.prisma.financialTransaction.createMany({
       data: input.rows.map((row) => ({

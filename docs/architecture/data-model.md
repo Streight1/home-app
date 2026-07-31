@@ -97,8 +97,19 @@ dokumentová polymorfní tabulka neexistuje.
 
 Interní outbox odděluje transakční odstranění dokumentových dat od fyzického
 odstranění storage objektu. Ukládá interní klíč, stav `PENDING`, `PROCESSING`,
-`COMPLETED` nebo `FAILED`, počet pokusů, bezpečný error code a časy. Klíč ani
-task se nevrací klientovi. Worker provede omezený retry přes `StoragePort`.
+`COMPLETED` nebo `FAILED`, počet pokusů, bezpečný error code, nullable
+`processingStartedAt` a časy. Klíč ani task se nevrací klientovi. Worker
+provede omezený retry přes `StoragePort`.
+
+`processingStartedAt` je zároveň token vlastnictví a 15minutový lease. Čerstvý
+`PROCESSING` řádek nelze znovu claimnout; starší řádek po pádu workeru ano.
+Dokončení nebo selhání používá podmíněný update se shodným tokenem a lease
+vynuluje. Index `StoredFileDeletionTask_lease_idx` pokrývá stav, začátek
+zpracování a pořadí podle vytvoření. Nedestruktivní migrace nastaví případným
+již rozpracovaným řádkům čas deploye, aby nebyly převzaté okamžitě. Navazující
+kompatibilní migrace instaluje trigger pro rolling deploy: i starší API při
+přechodu na `PROCESSING` dostane databázový lease. Claim používá databázový čas
+a po pěti neúspěšných pokusech už nevytvoří šestý pokus.
 
 ## Task, účastníci a TaskCompletion
 

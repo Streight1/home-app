@@ -1,17 +1,7 @@
-import type { ComponentType } from 'react';
-import { TasksWorkspaceView } from '../../features/tasks/navigation/TasksWorkspaceView.js';
-import type { HouseholdRole } from '../../features/tasks/types/task.types.js';
-import { CalendarWorkspaceView } from '../../features/calendar/navigation/CalendarWorkspaceView.js';
-import { DashboardWorkspaceView } from '../../features/dashboard/components/DashboardWorkspaceView.js';
-import { emptyDashboardData } from '../../features/dashboard/types/dashboard.types.js';
-import { DocumentsWorkspaceView } from '../../features/documents/navigation/DocumentsWorkspaceView.js';
-import { HouseholdSettingsPage } from '../../features/household/pages/HouseholdSettingsPage.js';
-import { FinanceWorkspaceView } from '../../features/finance/navigation/FinanceWorkspaceView.js';
+import { lazy, Suspense } from 'react';
+import type { HouseholdRole } from '../../features/household/household.public.js';
+import { loadLazyModuleWithRecovery } from './lazy-module-recovery.js';
 import type { WorkspaceView } from './workspace-navigation.types.js';
-import { BucketListWorkspaceView } from '../../features/bucket-list/navigation/BucketListWorkspaceView.js';
-import { MaintenanceWorkspaceView } from '../../features/maintenance/navigation/MaintenanceWorkspaceView.js';
-import { MealsWorkspaceView } from '../../features/meals/workspace/MealsWorkspaceView.js';
-import { ExpeditionsWorkspaceView } from '../../features/expeditions/navigation/ExpeditionsWorkspaceView.js';
 
 interface AreaHostProps {
   view: WorkspaceView;
@@ -20,51 +10,116 @@ interface AreaHostProps {
   householdName: string;
 }
 
-const hosts: Record<WorkspaceView['area'], ComponentType<AreaHostProps>> = {
-  dashboard: ({ displayName, householdName, role }) => (
-    <DashboardWorkspaceView
-      displayName={displayName}
-      householdName={householdName}
-      role={role}
-      data={emptyDashboardData}
-    />
-  ),
-  documents: ({ view, role }) =>
-    view.area === 'documents' ? (
-      <DocumentsWorkspaceView view={view} role={role} />
-    ) : null,
-  tasks: ({ view, role }) =>
-    view.area === 'tasks' ? (
-      <TasksWorkspaceView view={view} role={role} />
-    ) : null,
-  calendar: ({ view, role }) =>
-    view.area === 'calendar' ? (
-      <CalendarWorkspaceView view={view} role={role} />
-    ) : null,
-  'bucket-list': ({ view, role }) =>
-    view.area === 'bucket-list' ? (
-      <BucketListWorkspaceView view={view} role={role} />
-    ) : null,
-  maintenance: ({ view, role }) =>
-    view.area === 'maintenance' ? (
-      <MaintenanceWorkspaceView view={view} role={role} />
-    ) : null,
-  meals: ({ view, role }) =>
-    view.area === 'meals' ? (
-      <MealsWorkspaceView view={view} role={role} />
-    ) : null,
-  expeditions: ({ view, role }) =>
-    view.area === 'expeditions' ? (
-      <ExpeditionsWorkspaceView view={view} role={role} />
-    ) : null,
-  finance: ({ view, role }) =>
-    view.area === 'finance' ? (
-      <FinanceWorkspaceView view={view} role={role} />
-    ) : null,
-  settings: () => <HouseholdSettingsPage />,
-};
+const DashboardWorkspaceHost = lazy(async () =>
+  loadLazyModuleWithRecovery('workspace-dashboard', async () => ({
+    default: (await import('../../features/dashboard/dashboard.public.js'))
+      .DashboardWorkspaceHost,
+  })),
+);
+const TasksWorkspaceView = lazy(async () =>
+  loadLazyModuleWithRecovery('workspace-tasks', async () => ({
+    default: (await import('../../features/tasks/tasks.public.js'))
+      .TasksWorkspaceView,
+  })),
+);
+const CalendarWorkspaceView = lazy(async () =>
+  loadLazyModuleWithRecovery('workspace-calendar', async () => ({
+    default: (await import('../../features/calendar/calendar.public.js'))
+      .CalendarWorkspaceView,
+  })),
+);
+const DocumentsWorkspaceView = lazy(async () =>
+  loadLazyModuleWithRecovery('workspace-documents', async () => ({
+    default: (await import('../../features/documents/documents.public.js'))
+      .DocumentsWorkspaceView,
+  })),
+);
+const HouseholdSettingsPage = lazy(async () =>
+  loadLazyModuleWithRecovery('workspace-household-settings', async () => ({
+    default: (await import('../../features/household/household.public.js'))
+      .HouseholdSettingsPage,
+  })),
+);
+const FinanceWorkspaceView = lazy(async () =>
+  loadLazyModuleWithRecovery('workspace-finance', async () => ({
+    default: (await import('../../features/finance/finance.public.js'))
+      .FinanceWorkspaceView,
+  })),
+);
+const BucketListWorkspaceView = lazy(async () =>
+  loadLazyModuleWithRecovery('workspace-bucket-list', async () => ({
+    default: (await import('../../features/bucket-list/bucket-list.public.js'))
+      .BucketListWorkspaceView,
+  })),
+);
+const MaintenanceWorkspaceView = lazy(async () =>
+  loadLazyModuleWithRecovery('workspace-maintenance', async () => ({
+    default: (await import('../../features/maintenance/maintenance.public.js'))
+      .MaintenanceWorkspaceView,
+  })),
+);
+const MealsWorkspaceView = lazy(async () =>
+  loadLazyModuleWithRecovery('workspace-meals', async () => ({
+    default: (await import('../../features/meals/meals.public.js'))
+      .MealsWorkspaceView,
+  })),
+);
+const ExpeditionsWorkspaceView = lazy(async () =>
+  loadLazyModuleWithRecovery('workspace-expeditions', async () => ({
+    default: (await import('../../features/expeditions/expeditions.public.js'))
+      .ExpeditionsWorkspaceView,
+  })),
+);
+
+function renderWorkspace({
+  view,
+  role,
+  displayName,
+  householdName,
+}: AreaHostProps) {
+  switch (view.area) {
+    case 'dashboard':
+      return (
+        <DashboardWorkspaceHost
+          displayName={displayName}
+          householdName={householdName}
+          role={role}
+        />
+      );
+    case 'documents':
+      return <DocumentsWorkspaceView view={view} role={role} />;
+    case 'tasks':
+      return <TasksWorkspaceView view={view} role={role} />;
+    case 'calendar':
+      return <CalendarWorkspaceView view={view} role={role} />;
+    case 'bucket-list':
+      return <BucketListWorkspaceView view={view} role={role} />;
+    case 'maintenance':
+      return <MaintenanceWorkspaceView view={view} role={role} />;
+    case 'meals':
+      return <MealsWorkspaceView view={view} role={role} />;
+    case 'expeditions':
+      return <ExpeditionsWorkspaceView view={view} role={role} />;
+    case 'finance':
+      return <FinanceWorkspaceView view={view} role={role} />;
+    case 'settings':
+      return <HouseholdSettingsPage />;
+  }
+}
 
 export function WorkspaceViewRegistry(props: AreaHostProps) {
-  const Host = hosts[props.view.area];
-  return <Host {...props} />;
+  return (
+    <Suspense
+      fallback={
+        <div
+          className="py-12 text-center text-sm text-text-muted"
+          role="status"
+        >
+          Načítáme obsah…
+        </div>
+      }
+    >
+      {renderWorkspace(props)}
+    </Suspense>
+  );
 }

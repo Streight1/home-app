@@ -1,3 +1,8 @@
+import {
+  dateOnlyToDatabase,
+  serializeDateOnly,
+} from '../../../common/time/date-only.js';
+
 export const financeCurrencies = ['CZK', 'EUR'] as const;
 export type FinanceCurrency = (typeof financeCurrencies)[number];
 
@@ -109,8 +114,6 @@ export const recommendedFinanceCategories = [
 export const normalizeFinanceName = (value: string): string =>
   value.trim().toLocaleLowerCase('cs-CZ').replace(/\s+/g, ' ');
 
-export const dateOnly = (value: string): Date =>
-  new Date(`${value}T00:00:00.000Z`);
+export const dateOnly = dateOnlyToDatabase;
 
-export const dateOnlyString = (value: Date): string =>
-  value.toISOString().slice(0, 10);
+export const dateOnlyString = serializeDateOnly;

@@ -9,17 +9,14 @@ import {
   MaxLength,
   Matches,
 } from 'class-validator';
-import {
-  ISO_DATE_PATTERN,
-  MINOR_UNITS_PATTERN,
-  nullableText,
-} from './finance-dto.helpers.js';
+import { IsDateOnly } from '../../../../common/time/is-date-only.decorator.js';
+import { MINOR_UNITS_PATTERN, nullableText } from './finance-dto.helpers.js';
 
 export class CreateFinancialTransactionDto {
   @IsUUID('4') public accountId!: string;
   @IsOptional() @IsUUID('4') public categoryId?: string | null;
   @IsString() @Matches(MINOR_UNITS_PATTERN) public amountMinor!: string;
-  @IsString() @Matches(ISO_DATE_PATTERN) public bookedDate!: string;
+  @IsString() @IsDateOnly() public bookedDate!: string;
   @Transform(nullableText)
   @IsOptional()
   @IsString()
@@ -72,7 +69,7 @@ export class UpdateFinancialTransactionDto {
   public amountMinor?: string;
   @IsOptional()
   @IsString()
-  @Matches(ISO_DATE_PATTERN)
+  @IsDateOnly()
   public bookedDate?: string;
   @Transform(nullableText)
   @IsOptional()

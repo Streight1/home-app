@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APPLICATION_SEARCH_PROVIDER_TOKENS } from '../../common/search/application-search-provider.js';
 import { AuditModule } from '../audit/audit.module.js';
 import { DocumentsModule } from '../documents/documents.module.js';
 import { HouseholdsModule } from '../households/households.module.js';
@@ -41,7 +42,11 @@ import { BucketListSearchProvider } from './infrastructure/bucket-list-search.pr
       useExisting: SystemBucketListClockAdapter,
     },
     BucketListSearchProvider,
+    {
+      provide: APPLICATION_SEARCH_PROVIDER_TOKENS['bucket-list'],
+      useExisting: BucketListSearchProvider,
+    },
   ],
-  exports: [BucketListSearchProvider],
+  exports: [APPLICATION_SEARCH_PROVIDER_TOKENS['bucket-list']],
 })
 export class BucketListModule {}

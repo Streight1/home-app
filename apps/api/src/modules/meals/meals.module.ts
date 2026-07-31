@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APPLICATION_SEARCH_PROVIDER_TOKENS } from '../../common/search/application-search-provider.js';
 import { AuditModule } from '../audit/audit.module.js';
 import { DocumentsModule } from '../documents/documents.module.js';
 import { HouseholdsModule } from '../households/households.module.js';
@@ -40,7 +41,11 @@ import { MealsSearchProvider } from './search/meals-search.provider.js';
     MealsDashboardService,
     MealsFacade,
     MealsSearchProvider,
+    {
+      provide: APPLICATION_SEARCH_PROVIDER_TOKENS.meals,
+      useExisting: MealsSearchProvider,
+    },
   ],
-  exports: [MealsFacade, MealsSearchProvider],
+  exports: [MealsFacade, APPLICATION_SEARCH_PROVIDER_TOKENS.meals],
 })
 export class MealsModule {}

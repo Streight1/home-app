@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APPLICATION_SEARCH_PROVIDER_TOKENS } from '../../common/search/application-search-provider.js';
 import { DocumentsModule } from '../documents/documents.module.js';
 import { AuditModule } from '../audit/audit.module.js';
 import { HouseholdsModule } from '../households/households.module.js';
@@ -84,7 +85,15 @@ import { TasksSearchProvider } from './search/tasks-search.provider.js';
     GetTaskDashboardService,
     TasksFacade,
     TasksSearchProvider,
+    {
+      provide: APPLICATION_SEARCH_PROVIDER_TOKENS.tasks,
+      useExisting: TasksSearchProvider,
+    },
   ],
-  exports: [GetTaskAttentionService, TasksFacade, TasksSearchProvider],
+  exports: [
+    GetTaskAttentionService,
+    TasksFacade,
+    APPLICATION_SEARCH_PROVIDER_TOKENS.tasks,
+  ],
 })
 export class TasksModule {}

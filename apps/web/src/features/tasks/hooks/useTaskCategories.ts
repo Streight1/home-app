@@ -6,7 +6,7 @@ import {
   updateTaskCategory,
 } from '../api/taskCategoriesApi.js';
 import type { TaskCategory } from '../types/task.types.js';
-import { TASKS_QUERY_KEY } from './useTasks.js';
+import { TASKS_QUERY_KEY } from '../tasks-query.public.js';
 
 const key = [...TASKS_QUERY_KEY, 'categories'] as const;
 

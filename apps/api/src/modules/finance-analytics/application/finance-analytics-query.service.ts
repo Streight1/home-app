@@ -26,8 +26,50 @@ export class FinanceAnalyticsQueryService {
       userId,
       FINANCE_READ_ROLE,
     );
+    return this.loadForHousehold(membership.householdId, query, period);
+  }
+
+  public async loadComparison(
+    userId: string,
+    query: FinanceAnalyticsQueryDto,
+    current: AnalyticsPeriod,
+    previous: AnalyticsPeriod,
+  ) {
+    const membership = await this.access.getActiveMembership(
+      userId,
+      FINANCE_READ_ROLE,
+    );
+    const combinedPeriod = {
+      from:
+        current.from.getTime() < previous.from.getTime()
+          ? current.from
+          : previous.from,
+      to:
+        current.to.getTime() > previous.to.getTime() ? current.to : previous.to,
+    };
+    const rows = await this.loadForHousehold(
+      membership.householdId,
+      query,
+      combinedPeriod,
+    );
+
+    return {
+      currentRows: rows.filter((row) =>
+        isWithinPeriod(row.bookedDate, current),
+      ),
+      previousRows: rows.filter((row) =>
+        isWithinPeriod(row.bookedDate, previous),
+      ),
+    };
+  }
+
+  private loadForHousehold(
+    householdId: string,
+    query: FinanceAnalyticsQueryDto,
+    period: AnalyticsPeriod,
+  ) {
     const where: Prisma.FinancialTransactionWhereInput = {
-      householdId: membership.householdId,
+      householdId,
       deletedAt: null,
       bookedDate: { gte: period.from, lte: period.to },
       type: { in: ['EXPENSE', 'REFUND', 'INCOME'] },
@@ -59,6 +101,10 @@ export class FinanceAnalyticsQueryService {
     });
   }
 }
+
+const isWithinPeriod = (date: Date, period: AnalyticsPeriod) =>
+  date.getTime() >= period.from.getTime() &&
+  date.getTime() <= period.to.getTime();
 
 export type AnalyticsTransaction = Awaited<
   ReturnType<FinanceAnalyticsQueryService['load']>

@@ -10,6 +10,7 @@ import {
   MinLength,
   Matches,
 } from 'class-validator';
+import { IsDateOnly } from '../../../../common/time/is-date-only.decorator.js';
 import {
   financeColorTokens,
   financeCurrencies,
@@ -21,7 +22,6 @@ import {
   type FinancialAccountType,
 } from '../../domain/finance.types.js';
 import {
-  ISO_DATE_PATTERN,
   MINOR_UNITS_PATTERN,
   nullableText,
   trim,
@@ -45,7 +45,7 @@ export class CreateFinancialAccountDto {
   public openingBalanceMinor!: string;
 
   @IsString()
-  @Matches(ISO_DATE_PATTERN)
+  @IsDateOnly()
   public openingBalanceDate!: string;
 
   @Transform(nullableText)
@@ -107,7 +107,7 @@ export class UpdateFinancialAccountDto {
 
   @IsOptional()
   @IsString()
-  @Matches(ISO_DATE_PATTERN)
+  @IsDateOnly()
   public openingBalanceDate?: string;
 
   @Transform(nullableText)

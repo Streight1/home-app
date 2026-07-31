@@ -1,27 +1,20 @@
 import type { CalendarFeedItem } from '../types/calendar.types.js';
+import {
+  addLocalDays,
+  dateOnlyToLocalDate,
+  formatLocalDateOnly,
+  isDateOnly,
+  startOfLocalDay,
+  startOfLocalMonth,
+  startOfLocalWeek,
+} from '../../../lib/date/dateOnly.js';
 
-export function localIsoDate(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${String(year)}-${month}-${day}`;
-}
-export function fromIsoDate(value: string): Date {
-  const [year, month, day] = value.split('-').map(Number);
-  return new Date(year ?? 1970, (month ?? 1) - 1, day ?? 1);
-}
-export function addDays(date: Date, days: number): Date {
-  const result = new Date(date);
-  result.setDate(result.getDate() + days);
-  return result;
-}
-export function startOfWeek(date: Date): Date {
-  const result = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  result.setDate(result.getDate() - ((result.getDay() + 6) % 7));
-  return result;
-}
+export const localIsoDate = formatLocalDateOnly;
+export const fromIsoDate = dateOnlyToLocalDate;
+export const addDays = addLocalDays;
+export const startOfWeek = startOfLocalWeek;
 export function monthGridStart(date: Date): Date {
-  return startOfWeek(new Date(date.getFullYear(), date.getMonth(), 1));
+  return startOfWeek(startOfLocalMonth(date));
 }
 export function feedRange(
   date: Date,
@@ -35,20 +28,20 @@ export function feedRange(
     const start = startOfWeek(date);
     return { from: start.toISOString(), to: addDays(start, 7).toISOString() };
   }
-  const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const start = startOfLocalDay(date);
   return { from: start.toISOString(), to: addDays(start, 1).toISOString() };
 }
 export function occursOnDate(item: CalendarFeedItem, date: Date): boolean {
   if (
     item.sourceType === 'CALENDAR_EVENT' &&
     item.isAllDay &&
-    /^\d{4}-\d{2}-\d{2}$/.test(item.start) &&
-    /^\d{4}-\d{2}-\d{2}$/.test(item.end)
+    isDateOnly(item.start) &&
+    isDateOnly(item.end)
   ) {
     const dateKey = localIsoDate(date);
     return item.start <= dateKey && dateKey < item.end;
   }
-  const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const start = startOfLocalDay(date);
   const end = addDays(start, 1);
   const itemEnd = item.end
     ? new Date(item.end)

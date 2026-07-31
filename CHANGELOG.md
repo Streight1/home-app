@@ -7,6 +7,14 @@ Významné změny projektu jsou evidovány v tomto souboru ve formátu inspirova
 
 ### Fixed
 
+- Stored-file deletion outbox už po pádu workeru nezůstane trvale ve stavu
+  `PROCESSING`: 15minutový lease dovolí bezpečné převzetí a claim token zabrání
+  opožděnému workeru přepsat výsledek nového vlastníka.
+- Date-only HTTP DTO nyní ověřují skutečné gregoriánské datum, takže hodnoty
+  jako 30. únor neprojdou pouze díky správnému textovému formátu.
+- Lazy workspace po nasazení nové verze jednou obnoví stránku při stale chunk
+  chybě, po úspěšném importu pojistku vyčistí a během načítání formuláře drží
+  viditelný nedismissible dialog.
 - Kanonický visual update nyní bezpečně podporuje přidání nebo odebrání
   screenshot scénáře, sám synchronizuje metadata počtu baseline a po
   přegenerování znovu striktně ověří celé připnuté Playwright prostředí.
@@ -242,6 +250,33 @@ Významné změny projektu jsou evidovány v tomto souboru ve formátu inspirova
 
 ### Changed
 
+- Architektura má reprodukovatelný before/after audit a metrický skript pro
+  Prisma modely, migrace, moduly, velikosti zdrojů, boundary importy, testové
+  deklarace, TODO/FIXME a lint/TypeScript suppression.
+- Search orchestrátor skládá modulové providery přes stabilní veřejné DI tokeny
+  místo konkrétních interních tříd; nové architecture regrese hlídají provider
+  hranici a deterministické pořadí.
+- Backendové date-only a Decimal helpery a frontendový date-only helper
+  sjednocují validaci, serializaci a DST-safe aritmetiku bez smíchání minor
+  units, gramů, minut a Decimal množství.
+- Workspace a create overlaye se načítají přes úzké feature public entrypointy.
+  Počáteční `WorkspacePage` chunk klesl ze 694 285 B na 54 738 B, zatímco
+  jednotlivé oblasti zůstaly samostatnými lazy chunky.
+- Modulové query-key kontrakty nahradily globální nebo neexistující invalidace
+  v Calendar, Tasks, Maintenance, Meals a Expeditions; optimistic packing a
+  shopping mutace mají cílený snapshot a rollback.
+- Finance CSV commit dávkově ověřuje unikátní category ID a Finance Analytics
+  sdílí načtený membership/ledger kontext namísto opakovaných stejných dotazů.
+- Stored-file deletion worker atomicky claimuje omezenou dávku outbox řádků a
+  podmíněným update chrání souběžné API instance před dvojím zpracováním.
+  Nedestruktivní migrace doplňuje nullable `processingStartedAt`, konzervativní
+  backfill a cílený lease index; navazující rolling-deploy trigger doplní lease
+  i starší API verzi. Claim používá databázový čas, nejvýše pět pokusů a
+  vyčerpaný stale pokus terminalizuje; dokončení i selhání timestamp vyčistí a
+  scheduled wrapper bezpečně pohltí DB výpadek bez citlivého exception logu.
+- Node verze je přesně připnutá na `24.18.0` v `.nvmrc`, Dockerfile i CI
+  validaci; container job neprovádí redundantní hostitelský install, ale dál
+  ověřuje Corepack/pnpm bootstrap a frozen Docker build.
 - Údržba domácnosti se v informační architektuře přesunula pod hlavní oblast
   Úkoly. Samostatná položka zmizela z desktopové, sbalené, tabletové i mobilní
   navigace; společný responzivní přepínač zpřístupňuje Úkoly/Údržbu a
@@ -322,6 +357,10 @@ Významné změny projektu jsou evidovány v tomto souboru ve formátu inspirova
 
 ### Security
 
+- Finance free-text drill-down query se už neukládá do History state ani
+  sessionStorage; starší stav se načte kompatibilně bez další persistence
+  citlivého textu.
+- Role VIEWER už nevidí globální create akce, které backend nepovoluje.
 - Nově inicializovaný PostgreSQL používá SCRAM pro host i local spojení;
   databázový port není publikovaný.
 - Source secret soubory zůstávají `0600`; init služba připraví `0440`

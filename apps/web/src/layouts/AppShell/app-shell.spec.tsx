@@ -296,6 +296,12 @@ describe('application shell navigation', () => {
 
   it('hides create commands from VIEWER while keeping navigation commands', async () => {
     renderShell({ area: 'dashboard' }, 'VIEWER');
+    expect(
+      screen.queryByRole('button', { name: 'Přidat' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Rychlé přidání' }),
+    ).not.toBeInTheDocument();
     const searchButton = screen.getAllByRole('button', {
       name: /Hledat v aplikaci/,
     })[0];
@@ -310,6 +316,75 @@ describe('application shell navigation', () => {
     expect(
       screen.queryByRole('option', { name: /Nová výprava/ }),
     ).not.toBeInTheDocument();
+  });
+
+  it('exposes semantic result headings and includes Show all in arrow navigation', async () => {
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: scrollIntoView,
+    });
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            partial: false,
+            unavailableProviders: [],
+            groups: [
+              {
+                key: 'tasks',
+                label: 'Úkoly a údržba',
+                total: 2,
+                items: [
+                  {
+                    resultId: 'tasks:TASK:30000000-0000-4000-8000-000000000003',
+                    providerKey: 'tasks',
+                    entityKind: 'TASK',
+                    title: 'Revize kotle',
+                    matchedField: 'Název',
+                    iconKey: 'task',
+                    score: 1,
+                    navigationTarget: {
+                      area: 'tasks',
+                      screen: 'detail',
+                      taskId: '30000000-0000-4000-8000-000000000003',
+                    },
+                  },
+                ],
+              },
+            ],
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
+      ),
+    );
+    renderShell();
+    const searchButton = screen.getAllByRole('button', {
+      name: /Hledat v aplikaci/,
+    })[0];
+    if (!searchButton) throw new Error('Search trigger was not rendered.');
+    await userEvent.click(searchButton);
+    const input = screen.getByRole('combobox', { name: 'Hledat v aplikaci' });
+    await userEvent.type(input, 'revize');
+
+    expect(
+      await screen.findByRole('group', {
+        name: 'Úkoly a údržba, počet výsledků: 2',
+      }),
+    ).toBeVisible();
+    await userEvent.keyboard('{ArrowDown}');
+    const showAll = screen.getByRole('option', {
+      name: 'Zobrazit vše v oblasti Úkoly a údržba',
+    });
+    expect(showAll).toHaveAttribute('aria-selected', 'true');
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest' });
+
+    await userEvent.keyboard('{Enter}');
+    expect(
+      screen
+        .getAllByRole('button', { name: 'Úkoly a údržba' })
+        .some((button) => button.getAttribute('aria-pressed') === 'true'),
+    ).toBe(true);
   });
 
   it('keeps available results visible when one provider reports a partial failure', async () => {

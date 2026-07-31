@@ -3,27 +3,22 @@ import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
-import type {
-  ApplicationSearchProvider,
-  ModuleSearchCandidate,
+import {
+  APPLICATION_SEARCH_PROVIDER_ORDER,
+  APPLICATION_SEARCH_PROVIDER_TOKENS,
+  APPLICATION_SEARCH_PROVIDERS_TOKEN,
+  type ApplicationSearchProvider,
+  type ModuleSearchCandidate,
 } from '../src/common/search/application-search-provider.js';
 import { isSearchNavigationTarget } from '../src/common/search/search-navigation-target.js';
 import {
   normalizeSearchText,
   safeSearchSnippet,
 } from '../src/common/search/search-normalization.js';
-import type { BucketListSearchProvider } from '../src/modules/bucket-list/infrastructure/bucket-list-search.provider.js';
-import type { CalendarSearchProvider } from '../src/modules/calendar/search/calendar-search.provider.js';
-import type { DocumentsSearchProvider } from '../src/modules/documents/search/documents-search.provider.js';
-import type { ExpeditionsSearchProvider } from '../src/modules/expeditions/expeditions-search.provider.js';
-import type { FinanceSearchProvider } from '../src/modules/finance/search/finance-search.provider.js';
 import type { HouseholdAccessService } from '../src/modules/households/household-access.service.js';
-import type { MaintenanceSearchProvider } from '../src/modules/maintenance/search/maintenance-search.provider.js';
-import type { MealsSearchProvider } from '../src/modules/meals/search/meals-search.provider.js';
 import { SearchRankingService } from '../src/modules/search/application/search-ranking.service.js';
 import { SearchService } from '../src/modules/search/application/search.service.js';
 import { SearchRequestDto } from '../src/modules/search/presentation/dto/search.dto.js';
-import type { TasksSearchProvider } from '../src/modules/tasks/search/tasks-search.provider.js';
 
 const householdId = '10000000-0000-4000-8000-000000000001';
 const entityId = '20000000-0000-4000-8000-000000000002';
@@ -84,19 +79,34 @@ function serviceWith(
   const service = new SearchService(
     access,
     new SearchRankingService(),
-    providers.documents as unknown as DocumentsSearchProvider,
-    providers.tasks as unknown as TasksSearchProvider,
-    providers.maintenance as unknown as MaintenanceSearchProvider,
-    providers.calendar as unknown as CalendarSearchProvider,
-    providers.finance as unknown as FinanceSearchProvider,
-    providers['bucket-list'] as unknown as BucketListSearchProvider,
-    providers.meals as unknown as MealsSearchProvider,
-    providers.expeditions as unknown as ExpeditionsSearchProvider,
+    APPLICATION_SEARCH_PROVIDER_ORDER.map(
+      (providerKey) => providers[providerKey],
+    ),
   );
   return { service, access };
 }
 
 describe('application search contract', () => {
+  it('defines one stable public injection token per provider', () => {
+    expect(Object.keys(APPLICATION_SEARCH_PROVIDER_TOKENS)).toEqual([
+      'documents',
+      'tasks',
+      'maintenance',
+      'calendar',
+      'finance',
+      'bucket-list',
+      'meals',
+      'expeditions',
+    ]);
+    expect(
+      new Set(Object.values(APPLICATION_SEARCH_PROVIDER_TOKENS)).size,
+    ).toBe(8);
+    expect(APPLICATION_SEARCH_PROVIDER_ORDER).toEqual(
+      Object.keys(APPLICATION_SEARCH_PROVIDER_TOKENS),
+    );
+    expect(APPLICATION_SEARCH_PROVIDERS_TOKEN).toBe('homeapp.search-providers');
+  });
+
   it('normalizes Czech diacritics, casing and whitespace', () => {
     expect(normalizeSearchText('  Údržba   Krkonoše ')).toBe('udrzba krkonose');
   });

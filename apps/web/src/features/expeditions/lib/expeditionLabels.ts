@@ -5,6 +5,7 @@ import type {
   TripStatus,
   TripType,
 } from '../types/expeditions.types.js';
+import { currentLocalDateOnly } from '../../../lib/date/dateOnly.js';
 
 export const LOAD_TYPE_LABELS: Record<GearLoadType, string> = {
   CARRIED: 'Nesené',
@@ -46,10 +47,4 @@ export function formatWeight(grams: number) {
   })} kg`;
 }
 
-export const todayDate = () => {
-  const date = new Date();
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${String(year)}-${month}-${day}`;
-};
+export const todayDate = currentLocalDateOnly;

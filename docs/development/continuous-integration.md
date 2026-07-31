@@ -39,13 +39,21 @@ revize, jejíž všechny dependency joby uspěly.
 
 ## Reprodukovatelný setup
 
-Lokální composite action `.github/actions/setup-project/action.yml`:
+Lokální composite action `.github/actions/setup-project/action.yml` používá
+přesně připnutý Node patch z `.nvmrc`; environment check ověřuje shodu s oběma
+produkčními Dockerfile a root `packageManager`. Action:
 
 1. načte Node z `.nvmrc`;
 2. nainstaluje připnutý Corepack;
 3. aktivuje a ověří `pnpm` z root `packageManager`;
-4. provede `pnpm install --frozen-lockfile`;
+4. standardně provede `pnpm install --frozen-lockfile`;
 5. podle inputu spustí `pnpm ci:generate`.
+
+Container validation je doložená výjimka z kroku 4: hostitelský job používá jen
+Docker, Bash a dependency-free Node kontrolu, zatímco dependencies instalují
+samotné Docker build stages. Nastavuje proto `install-dependencies: false`, ale
+stále aktivuje a ověří připnutý Node/pnpm toolchain. Ostatní validační joby
+locked instalaci zachovávají; cache není podmínkou správnosti.
 
 `ci:generate` provede Prisma generate a ověří očekávaný klient, model entrypoint,
 velikost i návaznost na schema. Prisma generate používá syntetickou

@@ -10,6 +10,7 @@ import {
   type SearchContext,
   type SearchEntityType,
 } from '../../../common/search/application-search-provider.js';
+import { serializeDateOnly } from '../../../common/time/date-only.js';
 import { PrismaService } from '../../../infrastructure/database/prisma.service.js';
 
 interface RecipeSearchRow {
@@ -161,17 +162,12 @@ export class MealsSearchProvider implements ApplicationSearchProvider {
       title: row.title,
       subtitle: row.recipeTitle ?? row.mealType,
       iconKey: 'meal-plan',
-      dateLabel: row.plannedFor.toISOString().slice(0, 10),
+      dateLabel: serializeDateOnly(row.plannedFor),
       fields: compactSearchFields([
         searchField('title', 'Jídlo', row.title, 0.84),
         searchField('recipe', 'Recept', row.recipeTitle, 0.78),
         searchField('meal-type', 'Typ jídla', row.mealType, 0.68),
-        searchField(
-          'date',
-          'Datum',
-          row.plannedFor.toISOString().slice(0, 10),
-          0.7,
-        ),
+        searchField('date', 'Datum', serializeDateOnly(row.plannedFor), 0.7),
       ]),
       navigationTarget: { area: 'meals', screen: 'planner' },
       updatedAt: row.updatedAt,

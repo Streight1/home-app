@@ -1,4 +1,10 @@
 import { Module } from '@nestjs/common';
+import {
+  APPLICATION_SEARCH_PROVIDER_ORDER,
+  APPLICATION_SEARCH_PROVIDER_TOKENS,
+  APPLICATION_SEARCH_PROVIDERS_TOKEN,
+  type ApplicationSearchProvider,
+} from '../../common/search/application-search-provider.js';
 import { BucketListModule } from '../bucket-list/bucket-list.module.js';
 import { CalendarModule } from '../calendar/calendar.module.js';
 import { DocumentsModule } from '../documents/documents.module.js';
@@ -25,6 +31,16 @@ import { SearchController } from './presentation/search.controller.js';
     ExpeditionsModule,
   ],
   controllers: [SearchController],
-  providers: [SearchRankingService, SearchService],
+  providers: [
+    SearchRankingService,
+    {
+      provide: APPLICATION_SEARCH_PROVIDERS_TOKEN,
+      inject: APPLICATION_SEARCH_PROVIDER_ORDER.map(
+        (providerKey) => APPLICATION_SEARCH_PROVIDER_TOKENS[providerKey],
+      ),
+      useFactory: (...providers: ApplicationSearchProvider[]) => providers,
+    },
+    SearchService,
+  ],
 })
 export class SearchModule {}

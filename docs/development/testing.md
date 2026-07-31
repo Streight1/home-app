@@ -117,9 +117,9 @@ Storybook project i skutečný Storybook server instalují stejnou
 
 ### Vizuální testy
 
-`pnpm test:visual` spouští v připnutém Playwright containeru 104 testů:
-referenční metriku lokálního Inter fontu a 103 vizuálních scénářů se
-104 screenshot baseline. Povinné kombinace dashboardu jsou 390×844 dark,
+`pnpm test:visual` spouští v připnutém Playwright containeru 116 testů nad
+116 screenshot baseline včetně referenční metriky lokálního Inter fontu.
+Povinné kombinace dashboardu jsou 390×844 dark,
 390×844 light, 768×1024 dark, 1280×800 light a 1440×900 dark.
 
 Další scénáře pokrývají login dark/light na telefonu a desktopu, fixture

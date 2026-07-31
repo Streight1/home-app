@@ -4,6 +4,7 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
+import { TASKS_QUERY_KEY } from '../../tasks/tasks-query.public.js';
 import {
   completeMaintenanceOccurrence,
   archiveMaintenanceCategory,
@@ -134,7 +135,11 @@ export function useMaintenanceMutations() {
     }),
     createTask: useMutation({
       mutationFn: createMaintenanceTask,
-      onSuccess: refresh,
+      onSuccess: () =>
+        Promise.all([
+          refresh(),
+          client.invalidateQueries({ queryKey: TASKS_QUERY_KEY }),
+        ]),
     }),
     recommendedCategories: useMutation({
       mutationFn: createRecommendedMaintenanceCategories,

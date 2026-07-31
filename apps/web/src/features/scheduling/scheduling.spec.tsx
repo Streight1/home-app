@@ -1,12 +1,20 @@
-import { render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { act, render, renderHook, screen } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { WorkspaceNavigationProvider } from '../../app/workspace-navigation/WorkspaceNavigationProvider.js';
 import { webEnvironment } from '../../lib/config/environment.js';
 import { TaskDetailHeader } from '../tasks/components/detail/TaskDetailHeader.js';
 import type { Task } from '../tasks/types/task.types.js';
+import { CALENDAR_QUERY_KEY } from '../calendar/calendar.public.js';
+import { TASKS_QUERY_KEY } from '../tasks/tasks.public.js';
 import { confirmTaskSlot, unscheduleTask } from './api/schedulingApi.js';
 import { SchedulingCandidateCard } from './components/SchedulingCandidateCard.js';
+import {
+  useConfirmTaskSlot,
+  useUnscheduleTask,
+} from './hooks/useTaskScheduling.js';
 
 const task = (patch: Partial<Task> = {}): Task => ({
   id: '30000000-0000-4000-8000-000000000001',
@@ -188,5 +196,47 @@ describe('task scheduling frontend', () => {
       `/tasks/${task().id}/scheduling`,
     );
     expect(fetchMock.mock.calls[0]?.[1]?.method).toBe('DELETE');
+  });
+
+  it('invalidates only task and calendar query families after schedule changes', async () => {
+    const client = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+    const invalidate = vi.spyOn(client, 'invalidateQueries');
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    );
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            eventId: '40000000-0000-4000-8000-000000000001',
+            startsAt: '2026-07-20T14:30:00.000Z',
+            endsAt: '2026-07-20T15:30:00.000Z',
+          }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(new Response(null, { status: 204 }));
+
+    const confirm = renderHook(() => useConfirmTaskSlot(), { wrapper });
+    await act(() =>
+      confirm.result.current.mutateAsync({
+        taskId: task().id,
+        candidateToken: 'signed-candidate',
+      }),
+    );
+    const unschedule = renderHook(() => useUnscheduleTask(), { wrapper });
+    await act(() => unschedule.result.current.mutateAsync(task().id));
+
+    expect(invalidate.mock.calls.map(([filters]) => filters)).toEqual([
+      { queryKey: TASKS_QUERY_KEY },
+      { queryKey: CALENDAR_QUERY_KEY },
+      { queryKey: TASKS_QUERY_KEY },
+      { queryKey: CALENDAR_QUERY_KEY },
+    ]);
   });
 });

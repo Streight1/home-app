@@ -18,6 +18,7 @@
     "format": "prettier --write .github apps deployment docs scripts AGENTS.md CHANGELOG.md CONTRIBUTING.md DESIGN.md README.md SECURITY.md compose.yaml compose.prod.yaml eslint.config.js package.json pnpm-workspace.yaml tsconfig.base.json .prettierrc.json .markdownlint-cli2.mjs",
     "format:check": "prettier --check .github apps deployment docs scripts AGENTS.md CHANGELOG.md CONTRIBUTING.md DESIGN.md README.md SECURITY.md compose.yaml compose.prod.yaml eslint.config.js package.json pnpm-workspace.yaml tsconfig.base.json .prettierrc.json .markdownlint-cli2.mjs",
     "architecture:check": "node scripts/check-architecture.mjs",
+    "architecture:metrics": "node scripts/measure-architecture.mjs",
     "deployment:check": "node scripts/check-deployment.mjs && node scripts/check-container-deployment.mjs",
     "env:check": "pnpm environment:check",
     "environment:check": "node scripts/check-environment.mjs",

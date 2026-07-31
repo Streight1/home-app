@@ -1,9 +1,16 @@
+import { DECIMAL_QUANTITY_PATTERN } from '../../../common/numbers/decimal.js';
+import {
+  currentDateOnlyInTimeZone,
+  DATE_ONLY_PATTERN,
+  dateOnlyToDatabase,
+  serializeDateOnly,
+} from '../../../common/time/date-only.js';
+
 export const MEALS_READ_ROLE = 'VIEWER' as const;
 export const MEALS_WRITE_ROLE = 'MEMBER' as const;
 export const MEALS_ADMIN_ROLE = 'ADMIN' as const;
 
-export const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-export const DECIMAL_QUANTITY_PATTERN = /^(?:0|[1-9]\d*)(?:\.\d{1,3})?$/;
+export { DATE_ONLY_PATTERN, DECIMAL_QUANTITY_PATTERN };
 
 export const normalizeCatalogName = (value: string) =>
   value.trim().replace(/\s+/g, ' ').toLocaleLowerCase('cs-CZ');
@@ -13,17 +20,12 @@ export const optionalText = (value?: string | null) => {
   return trimmed === undefined || trimmed.length === 0 ? null : trimmed;
 };
 
-export const dateOnly = (value: string) => new Date(`${value}T12:00:00.000Z`);
+export const dateOnly = dateOnlyToDatabase;
 
-export const dateOnlyString = (value: Date) => value.toISOString().slice(0, 10);
+export const dateOnlyString = serializeDateOnly;
 
 export const currentDateOnly = (now = new Date(), timeZone = 'Europe/Prague') =>
-  new Intl.DateTimeFormat('sv-SE', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(now);
+  currentDateOnlyInTimeZone(now, timeZone);
 
 export const RECIPE_DIFFICULTIES = [
   'EASY',

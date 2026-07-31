@@ -8,14 +8,17 @@ import {
   permanentDeleteTombstone,
   resolveTrashRestoreFolderId,
 } from '../domain/document-lifecycle.js';
-import type {
-  CreateDocumentRecordInput,
-  DocumentMetadataRecord,
-  DocumentRecord,
-  DocumentRepository,
-  ListDocumentRecordsInput,
-  SetDocumentStatusInput,
-  UpdateDocumentRecordInput,
+import {
+  STORED_FILE_DELETION_LEASE_MS,
+  STORED_FILE_DELETION_MAX_ATTEMPTS,
+  type CreateDocumentRecordInput,
+  type DocumentMetadataRecord,
+  type DocumentRecord,
+  type DocumentRepository,
+  type ListDocumentRecordsInput,
+  type SetDocumentStatusInput,
+  type StoredFileDeletionTaskRecord,
+  type UpdateDocumentRecordInput,
 } from '../domain/document.repository.js';
 import { documentInclude, toDocumentRecord } from './prisma-document.mapper.js';
 
@@ -435,45 +438,131 @@ export class PrismaDocumentRepository implements DocumentRepository {
     });
   }
 
-  public async findDeletionTasks(limit: number, taskId?: string) {
-    return this.prisma.storedFileDeletionTask.findMany({
+  public claimDeletionTasks(limit: number, taskId?: string) {
+    return this.prisma.$transaction(async (transaction) => {
+      const [databaseClock] = await transaction.$queryRaw<
+        { claimedAt: Date }[]
+      >`SELECT CURRENT_TIMESTAMP AS "claimedAt"`;
+      if (!databaseClock) {
+        throw new Error('Database clock query returned no value.');
+      }
+      const { claimedAt } = databaseClock;
+      const leaseExpiredBefore = new Date(
+        claimedAt.getTime() - STORED_FILE_DELETION_LEASE_MS,
+      );
+      await transaction.storedFileDeletionTask.updateMany({
+        where: {
+          ...(taskId ? { id: taskId } : {}),
+          status: 'PROCESSING',
+          attempts: { gte: STORED_FILE_DELETION_MAX_ATTEMPTS },
+          processingStartedAt: { lte: leaseExpiredBefore },
+        },
+        data: {
+          status: 'FAILED',
+          processingStartedAt: null,
+          lastErrorCode: 'STORAGE_DELETE_RETRY_EXHAUSTED',
+        },
+      });
+      const candidates = await transaction.storedFileDeletionTask.findMany({
+        where: {
+          ...(taskId ? { id: taskId } : {}),
+          OR: [
+            {
+              status: { in: ['PENDING', 'FAILED'] },
+              attempts: { lt: STORED_FILE_DELETION_MAX_ATTEMPTS },
+            },
+            {
+              status: 'PROCESSING',
+              attempts: { lt: STORED_FILE_DELETION_MAX_ATTEMPTS },
+              processingStartedAt: { lte: leaseExpiredBefore },
+            },
+          ],
+        },
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        take: limit,
+        select: {
+          id: true,
+          storageKey: true,
+          status: true,
+          attempts: true,
+          processingStartedAt: true,
+        },
+      });
+      const claimed: StoredFileDeletionTaskRecord[] = [];
+      for (const candidate of candidates) {
+        const result = await transaction.storedFileDeletionTask.updateMany({
+          where: {
+            id: candidate.id,
+            OR: [
+              {
+                status: { in: ['PENDING', 'FAILED'] },
+                attempts: { lt: STORED_FILE_DELETION_MAX_ATTEMPTS },
+              },
+              {
+                status: 'PROCESSING',
+                attempts: { lt: STORED_FILE_DELETION_MAX_ATTEMPTS },
+                processingStartedAt: { lte: leaseExpiredBefore },
+              },
+            ],
+          },
+          data: {
+            status: 'PROCESSING',
+            attempts: { increment: 1 },
+            processingStartedAt: claimedAt,
+            lastErrorCode: null,
+          },
+        });
+        if (result.count === 1) {
+          claimed.push({
+            ...candidate,
+            status: 'PROCESSING' as const,
+            attempts: candidate.attempts + 1,
+            processingStartedAt: claimedAt,
+          });
+        }
+      }
+      return claimed;
+    });
+  }
+
+  public async completeDeletionTask(
+    taskId: string,
+    claimedAt: Date,
+  ): Promise<boolean> {
+    const result = await this.prisma.storedFileDeletionTask.updateMany({
       where: {
-        ...(taskId ? { id: taskId } : {}),
-        status: { in: ['PENDING', 'FAILED'] },
-        attempts: { lt: 5 },
+        id: taskId,
+        status: 'PROCESSING',
+        processingStartedAt: claimedAt,
       },
-      orderBy: { createdAt: 'asc' },
-      take: limit,
-      select: { id: true, storageKey: true, status: true, attempts: true },
-    });
-  }
-
-  public async markDeletionTaskProcessing(taskId: string): Promise<void> {
-    await this.prisma.storedFileDeletionTask.update({
-      where: { id: taskId },
-      data: { status: 'PROCESSING', attempts: { increment: 1 } },
-    });
-  }
-
-  public async completeDeletionTask(taskId: string): Promise<void> {
-    await this.prisma.storedFileDeletionTask.update({
-      where: { id: taskId },
       data: {
         status: 'COMPLETED',
         completedAt: new Date(),
         lastErrorCode: null,
+        processingStartedAt: null,
       },
     });
+    return result.count === 1;
   }
 
   public async failDeletionTask(
     taskId: string,
     errorCode: string,
-  ): Promise<void> {
-    await this.prisma.storedFileDeletionTask.update({
-      where: { id: taskId },
-      data: { status: 'FAILED', lastErrorCode: errorCode },
+    claimedAt: Date,
+  ): Promise<boolean> {
+    const result = await this.prisma.storedFileDeletionTask.updateMany({
+      where: {
+        id: taskId,
+        status: 'PROCESSING',
+        processingStartedAt: claimedAt,
+      },
+      data: {
+        status: 'FAILED',
+        lastErrorCode: errorCode,
+        processingStartedAt: null,
+      },
     });
+    return result.count === 1;
   }
 
   public async recordFileAccess(

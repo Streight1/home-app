@@ -5,11 +5,15 @@ import {
   type WorkspaceView,
 } from './workspace-navigation.types.js';
 import type { CalendarEventDraftSource } from './workspace-navigation.types.js';
+import { isDateOnly } from '../../lib/date/dateOnly.js';
 
 export const WORKSPACE_STORAGE_KEY = 'homeapp.workspace.navigation';
+const LEGACY_LAZY_CHUNK_RECOVERY_STORAGE_KEY =
+  'homeapp.workspace.lazy-chunk-recovery.v1';
+const LAZY_CHUNK_RECOVERY_STORAGE_KEY =
+  'homeapp.workspace.lazy-chunk-recovery.v2';
 const uuid =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const date = /^\d{4}-\d{2}-\d{2}$/;
 const time = /^([01]\d|2[0-3]):[0-5]\d$/;
 const calendarDraftSources = new Set<CalendarEventDraftSource>([
   'calendar-toolbar',
@@ -146,19 +150,16 @@ function parseView(value: unknown): WorkspaceView | null {
     if (value.screen === 'transactions') {
       const filters = isRecord(value.filters)
         ? {
-            ...(typeof value.filters.query === 'string'
-              ? { query: value.filters.query.slice(0, 200) }
-              : {}),
             ...(typeof value.filters.categoryId === 'string' &&
             uuid.test(value.filters.categoryId)
               ? { categoryId: value.filters.categoryId }
               : {}),
             ...(typeof value.filters.dateFrom === 'string' &&
-            date.test(value.filters.dateFrom)
+            isDateOnly(value.filters.dateFrom)
               ? { dateFrom: value.filters.dateFrom }
               : {}),
             ...(typeof value.filters.dateTo === 'string' &&
-            date.test(value.filters.dateTo)
+            isDateOnly(value.filters.dateTo)
               ? { dateTo: value.filters.dateTo }
               : {}),
           }
@@ -212,7 +213,7 @@ function parseOverlay(value: unknown): WorkspaceOverlay | null {
     return { kind: 'recipe-edit', recipeId: value.recipeId };
   if (value.kind === 'meal-plan-create') {
     const plannedFor =
-      typeof value.plannedFor === 'string' && date.test(value.plannedFor)
+      typeof value.plannedFor === 'string' && isDateOnly(value.plannedFor)
         ? value.plannedFor
         : undefined;
     const recipeId =
@@ -230,7 +231,7 @@ function parseOverlay(value: unknown): WorkspaceOverlay | null {
     typeof value.entryId === 'string' &&
     uuid.test(value.entryId) &&
     typeof value.plannedFor === 'string' &&
-    date.test(value.plannedFor)
+    isDateOnly(value.plannedFor)
   )
     return {
       kind: 'meal-plan-edit',
@@ -265,7 +266,7 @@ function parseOverlay(value: unknown): WorkspaceOverlay | null {
         typeof draft.source === 'string' &&
         isCalendarDraftSource(draft.source) &&
         typeof draft.date === 'string' &&
-        date.test(draft.date) &&
+        isDateOnly(draft.date) &&
         typeof draft.startTime === 'string' &&
         time.test(draft.startTime) &&
         typeof draft.durationMinutes === 'number' &&
@@ -285,7 +286,7 @@ function parseOverlay(value: unknown): WorkspaceOverlay | null {
           },
         };
     }
-    if (typeof value.date === 'string' && date.test(value.date))
+    if (typeof value.date === 'string' && isDateOnly(value.date))
       return {
         kind: value.kind,
         draft: {
@@ -339,9 +340,40 @@ export function loadWorkspaceState(): WorkspaceNavigationState {
 }
 
 export function storeWorkspaceState(state: WorkspaceNavigationState): void {
-  sessionStorage.setItem(WORKSPACE_STORAGE_KEY, JSON.stringify(state));
+  const safeState = parseWorkspaceState(state) ?? {
+    view: dashboardWorkspaceView,
+  };
+  sessionStorage.setItem(WORKSPACE_STORAGE_KEY, JSON.stringify(safeState));
 }
 
 export function clearWorkspaceState(): void {
   sessionStorage.removeItem(WORKSPACE_STORAGE_KEY);
+  sessionStorage.removeItem(LEGACY_LAZY_CHUNK_RECOVERY_STORAGE_KEY);
+  sessionStorage.removeItem(LAZY_CHUNK_RECOVERY_STORAGE_KEY);
+}
+
+export function readLazyChunkReloadTarget(): string | null | undefined {
+  try {
+    return sessionStorage.getItem(LAZY_CHUNK_RECOVERY_STORAGE_KEY);
+  } catch {
+    return undefined;
+  }
+}
+
+export function markLazyChunkReloadAttempted(target: string): boolean {
+  try {
+    sessionStorage.setItem(LAZY_CHUNK_RECOVERY_STORAGE_KEY, target);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function clearLazyChunkReloadAttempt(target: string): void {
+  try {
+    if (sessionStorage.getItem(LAZY_CHUNK_RECOVERY_STORAGE_KEY) === target)
+      sessionStorage.removeItem(LAZY_CHUNK_RECOVERY_STORAGE_KEY);
+  } catch {
+    // Session storage is an optional resilience aid; module loading still works.
+  }
 }

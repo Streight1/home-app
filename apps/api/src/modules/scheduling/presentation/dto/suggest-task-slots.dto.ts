@@ -8,13 +8,14 @@ import {
   Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { IsDateOnly } from '../../../../common/time/is-date-only.decorator.js';
 import {
   travelRouteModes,
   type TravelRouteMode,
 } from '../../../location/travel-estimation.facade.js';
 
 export class SuggestTaskSlotsDto {
-  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  @IsDateOnly()
   public date!: string;
 
   @Matches(/^([01]\d|2[0-3]):[0-5]\d$/)

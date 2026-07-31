@@ -16,8 +16,8 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
+import { IsDateOnly } from '../../../../common/time/is-date-only.decorator.js';
 import {
-  DATE_ONLY_PATTERN,
   DECIMAL_QUANTITY_PATTERN,
   EXPEDITION_TRIP_TYPES,
   GEAR_CRITICALITIES,
@@ -61,8 +61,8 @@ export class TripInputDto {
   @IsOptional() @IsString() @Length(0, 3000) public description?: string;
   @IsIn(EXPEDITION_TRIP_TYPES)
   public tripType: (typeof EXPEDITION_TRIP_TYPES)[number] = 'DAY_HIKE';
-  @Matches(DATE_ONLY_PATTERN) public startsOn!: string;
-  @Matches(DATE_ONLY_PATTERN) public endsOn!: string;
+  @IsDateOnly() public startsOn!: string;
+  @IsDateOnly() public endsOn!: string;
   @IsOptional() @IsString() @Length(0, 300) public locationLabel?: string;
   @Type(() => Number) @IsInt() @Min(0) @Max(365) public overnightCount = 0;
   @IsOptional()

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { isDateOnly } from '../../../../common/time/date-only.js';
 import { invalidDocumentInput } from '../../domain/document.errors.js';
 import type {
   DocumentLineItem,
@@ -13,7 +14,6 @@ import { DocumentTypeRegistryService } from './document-type-registry.service.js
 
 export type DocumentMetadata = DocumentMetadataRecord;
 
-const isoDatePattern = /^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$/;
 const decimalPattern = /^-?\d+(?:\.\d+)?$/;
 
 @Injectable()
@@ -78,7 +78,7 @@ export class ValidateDocumentMetadataService {
     const normalized = value.trim();
     if (field.maxLength && normalized.length > field.maxLength)
       throw invalidDocumentInput(`Pole ${field.label} je příliš dlouhé.`);
-    if (field.type === 'DATE' && !isoDatePattern.test(normalized))
+    if (field.type === 'DATE' && !isDateOnly(normalized))
       throw invalidDocumentInput(
         `Pole ${field.label} musí být datum ve formátu RRRR-MM-DD.`,
       );

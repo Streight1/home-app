@@ -3,6 +3,7 @@ import { useWorkspaceNavigation } from '../../../../app/workspace-navigation/use
 import { EmptyState } from '../../../../components/ui/EmptyState/EmptyState.js';
 import { IconButton } from '../../../../components/ui/IconButton/IconButton.js';
 import { InlineAlert } from '../../../../components/ui/InlineAlert/InlineAlert.js';
+import { dateOnlyToLocalDate } from '../../../../lib/date/dateOnly.js';
 import { useTasksDashboard } from '../../hooks/useTasksDashboard.js';
 import { useCompleteTask } from '../../hooks/useTaskMutations.js';
 import { taskErrorMessage } from '../../lib/taskErrorMessage.js';
@@ -10,8 +11,7 @@ import type { TaskDashboard } from '../../types/task.types.js';
 
 function dueLabel(item: TaskDashboard['items'][number]) {
   if (!item.dueDate) return 'Bez termínu';
-  const [year = 0, month = 1, day = 1] = item.dueDate.split('-').map(Number);
-  const date = new Date(year, month - 1, day);
+  const date = dateOnlyToLocalDate(item.dueDate);
   const formatted = date.toLocaleDateString('cs-CZ', {
     day: 'numeric',
     month: 'numeric',

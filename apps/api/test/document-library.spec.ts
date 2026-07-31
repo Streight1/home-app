@@ -190,6 +190,18 @@ describe('document library foundation', () => {
     ).toThrow();
   });
 
+  it('rejects impossible date-only metadata values', () => {
+    const registry = new DocumentTypeRegistryService();
+    const validator = new ValidateDocumentMetadataService(registry);
+
+    expect(() =>
+      validator.validate('INVOICE', 1, { issueDate: '2026-02-30' }),
+    ).toThrow();
+    expect(
+      validator.validate('INVOICE', 1, { issueDate: '2026-02-28' }),
+    ).toEqual({ issueDate: '2026-02-28' });
+  });
+
   it('limits notes to 50,000 plain-text characters', async () => {
     const dto = plainToInstance(UpdateDocumentDto, {
       notes: 'x'.repeat(50_001),

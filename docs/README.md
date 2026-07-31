@@ -21,6 +21,14 @@ chování má vždy přednost před zastaralým textem; při rozporu dokument op
 - [Deployment](architecture/deployment.md) — single-VPS topologie, image, sítě, perzistence, migrace a health.
 - [Hledání](architecture/search.md) — federované modulové providery, ranking,
   indexy, privacy a bezpečné workspace targety.
+- [Modulární hranice](architecture/module-boundaries.md) — veřejné facade,
+  provider tokeny, frontend public entrypointy a kontrolované přesahy.
+- [Sdílené doménové primitivy](architecture/shared-domain-primitives.md) —
+  date-only, Decimal a hranice peněz, hmotnosti, množství a času.
+- [Frontendový stav](architecture/frontend-state.md) — workspace navigation,
+  overlaye, Query cache, lokální preference a lazy loading.
+- [Refaktorizační audit](architecture/refactoring-audit.md) — měřitelná baseline,
+  nalezený dluh, rizika a fázovaný stabilizační plán.
 
 ## Produktový design
 
@@ -117,6 +125,10 @@ chování má vždy přednost před zastaralým textem; při rozporu dokument op
 - [ADR 0001](adr/0001-modular-monolith.md) — pnpm monorepo a modulární monolit.
 - [ADR 0002](adr/0002-google-auth-and-server-sessions.md) — Google Identity Services a serverové relace.
 - [ADR 0003](adr/0003-centralized-environment-configuration.md) — jediný kořenový `.env` pro Compose, API, Prisma a Vite.
+- [ADR 0004](adr/0004-public-contracts-and-provider-tokens.md) — veřejné
+  modulové kontrakty, provider tokeny a frontend public entrypointy.
+- [ADR 0005](adr/0005-date-only-and-exact-numbers.md) — date-only a přesná
+  čísla bez směšování doménových jednotek.
 
 ## Aktuální stav a roadmapa
 

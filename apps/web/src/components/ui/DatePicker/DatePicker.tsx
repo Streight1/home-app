@@ -1,27 +1,38 @@
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import {
+  dateOnlyToLocalDate,
+  formatDateOnly,
+  formatLocalDateOnly,
+  isDateOnly,
+  startOfLocalMonth,
+} from '../../../lib/date/dateOnly.js';
 import { Button } from '../Button/Button.js';
 import { Dialog } from '../Dialog/Dialog.js';
 import { IconButton } from '../IconButton/IconButton.js';
 
 const weekdays = ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'] as const;
 const isoDate = (year: number, month: number, day: number) =>
-  `${String(year).padStart(4, '0')}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  formatDateOnly({ year, month: month + 1, day });
 
 const selectedMonth = (value: string) => {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  return match
-    ? new Date(Number(match[1]), Number(match[2]) - 1, 1)
-    : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  return isDateOnly(value)
+    ? startOfLocalMonth(dateOnlyToLocalDate(value))
+    : startOfLocalMonth(new Date());
 };
 
 export const datePickerLabel = (value: string) => {
-  if (!value) return 'Vybrat datum';
-  const [year = 0, month = 1, day = 1] = value.split('-').map(Number);
+  if (!isDateOnly(value)) return 'Vybrat datum';
   return new Intl.DateTimeFormat('cs-CZ', { dateStyle: 'long' }).format(
-    new Date(year, month - 1, day),
+    dateOnlyToLocalDate(value),
   );
 };
+
+function shiftMonthStart(value: Date, amount: number): Date {
+  const result = startOfLocalMonth(value);
+  result.setMonth(result.getMonth() + amount);
+  return result;
+}
 
 export function DatePicker({
   label,
@@ -40,18 +51,16 @@ export function DatePicker({
   const [month, setMonth] = useState(() => selectedMonth(value));
   const days = useMemo(() => {
     const leading = (month.getDay() + 6) % 7;
-    const count = new Date(
-      month.getFullYear(),
-      month.getMonth() + 1,
-      0,
-    ).getDate();
+    const end = shiftMonthStart(month, 1);
+    end.setDate(0);
+    const count = end.getDate();
     return [
       ...Array.from({ length: leading }, () => null),
       ...Array.from({ length: count }, (_, index) => index + 1),
     ];
   }, [month]);
   const now = new Date();
-  const today = isoDate(now.getFullYear(), now.getMonth(), now.getDate());
+  const today = formatLocalDateOnly(now);
   return (
     <div className="grid gap-2">
       <span className="text-body-sm font-medium text-text">{label}</span>
@@ -81,10 +90,7 @@ export function DatePicker({
             <IconButton
               aria-label="Předchozí měsíc"
               onClick={() =>
-                setMonth(
-                  (current) =>
-                    new Date(current.getFullYear(), current.getMonth() - 1, 1),
-                )
+                setMonth((current) => shiftMonthStart(current, -1))
               }
             >
               <ChevronLeft className="size-5" aria-hidden="true" />
@@ -97,12 +103,7 @@ export function DatePicker({
             </strong>
             <IconButton
               aria-label="Následující měsíc"
-              onClick={() =>
-                setMonth(
-                  (current) =>
-                    new Date(current.getFullYear(), current.getMonth() + 1, 1),
-                )
-              }
+              onClick={() => setMonth((current) => shiftMonthStart(current, 1))}
             >
               <ChevronRight className="size-5" aria-hidden="true" />
             </IconButton>

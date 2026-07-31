@@ -48,6 +48,44 @@ describe('workspace navigation state', () => {
     );
   });
 
+  it('keeps finance drill-down text transient while persisting safe filters', () => {
+    const unsafeState = {
+      view: {
+        area: 'finance',
+        screen: 'transactions',
+        filters: {
+          query: 'citlivá poznámka obchodníka',
+          categoryId: documentId,
+          dateFrom: '2026-07-01',
+          dateTo: '2026-07-31',
+        },
+      },
+    } as Parameters<typeof storeWorkspaceState>[0];
+
+    storeWorkspaceState(unsafeState);
+    writeWorkspaceHistory(unsafeState, true);
+
+    const expected = {
+      view: {
+        area: 'finance' as const,
+        screen: 'transactions' as const,
+        filters: {
+          categoryId: documentId,
+          dateFrom: '2026-07-01',
+          dateTo: '2026-07-31',
+        },
+      },
+    };
+    expect(loadWorkspaceState()).toEqual(expected);
+    expect(stateFromHistory(window.history.state)).toEqual(expected);
+    expect(sessionStorage.getItem(WORKSPACE_STORAGE_KEY)).not.toContain(
+      'citlivá poznámka',
+    );
+    expect(JSON.stringify(window.history.state)).not.toContain(
+      'citlivá poznámka',
+    );
+  });
+
   it('keeps feature navigation on the single /app URL', () => {
     const state = {
       view: { area: 'calendar' as const, screen: 'calendar' as const },
@@ -183,6 +221,41 @@ describe('workspace navigation state', () => {
           durationMinutes: 60,
           isAllDay: false,
         },
+      },
+    });
+    expect(
+      parseWorkspaceState({
+        view: { area: 'calendar', screen: 'calendar' },
+        overlay: { kind: 'calendar-create', date: '2026-02-30' },
+      }),
+    ).toBeNull();
+  });
+
+  it('rejects impossible date-only values in persisted feature state', () => {
+    expect(
+      parseWorkspaceState({
+        view: { area: 'meals', screen: 'planner' },
+        overlay: {
+          kind: 'meal-plan-edit',
+          entryId: documentId,
+          plannedFor: '2026-02-30',
+        },
+      }),
+    ).toBeNull();
+
+    expect(
+      parseWorkspaceState({
+        view: {
+          area: 'finance',
+          screen: 'transactions',
+          filters: { dateFrom: '2026-02-30', dateTo: '2026-03-01' },
+        },
+      }),
+    ).toEqual({
+      view: {
+        area: 'finance',
+        screen: 'transactions',
+        filters: { dateTo: '2026-03-01' },
       },
     });
   });

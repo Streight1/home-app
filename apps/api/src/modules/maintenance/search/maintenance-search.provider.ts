@@ -9,6 +9,7 @@ import {
   type ModuleSearchRequest,
   type SearchContext,
 } from '../../../common/search/application-search-provider.js';
+import { serializeDateOnly } from '../../../common/time/date-only.js';
 import { PrismaService } from '../../../infrastructure/database/prisma.service.js';
 
 interface MaintenanceSearchRow {
@@ -66,7 +67,7 @@ export class MaintenanceSearchProvider implements ApplicationSearchProvider {
         subtitle: row.categoryName ?? 'Údržba',
         iconKey: 'maintenance',
         ...(row.nextDueOn
-          ? { dateLabel: row.nextDueOn.toISOString().slice(0, 10) }
+          ? { dateLabel: serializeDateOnly(row.nextDueOn) }
           : {}),
         badges: [{ label: row.status }],
         fields: compactSearchFields([

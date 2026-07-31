@@ -73,6 +73,17 @@ Skrytí feature cesty není bezpečnostní mechanismus. Stránky se načítají 
 `ProtectedRoute` před ověřením session nezobrazí chráněný obsah a při 401 vede
 na login.
 
+`WorkspaceViewRegistry` a `WorkspaceOverlayHost` importují feature dynamicky
+výhradně přes úzké `*.public.ts` entrypointy. Každý hlavní workspace a sada
+feature dialogů proto tvoří samostatný produkční chunk. `Suspense` poskytuje
+pravdivý loading stav a stejný validovaný workspace/overlay target dál vlastní
+navigaci; code splitting nevytváří další route ani formulář. Stale dynamic
+import po deploymentu může nejvýše jednou obnovit aktuální `/app`; session
+marker zabrání reload smyčce a první následný úspěšný import jej vymaže, aby
+zůstala recovery dostupná i po dalším nasazení. Overlay fallback je viditelný
+nedismissible dialog, takže uživatel nemůže zavřít navigační overlay dříve, než
+se skutečný formulář načte.
+
 ## Responzivní AppShell
 
 Obsah se v DOM neduplikuje. CSS media queries mění pouze shell:
@@ -256,7 +267,10 @@ renderují jako oddělené karty.
 mapování, stránkované desktop/mobile preview a historii. `finance-categorization`
 vlastní pravidla a veřejný bulk-category prvek. `finance-analytics` vlastní
 API/hooky a grafické projekce; komponenty nikdy neagregují raw ledger. Drill-down
-zapisuje pouze validovaný interní workspace filter a browser URL zůstává `/app`.
+zapisuje pouze validovaný interní category/date workspace filter a browser URL
+zůstává `/app`. Volný text protistrany nebo popisu je transientní stav
+otevřeného seznamu; parser jej při čtení staršího history/session záznamu
+zahodí.
 
 `finance-budgets` vlastní API/hooky, členěný create dialog, progress a
 category/forecast graf, insight cards/comparison, recurring cards a veřejný
@@ -272,6 +286,11 @@ registry nad existujícími workspace overlayi. Paleta je hostovaná jednou v
 Result target se před navigací znovu validuje parserem workspace state a URL
 zůstává `/app`. Search response není persistentní Query cache a query se
 neukládá do history, sessionStorage ani localStorage.
+
+Query invalidace používá skutečné feature root keys. Calendar delete a task
+schedule lifecycle obnoví pouze Calendar a Tasks cache; neexistující dashboard
+key ani globální `invalidateQueries()` se nepoužívají. Quick-create ovládání se
+pro roli VIEWER nevykreslí, přičemž backendová role zůstává autoritativní.
 
 Generický Vite build, Vitest a Storybook používají
 `vite.shared.config.ts` s `envDir: false`; nečtou aplikační `.env`.

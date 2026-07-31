@@ -9,7 +9,10 @@ import {
   FINANCE_WRITE_ROLE,
 } from '../domain/finance-access.policy.js';
 import { financeInvalid, financeNotFound } from '../domain/finance.errors.js';
-import type { ManualTransactionType } from '../domain/finance.types.js';
+import {
+  dateOnlyString,
+  type ManualTransactionType,
+} from '../domain/finance.types.js';
 import { isCategoryKindAllowed } from '../domain/ledger-rules.js';
 import { PrismaFinancialAccountRepository } from '../infrastructure/prisma-financial-account.repository.js';
 import { PrismaFinancialCategoryRepository } from '../infrastructure/prisma-financial-category.repository.js';
@@ -115,8 +118,7 @@ export class FinanceLedgerService {
       categoryId:
         input.categoryId === undefined ? existing.categoryId : input.categoryId,
       amountMinor: input.amountMinor ?? existing.amountMinor.toString(),
-      bookedDate:
-        input.bookedDate ?? existing.bookedDate.toISOString().slice(0, 10),
+      bookedDate: input.bookedDate ?? dateOnlyString(existing.bookedDate),
       counterpartyName:
         input.counterpartyName === undefined
           ? existing.counterpartyName

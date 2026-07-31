@@ -17,6 +17,14 @@ interface ApplicationSearchProvider {
 }
 ```
 
+Konkrétní provider třída zůstává privátní ve svém modulu. Modul ji registruje
+přes `useExisting` pod stabilním tokenem z
+`APPLICATION_SEARCH_PROVIDER_TOKENS` a exportuje jen tento token. Composition
+root Search modulu sestaví agregovaný `APPLICATION_SEARCH_PROVIDERS_TOKEN` v
+jediném deklarovaném pořadí. `SearchService` proto injektuje pouze
+`readonly ApplicationSearchProvider[]` a při přidání provideru neimportuje jeho
+interní cestu.
+
 Provider vlastní searchable pole, household-scoped databázový dotaz, bezpečný
 prezentační mapping a typovaný `SearchNavigationTarget`. Orchestrátor nejprve
 odvodí aktivní membership a roli, vybere providery podle filtru a spustí je
@@ -73,4 +81,5 @@ nepersistují.
 - navigation target je diskriminovaný allowlist s UUID validací;
 - Finance projekce nezná bankovní účet protistrany, fingerprint ani raw import;
 - architektonická kontrola zakazuje centrální Prisma/SQL v Search modulu,
-  libovolné URL targety, GET search a kopírování formulářů do palety.
+  import konkrétních providerů, libovolné URL targety, GET search a kopírování
+  formulářů do palety.

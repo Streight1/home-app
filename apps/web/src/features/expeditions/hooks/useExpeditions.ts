@@ -4,6 +4,7 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
+import { TASKS_QUERY_KEY } from '../../tasks/tasks-query.public.js';
 import {
   createGear,
   createPackTemplate,
@@ -32,33 +33,34 @@ import type {
   Trip,
   TripPackItemInput,
 } from '../types/expeditions.types.js';
+import { expeditionKeys } from '../expeditionQueryKeys.js';
 
-export const EXPEDITIONS_QUERY_KEY = ['expeditions'] as const;
+export { EXPEDITIONS_QUERY_KEY } from '../expeditionQueryKeys.js';
 
 export const useGear = (filters = { page: 1, pageSize: 20 }) =>
   useQuery({
-    queryKey: [...EXPEDITIONS_QUERY_KEY, 'gear', filters],
+    queryKey: expeditionKeys.gearList(filters),
     queryFn: () => getGear(filters),
     placeholderData: keepPreviousData,
   });
 export const useGearCategories = () =>
   useQuery({
-    queryKey: [...EXPEDITIONS_QUERY_KEY, 'categories'],
+    queryKey: expeditionKeys.categories(),
     queryFn: getGearCategories,
   });
 export const usePackTemplates = () =>
   useQuery({
-    queryKey: [...EXPEDITIONS_QUERY_KEY, 'templates'],
+    queryKey: expeditionKeys.templates(),
     queryFn: getPackTemplates,
   });
 export const useTrips = () =>
   useQuery({
-    queryKey: [...EXPEDITIONS_QUERY_KEY, 'trips'],
+    queryKey: expeditionKeys.trips(),
     queryFn: getTrips,
   });
 export const useTrip = (tripId?: string) =>
   useQuery({
-    queryKey: [...EXPEDITIONS_QUERY_KEY, 'trip', tripId],
+    queryKey: expeditionKeys.trip(tripId),
     queryFn: () => {
       if (!tripId) throw new Error('Chybí výprava.');
       return getTrip(tripId);
@@ -67,7 +69,7 @@ export const useTrip = (tripId?: string) =>
   });
 export const useTripWeightSummary = (tripId?: string) =>
   useQuery({
-    queryKey: [...EXPEDITIONS_QUERY_KEY, 'weight', tripId],
+    queryKey: expeditionKeys.weight(tripId),
     queryFn: () => {
       if (!tripId) throw new Error('Chybí výprava.');
       return getTripWeightSummary(tripId);
@@ -79,25 +81,37 @@ export const useTripTemplateReviewPreview = (
   enabled: boolean,
 ) =>
   useQuery({
-    queryKey: [...EXPEDITIONS_QUERY_KEY, 'template-review', tripId],
+    queryKey: expeditionKeys.templateReview(tripId),
     queryFn: () => getTripTemplateReviewPreview(tripId),
     enabled,
   });
 export const useExpeditionsDashboard = () =>
   useQuery({
-    queryKey: [...EXPEDITIONS_QUERY_KEY, 'dashboard'],
+    queryKey: expeditionKeys.dashboard(),
     queryFn: getExpeditionsDashboard,
   });
 
 export function useExpeditionMutations() {
   const client = useQueryClient();
-  const refresh = () =>
-    client.invalidateQueries({ queryKey: EXPEDITIONS_QUERY_KEY });
+  const invalidate = (...queryKeys: readonly (readonly unknown[])[]) =>
+    Promise.all(
+      queryKeys.map((queryKey) => client.invalidateQueries({ queryKey })),
+    );
+  const refreshTrip = (tripId: string) =>
+    invalidate(
+      expeditionKeys.trip(tripId),
+      expeditionKeys.trips(),
+      expeditionKeys.weight(tripId),
+      expeditionKeys.dashboard(),
+    );
   return {
-    createGear: useMutation({ mutationFn: createGear, onSuccess: refresh }),
+    createGear: useMutation({
+      mutationFn: createGear,
+      onSuccess: () => invalidate(expeditionKeys.gear()),
+    }),
     recommendedCategories: useMutation({
       mutationFn: createRecommendedGearCategories,
-      onSuccess: refresh,
+      onSuccess: () => invalidate(expeditionKeys.categories()),
     }),
     importImage: useMutation({
       mutationFn: ({
@@ -107,14 +121,18 @@ export function useExpeditionMutations() {
         gearItemId: string;
         input: Parameters<typeof importGearImage>[1];
       }) => importGearImage(gearItemId, input),
-      onSuccess: refresh,
+      onSuccess: () => invalidate(expeditionKeys.gear()),
     }),
     searchImages: useMutation({ mutationFn: searchGearImages }),
     createTemplate: useMutation({
       mutationFn: createPackTemplate,
-      onSuccess: refresh,
+      onSuccess: () => invalidate(expeditionKeys.templates()),
     }),
-    createTrip: useMutation({ mutationFn: createTrip, onSuccess: refresh }),
+    createTrip: useMutation({
+      mutationFn: createTrip,
+      onSuccess: () =>
+        invalidate(expeditionKeys.trips(), expeditionKeys.dashboard()),
+    }),
     replaceItems: useMutation({
       mutationFn: ({
         tripId,
@@ -123,7 +141,7 @@ export function useExpeditionMutations() {
         tripId: string;
         items: TripPackItemInput[];
       }) => replaceTripPackItems(tripId, items),
-      onSuccess: refresh,
+      onSuccess: (_trip, { tripId }) => refreshTrip(tripId),
     }),
     packing: useMutation({
       mutationFn: ({
@@ -136,7 +154,7 @@ export function useExpeditionMutations() {
         status: PackingStatus;
       }) => updatePackingStatus(tripId, itemIds, status),
       onMutate: async ({ tripId, itemIds, status }) => {
-        const queryKey = [...EXPEDITIONS_QUERY_KEY, 'trip', tripId];
+        const queryKey = expeditionKeys.trip(tripId);
         await client.cancelQueries({ queryKey });
         const previous = client.getQueryData<Trip>(queryKey);
         client.setQueryData<Trip>(queryKey, (current) =>
@@ -162,15 +180,15 @@ export function useExpeditionMutations() {
         if (context?.previous)
           client.setQueryData(context.queryKey, context.previous);
       },
-      onSettled: refresh,
+      onSettled: (_data, _error, { tripId }) => refreshTrip(tripId),
     }),
     markReady: useMutation({
       mutationFn: markTripReady,
-      onSuccess: refresh,
+      onSuccess: (_trip, tripId) => refreshTrip(tripId),
     }),
     complete: useMutation({
       mutationFn: completeTrip,
-      onSuccess: refresh,
+      onSuccess: (_trip, tripId) => refreshTrip(tripId),
     }),
     review: useMutation({
       mutationFn: ({
@@ -180,7 +198,11 @@ export function useExpeditionMutations() {
         tripId: string;
         items: Parameters<typeof reviewTrip>[1];
       }) => reviewTrip(tripId, items),
-      onSuccess: refresh,
+      onSuccess: (_trip, { tripId }) =>
+        Promise.all([
+          refreshTrip(tripId),
+          invalidate(expeditionKeys.templateReview(tripId)),
+        ]),
     }),
     applyTemplateReview: useMutation({
       mutationFn: ({
@@ -197,7 +219,11 @@ export function useExpeditionMutations() {
           addTripItemIds,
           confirmed: true,
         }),
-      onSuccess: refresh,
+      onSuccess: (_template, { tripId }) =>
+        invalidate(
+          expeditionKeys.templates(),
+          expeditionKeys.templateReview(tripId),
+        ),
     }),
     createTask: useMutation({
       mutationFn: ({
@@ -207,6 +233,7 @@ export function useExpeditionMutations() {
         tripId: string;
         input: Parameters<typeof createTripTask>[1];
       }) => createTripTask(tripId, input),
+      onSuccess: () => client.invalidateQueries({ queryKey: TASKS_QUERY_KEY }),
     }),
   };
 }

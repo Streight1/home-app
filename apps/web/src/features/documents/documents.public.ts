@@ -3,6 +3,8 @@ import { createDocument } from './api/documentsApi.js';
 import { useDocuments } from './hooks/useDocuments.js';
 import { DOCUMENTS_QUERY_KEY } from './hooks/useDocuments.js';
 export { useDocumentNavigation } from './navigation/useDocumentNavigation.js';
+export { DocumentPreviewDialog } from './components/modals/DocumentPreviewDialog.js';
+export { DocumentsWorkspaceView } from './navigation/DocumentsWorkspaceView.js';
 
 export function useDocumentPickerOptions() {
   const query = useDocuments({ page: 1, pageSize: 100, status: 'ACTIVE' });

@@ -3,6 +3,7 @@ import { Button } from '../../../../components/ui/Button/Button.js';
 import { DatePicker } from '../../../../components/ui/DatePicker/DatePicker.js';
 import { Dialog } from '../../../../components/ui/Dialog/Dialog.js';
 import { Textarea } from '../../../../components/ui/Textarea/Textarea.js';
+import { currentLocalDateOnly } from '../../../../lib/date/dateOnly.js';
 import { useBucketListMutations } from '../../hooks/useBucketList.js';
 import type { BucketListItem } from '../../types/bucket-list.types.js';
 
@@ -36,7 +37,7 @@ export function BucketListActionDialog({
   onClose: () => void;
 }) {
   const mutations = useBucketListMutations();
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(currentLocalDateOnly);
   const [note, setNote] = useState('');
   if (!action) return null;
   const pending =

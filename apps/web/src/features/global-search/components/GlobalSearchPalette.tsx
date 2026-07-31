@@ -22,7 +22,6 @@ import { SearchCommandList } from './SearchCommandList.js';
 import { SearchFilters } from './SearchFilters.js';
 import { SearchRecentList } from './SearchRecentList.js';
 import { SearchResultList } from './SearchResultList.js';
-
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   return (
@@ -31,6 +30,13 @@ function isTypingTarget(target: EventTarget | null): boolean {
     target instanceof HTMLSelectElement ||
     target.isContentEditable
   );
+}
+
+function scrollOptionIntoView(option: HTMLElement | null): void {
+  if (!option) return;
+  const scrollIntoView: unknown = Reflect.get(option, 'scrollIntoView');
+  if (typeof scrollIntoView === 'function')
+    scrollIntoView.call(option, { block: 'nearest' });
 }
 
 export function useGlobalSearchShortcut(onOpen: () => void) {
@@ -62,6 +68,7 @@ export function GlobalSearchPalette({
   const workspace = useWorkspaceNavigation();
   const auth = useCurrentUser();
   const inputRef = useRef<HTMLInputElement>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<SearchFilterKey>('all');
@@ -79,9 +86,18 @@ export function GlobalSearchPalette({
   const commands = useSearchCommands(role);
 
   const hasQuery = query.trim().length > 0;
-  const results = search.data?.groups.flatMap((group) => group.items) ?? [];
+  const groups = search.data?.groups ?? [];
+  const results = groups.flatMap((group) => group.items);
+  const showGroupIds = groups
+    .filter((group) => group.total > group.items.length)
+    .map((group) => `show-group-${group.key}`);
   const optionIds = hasQuery
-    ? results.map((result) => result.resultId)
+    ? groups.flatMap((group) => [
+        ...group.items.map((result) => result.resultId),
+        ...(group.total > group.items.length
+          ? [`show-group-${group.key}`]
+          : []),
+      ])
     : [
         ...commands.map((command) => command.id),
         ...recent.map((_, index) => `recent-${String(index)}`),
@@ -90,6 +106,14 @@ export function GlobalSearchPalette({
     optionIds[Math.min(activeIndex, Math.max(0, optionIds.length - 1))];
 
   useEffect(() => setActiveIndex(0), [query, filter]);
+  useEffect(() => {
+    if (!activeId) return;
+    scrollOptionIntoView(
+      resultsRef.current?.querySelector<HTMLElement>(
+        '[aria-selected="true"]',
+      ) ?? null,
+    );
+  }, [activeId]);
   useEffect(() => {
     if (open) {
       returnFocusRef.current = document.activeElement as HTMLElement | null;
@@ -119,11 +143,25 @@ export function GlobalSearchPalette({
       );
     runAndClose(() => workspace.navigate(state.view));
   };
+  const showGroup = (groupKey: string) => {
+    const target: Record<string, SearchFilterKey> = {
+      documents: 'documents',
+      tasks: 'tasks',
+      calendar: 'calendar',
+      finance: 'finance',
+      meals: 'meals',
+      expeditions: 'expeditions',
+      other: 'other',
+    };
+    setFilter(target[groupKey] ?? 'all');
+  };
   const activateCurrent = () => {
     if (!activeId) return;
     if (hasQuery) {
       const result = results.find((item) => item.resultId === activeId);
       if (result) openResult(result);
+      else if (showGroupIds.includes(activeId))
+        showGroup(activeId.replace('show-group-', ''));
       return;
     }
     const command = commands.find((item) => item.id === activeId);
@@ -207,6 +245,7 @@ export function GlobalSearchPalette({
           </div>
         ) : null}
         <div
+          ref={resultsRef}
           id="global-search-results"
           role={hasOptions ? 'listbox' : 'region'}
           aria-label={
@@ -246,18 +285,7 @@ export function GlobalSearchPalette({
               response={search.data}
               {...(activeId ? { activeId } : {})}
               onOpen={openResult}
-              onShowGroup={(groupKey) => {
-                const target: Record<string, SearchFilterKey> = {
-                  documents: 'documents',
-                  tasks: 'tasks',
-                  calendar: 'calendar',
-                  finance: 'finance',
-                  meals: 'meals',
-                  expeditions: 'expeditions',
-                  other: 'other',
-                };
-                setFilter(target[groupKey] ?? 'all');
-              }}
+              onShowGroup={showGroup}
             />
           ) : (
             <p className="rounded-md bg-surface-subtle p-4 text-body-sm text-text-muted">

@@ -61,7 +61,7 @@ export function totals(
     );
 }
 export const mergeCurrencyCodes = (
-  ...groups: readonly AnalyticsTransaction[][]
+  ...groups: readonly (readonly AnalyticsTransaction[])[]
 ) =>
   [
     ...new Set(groups.flatMap((rows) => rows.map((row) => row.currencyCode))),

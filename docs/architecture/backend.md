@@ -54,7 +54,21 @@ moduly a nevystavuje Prisma entity ani `storageKey`.
 srozumitelný seznam; React proto neparsuje metadata faktury. Lifecycle use cases
 oddělují archivaci, koš, obnovu a permanent delete. Permanent delete transakčně
 vytvoří `StoredFileDeletionTask`; samostatný worker dokončí storage cleanup s
-omezeným retry a bez logování klíče.
+omezeným retry a bez logování klíče. Worker úlohu nejprve atomicky claimne přes
+podmíněný databázový update stavu a počtu pokusů; dvě API instance proto mohou
+vidět stejného kandidáta, ale fyzické smazání provede jen vlastník úspěšného
+claimu. Claim načte PostgreSQL `CURRENT_TIMESTAMP` ve stejné transakci a uloží
+jej do `processingStartedAt`; lease proto nezávisí na rozdílných hodinách API
+instancí. Pokud worker skončí před uložením výsledku, jiná instance smí položku převzít až po konzervativním
+15minutovém lease. Dokončení i selhání kontrolují původní čas claimu, takže
+opožděný worker nepřepíše nového vlastníka; oba terminální přechody lease
+vyčistí. Nejvýše pět pokusů platí i pro crash recovery; vyčerpaný stale claim
+se terminalizuje bez šestého pokusu. Databázový trigger během rolling deploye
+doplní lease i claimu ze starší API verze. Lokální storage delete je
+idempotentní a opakování po pádu bezpečně akceptuje již chybějící soubor.
+Fire-and-forget bootstrap/interval wrapper zachytí i výpadek claimu nebo
+failure-bookkeepingu a loguje pouze stabilní kód a interní task ID, nikoli
+výjimku, storage key nebo connection string.
 
 `DocumentExtractionModule` vlastní samostatné fáze klasifikace, layout
 extrakce, supplier profilů, kandidátů, line items, normalizace, cross-field
@@ -155,6 +169,13 @@ shodu. `FinanceAnalyticsModule` provádí household-scoped read model nad
 ledgerem. Převody jsou z dotazů vyloučené, refund je záporný výdaj, kreditní
 nákup běžný výdaj a různé měny tvoří samostatné response skupiny.
 
+CSV ledger facade ověří měnu všech řádků a všechny unikátní category ID jedním
+household-scoped dotazem před dávkovým zápisem; počet validačních dotazů proto
+neroste s počtem importních řádků. Finance Analytics dashboard načte current a
+previous období jednou po jedné membership kontrole a response sestaví čistými
+summary/category/trend projektory. Samostatné endpointy zachovávají stejné DTO
+a ledger semantics.
+
 `FinanceBudgetsModule` odděluje budget CRUD/summary, deterministické insighty,
 recurring pattern detection a kompaktní dashboard. Cizí finance data čte pouze
 přes `FinanceAnalyticsFacade`; controllery nepočítají forecast ani evidenci.
@@ -232,12 +253,13 @@ agregované počty/stavy.
 
 ## SearchModule
 
-`SearchModule` je pouze orchestrátor nad veřejnými read-only providery
+`SearchModule` je pouze orchestrátor nad veřejnými read-only provider tokeny
 Documents, Tasks, Maintenance, Calendar, Finance, BucketList, Meals a
 Expeditions. Nejprve přes `HouseholdAccessService` odvodí aktivní household a
 roli, potom providery spustí paralelně s timeoutem. Provider vlastní
 household-scoped query a lifecycle filtry; Search modul neimportuje cizí Prisma
-repository ani neskládá centrální SQL přes všechny tabulky.
+repository, konkrétní provider třídu ani neskládá centrální SQL přes všechny
+tabulky.
 
 Společná normalizace a ranking jsou čisté služby. `Promise.allSettled` zachová
 autorizované výsledky při výpadku jedné oblasti a vrátí bezpečný partial stav.

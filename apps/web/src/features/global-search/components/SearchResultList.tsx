@@ -49,20 +49,20 @@ export function SearchResultList({
         <section
           key={group.key}
           role="group"
-          aria-labelledby={`search-group-${group.key}`}
+          aria-label={`${group.label}, počet výsledků: ${String(group.total)}`}
         >
           <div
             className="mb-2 flex items-center justify-between gap-3"
             role="presentation"
           >
-            <h2
-              id={`search-group-${group.key}`}
+            <div
+              aria-hidden="true"
               role="presentation"
               className="text-caption font-semibold uppercase tracking-wider text-text-muted"
             >
               {group.label}
-            </h2>
-            <span role="presentation" className="text-caption text-text-subtle">
+            </div>
+            <span aria-hidden="true" className="text-caption text-text-subtle">
               {group.total}
             </span>
           </div>
@@ -111,10 +111,11 @@ export function SearchResultList({
           </div>
           {group.total > group.items.length ? (
             <button
+              id={`search-option-show-group-${group.key}`}
               type="button"
               role="option"
-              aria-selected="false"
-              className="mt-2 min-h-11 rounded-md px-3 text-body-sm font-semibold text-primary hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-focus"
+              aria-selected={activeId === `show-group-${group.key}`}
+              className={`mt-2 min-h-11 rounded-md px-3 text-body-sm font-semibold text-primary focus-visible:outline-2 focus-visible:outline-focus ${activeId === `show-group-${group.key}` ? 'bg-selected-surface' : 'hover:bg-surface-hover'}`}
               onClick={() => onShowGroup(group.key)}
             >
               Zobrazit vše v oblasti {group.label}

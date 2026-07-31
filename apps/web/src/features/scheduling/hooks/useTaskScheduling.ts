@@ -6,6 +6,15 @@ import {
   unscheduleTask,
 } from '../api/schedulingApi.js';
 import type { SchedulingInput } from '../types/scheduling.types.js';
+import { CALENDAR_QUERY_KEY } from '../../calendar/calendar-query.public.js';
+import { TASKS_QUERY_KEY } from '../../tasks/tasks-query.public.js';
+
+function refreshTaskSchedule(queryClient: ReturnType<typeof useQueryClient>) {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: TASKS_QUERY_KEY }),
+    queryClient.invalidateQueries({ queryKey: CALENDAR_QUERY_KEY }),
+  ]);
+}
 
 export function useTaskSlotSuggestions() {
   const request = useRef<AbortController | null>(null);
@@ -35,13 +44,7 @@ export function useConfirmTaskSlot() {
       taskId: string;
       candidateToken: string;
     }) => confirmTaskSlot(taskId, candidateToken),
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['tasks'] }),
-        queryClient.invalidateQueries({ queryKey: ['calendar'] }),
-        queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
-      ]);
-    },
+    onSuccess: () => refreshTaskSchedule(queryClient),
   });
 }
 
@@ -49,6 +52,6 @@ export function useUnscheduleTask() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: unscheduleTask,
-    onSuccess: () => queryClient.invalidateQueries(),
+    onSuccess: () => refreshTaskSchedule(queryClient),
   });
 }

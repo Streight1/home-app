@@ -120,12 +120,11 @@ export function QuickCreateButton({ compact = false }: { compact?: boolean }) {
   const workspace = useWorkspaceNavigation();
   const auth = useCurrentUser();
   const openCreateEvent = useCreateCalendarEventDialog();
-  const canAddTask = auth.data?.activeHousehold.role !== 'VIEWER';
-  const canAddFinance = auth.data?.activeHousehold.role !== 'VIEWER';
-  const canAddEvent = auth.data?.activeHousehold.role !== 'VIEWER';
-  const canAddMaintenance = auth.data?.activeHousehold.role !== 'VIEWER';
-  const canAddMeals = auth.data?.activeHousehold.role !== 'VIEWER';
-  const canAddExpeditions = auth.data?.activeHousehold.role !== 'VIEWER';
+  // Keep the trigger mounted while the already guarded shell hydrates its
+  // cached user summary. This avoids restarting the primary-action surface
+  // animation after the first paint; an authenticated VIEWER still loses the
+  // complete create control as soon as their role is available.
+  const canWrite = auth.data?.activeHousehold.role !== 'VIEWER';
   const addDocument = () =>
     workspace.navigate({ area: 'documents', screen: 'new' });
   const addTask = () => workspace.openOverlay({ kind: 'task-create' });
@@ -140,6 +139,7 @@ export function QuickCreateButton({ compact = false }: { compact?: boolean }) {
     workspace.openOverlay({ kind: 'shopping-item-create' });
   const addTrip = () => workspace.openOverlay({ kind: 'trip-create' });
   const addGear = () => workspace.openOverlay({ kind: 'gear-item-create' });
+  if (!canWrite) return null;
   return compact ? (
     <Sheet
       side="bottom"
@@ -153,20 +153,15 @@ export function QuickCreateButton({ compact = false }: { compact?: boolean }) {
     >
       <PreparedActions
         onAddDocument={addDocument}
-        {...(canAddTask ? { onAddTask: addTask } : {})}
-        {...(canAddEvent ? { onAddEvent: addEvent } : {})}
-        {...(canAddMaintenance ? { onAddMaintenance: addMaintenance } : {})}
-        {...(canAddMeals
-          ? {
-              onAddRecipe: addRecipe,
-              onAddMeal: addMeal,
-              onAddShoppingItem: addShoppingItem,
-            }
-          : {})}
-        {...(canAddExpeditions
-          ? { onAddTrip: addTrip, onAddGear: addGear }
-          : {})}
-        {...(canAddFinance ? { onAddExpense: addExpense } : {})}
+        onAddTask={addTask}
+        onAddEvent={addEvent}
+        onAddMaintenance={addMaintenance}
+        onAddRecipe={addRecipe}
+        onAddMeal={addMeal}
+        onAddShoppingItem={addShoppingItem}
+        onAddTrip={addTrip}
+        onAddGear={addGear}
+        onAddExpense={addExpense}
       />
     </Sheet>
   ) : (
@@ -183,39 +178,21 @@ export function QuickCreateButton({ compact = false }: { compact?: boolean }) {
       <DropdownMenuItem onSelect={addDocument}>
         Přidat dokument
       </DropdownMenuItem>
-      {canAddTask ? (
-        <DropdownMenuItem onSelect={addTask}>Přidat úkol</DropdownMenuItem>
-      ) : null}
-      {canAddEvent ? (
-        <DropdownMenuItem onSelect={addEvent}>Nová událost</DropdownMenuItem>
-      ) : null}
-      {canAddMaintenance ? (
-        <DropdownMenuItem onSelect={addMaintenance}>
-          Nový plán údržby
-        </DropdownMenuItem>
-      ) : null}
-      {canAddMeals ? (
-        <>
-          <DropdownMenuItem onSelect={addRecipe}>Nový recept</DropdownMenuItem>
-          <DropdownMenuItem onSelect={addMeal}>
-            Naplánovat jídlo
-          </DropdownMenuItem>
-          <DropdownMenuItem onSelect={addShoppingItem}>
-            Přidat položku nákupu
-          </DropdownMenuItem>
-        </>
-      ) : null}
-      {canAddExpeditions ? (
-        <>
-          <DropdownMenuItem onSelect={addTrip}>Nová výprava</DropdownMenuItem>
-          <DropdownMenuItem onSelect={addGear}>
-            Nová položka výbavy
-          </DropdownMenuItem>
-        </>
-      ) : null}
-      {canAddFinance ? (
-        <DropdownMenuItem onSelect={addExpense}>Přidat výdaj</DropdownMenuItem>
-      ) : null}
+      <DropdownMenuItem onSelect={addTask}>Přidat úkol</DropdownMenuItem>
+      <DropdownMenuItem onSelect={addEvent}>Nová událost</DropdownMenuItem>
+      <DropdownMenuItem onSelect={addMaintenance}>
+        Nový plán údržby
+      </DropdownMenuItem>
+      <DropdownMenuItem onSelect={addRecipe}>Nový recept</DropdownMenuItem>
+      <DropdownMenuItem onSelect={addMeal}>Naplánovat jídlo</DropdownMenuItem>
+      <DropdownMenuItem onSelect={addShoppingItem}>
+        Přidat položku nákupu
+      </DropdownMenuItem>
+      <DropdownMenuItem onSelect={addTrip}>Nová výprava</DropdownMenuItem>
+      <DropdownMenuItem onSelect={addGear}>
+        Nová položka výbavy
+      </DropdownMenuItem>
+      <DropdownMenuItem onSelect={addExpense}>Přidat výdaj</DropdownMenuItem>
     </DropdownMenu>
   );
 }

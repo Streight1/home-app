@@ -3,7 +3,6 @@ import {
   ArrayUnique,
   IsArray,
   IsBoolean,
-  IsDateString,
   IsIn,
   IsISO8601,
   IsOptional,
@@ -15,6 +14,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ValidateNested } from 'class-validator';
+import { IsDateOnly } from '../../../../common/time/is-date-only.decorator.js';
 import {
   calendarColorTokens,
   calendarEventTypes,
@@ -44,11 +44,11 @@ export class CreateCalendarEventDto {
   public endsAt?: string | null;
 
   @ValidateIf((value: CreateCalendarEventDto) => value.isAllDay)
-  @IsDateString()
+  @IsDateOnly()
   public allDayStartDate?: string | null;
 
   @ValidateIf((value: CreateCalendarEventDto) => value.isAllDay)
-  @IsDateString()
+  @IsDateOnly()
   public allDayEndDateExclusive?: string | null;
 
   @IsOptional()

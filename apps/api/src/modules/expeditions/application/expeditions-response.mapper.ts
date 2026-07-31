@@ -1,4 +1,5 @@
 import type { Prisma } from '../../../generated/prisma/client.js';
+import { serializeDecimal } from '../../../common/numbers/decimal.js';
 import { dateOnlyString } from '../domain/expeditions.types.js';
 
 export const gearListInclude = {
@@ -44,9 +45,6 @@ export type TripRecord = Prisma.TripGetPayload<{
   include: typeof tripInclude;
 }>;
 
-const decimalString = (value: { toFixed: (places: number) => string }) =>
-  value.toFixed(3).replace(/\.?0+$/, '');
-
 export function mapGear(record: GearRecord) {
   return {
     id: record.id,
@@ -60,7 +58,7 @@ export function mapGear(record: GearRecord) {
     defaultLoadType: record.defaultLoadType,
     defaultCriticality: record.defaultCriticality,
     isHouseholdShared: record.isHouseholdShared,
-    defaultQuantity: decimalString(record.defaultQuantityDecimal),
+    defaultQuantity: serializeDecimal(record.defaultQuantityDecimal),
     purchaseUrl: record.purchaseUrl,
     productUrl: record.productUrl,
     imageSourceUrl: record.imageSourceUrl,
@@ -97,7 +95,7 @@ export function mapTemplate(record: PackTemplateRecord) {
       name: item.nameSnapshot,
       categoryId: item.categoryId,
       categoryName: item.categoryNameSnapshot,
-      quantity: decimalString(item.quantityDecimal),
+      quantity: serializeDecimal(item.quantityDecimal),
       unitWeightGrams: item.unitWeightGramsSnapshot,
       loadType: item.loadType,
       criticality: item.criticality,
@@ -136,7 +134,7 @@ export function mapTrip(record: TripRecord) {
       gearItemId: item.gearItemId,
       name: item.nameSnapshot,
       categoryName: item.categoryNameSnapshot,
-      quantity: decimalString(item.quantityDecimal),
+      quantity: serializeDecimal(item.quantityDecimal),
       unitWeightGrams: item.unitWeightGramsSnapshot,
       loadType: item.loadType,
       criticality: item.criticality,

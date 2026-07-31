@@ -139,9 +139,13 @@ export interface SetDocumentStatusInput {
 export interface StoredFileDeletionTaskRecord {
   id: string;
   storageKey: string;
-  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  status: 'PROCESSING';
   attempts: number;
+  processingStartedAt: Date;
 }
+
+export const STORED_FILE_DELETION_LEASE_MS = 15 * 60 * 1000;
+export const STORED_FILE_DELETION_MAX_ATTEMPTS = 5;
 
 export interface DocumentRepository {
   create(input: CreateDocumentRecordInput): Promise<DocumentRecord>;
@@ -186,13 +190,16 @@ export interface DocumentRepository {
     householdId: string;
     userId: string;
   }): Promise<{ taskId: string }>;
-  findDeletionTasks(
+  claimDeletionTasks(
     limit: number,
     taskId?: string,
   ): Promise<StoredFileDeletionTaskRecord[]>;
-  markDeletionTaskProcessing(taskId: string): Promise<void>;
-  completeDeletionTask(taskId: string): Promise<void>;
-  failDeletionTask(taskId: string, errorCode: string): Promise<void>;
+  completeDeletionTask(taskId: string, claimedAt: Date): Promise<boolean>;
+  failDeletionTask(
+    taskId: string,
+    errorCode: string,
+    claimedAt: Date,
+  ): Promise<boolean>;
   recordFileAccess(
     householdId: string,
     userId: string,

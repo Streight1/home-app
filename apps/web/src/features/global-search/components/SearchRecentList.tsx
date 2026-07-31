@@ -12,14 +12,14 @@ export function SearchRecentList({
 }) {
   if (items.length === 0) return null;
   return (
-    <section role="group" aria-labelledby="search-recent-heading">
-      <h2
-        id="search-recent-heading"
+    <section role="group" aria-label="Nedávno otevřené">
+      <div
+        aria-hidden="true"
         role="presentation"
         className="mb-2 text-caption font-semibold uppercase tracking-wider text-text-muted"
       >
         Nedávno otevřené
-      </h2>
+      </div>
       <div className="grid gap-1" role="presentation">
         {items.map((item, index) => {
           const id = `recent-${String(index)}`;

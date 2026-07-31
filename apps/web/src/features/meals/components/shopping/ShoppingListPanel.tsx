@@ -6,16 +6,11 @@ import { EmptyState } from '../../../../components/ui/EmptyState/EmptyState.js';
 import { InlineAlert } from '../../../../components/ui/InlineAlert/InlineAlert.js';
 import { Input } from '../../../../components/ui/Input/Input.js';
 import { Select } from '../../../../components/ui/Select/Select.js';
+import { addLocalDays } from '../../../../lib/date/dateOnly.js';
 import { useMealsMutations, useShoppingLists } from '../../hooks/useMeals.js';
 import { localDate, UNIT_LABELS } from '../../lib/decimalQuantity.js';
 import type { ShoppingListItem } from '../../types/meals.types.js';
 import { ShoppingGenerationPreview } from './ShoppingGenerationPreview.js';
-
-const addDays = (date: Date, amount: number) => {
-  const next = new Date(date);
-  next.setDate(next.getDate() + amount);
-  return next;
-};
 
 export function ShoppingListPanel({ canWrite }: { canWrite: boolean }) {
   const workspace = useWorkspaceNavigation();
@@ -38,7 +33,7 @@ export function ShoppingListPanel({ canWrite }: { canWrite: boolean }) {
     return [...groups.entries()];
   }, [selected]);
   const from = localDate();
-  const to = localDate(addDays(new Date(), 6));
+  const to = localDate(addLocalDays(new Date(), 6));
   return (
     <section className="grid gap-4" aria-labelledby="shopping-list-title">
       <div className="flex flex-wrap items-end justify-between gap-3">

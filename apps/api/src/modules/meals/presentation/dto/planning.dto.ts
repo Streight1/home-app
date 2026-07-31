@@ -10,14 +10,14 @@ import {
   Length,
   Matches,
 } from 'class-validator';
+import { IsDateOnly } from '../../../../common/time/is-date-only.decorator.js';
 import {
-  DATE_ONLY_PATTERN,
   DECIMAL_QUANTITY_PATTERN,
   MEAL_TYPES,
 } from '../../domain/meals.types.js';
 
 export class MealPlanInputDto {
-  @Matches(DATE_ONLY_PATTERN) public plannedFor!: string;
+  @IsDateOnly() public plannedFor!: string;
   @IsIn(MEAL_TYPES) public mealType!: (typeof MEAL_TYPES)[number];
   @IsOptional() @IsString() @Length(1, 80) public customMealTypeLabel?: string;
   @IsOptional() @IsUUID('4') public recipeId?: string | null;
@@ -35,13 +35,13 @@ export class CreateMealPlanEntryDto extends MealPlanInputDto {}
 export class UpdateMealPlanEntryDto extends MealPlanInputDto {}
 
 export class MealPlanRangeQueryDto {
-  @Matches(DATE_ONLY_PATTERN) public dateFrom!: string;
-  @Matches(DATE_ONLY_PATTERN) public dateTo!: string;
+  @IsDateOnly() public dateFrom!: string;
+  @IsDateOnly() public dateTo!: string;
 }
 
 export class CopyMealPlanWeekDto {
-  @Matches(DATE_ONLY_PATTERN) public sourceWeekStart!: string;
-  @Matches(DATE_ONLY_PATTERN) public targetWeekStart!: string;
+  @IsDateOnly() public sourceWeekStart!: string;
+  @IsDateOnly() public targetWeekStart!: string;
   @IsOptional() @IsBoolean() public replaceExisting = false;
   @IsOptional() @IsBoolean() public confirmed = false;
 }

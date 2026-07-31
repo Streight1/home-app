@@ -10,15 +10,13 @@ import {
   Matches,
   Min,
 } from 'class-validator';
+import { IsDateOnly } from '../../../../common/time/is-date-only.decorator.js';
 import {
   financePageSizes,
   financeSortDirections,
   financialTransactionTypes,
 } from '../../domain/finance.types.js';
-import {
-  ISO_DATE_PATTERN,
-  MINOR_UNITS_PATTERN,
-} from './finance-dto.helpers.js';
+import { MINOR_UNITS_PATTERN } from './finance-dto.helpers.js';
 
 const transactionSortFields = [
   'bookedDate',
@@ -39,8 +37,8 @@ export class ListFinancialTransactionsDto {
   @IsOptional()
   @IsIn(financialTransactionTypes)
   public type?: (typeof financialTransactionTypes)[number];
-  @IsOptional() @Matches(ISO_DATE_PATTERN) public dateFrom?: string;
-  @IsOptional() @Matches(ISO_DATE_PATTERN) public dateTo?: string;
+  @IsOptional() @IsDateOnly() public dateFrom?: string;
+  @IsOptional() @IsDateOnly() public dateTo?: string;
   @IsOptional() @Matches(MINOR_UNITS_PATTERN) public amountFromMinor?: string;
   @IsOptional() @Matches(MINOR_UNITS_PATTERN) public amountToMinor?: string;
   @Transform(({ value }: { value: unknown }) => {
@@ -60,6 +58,6 @@ export class ListFinancialTransactionsDto {
 }
 
 export class FinancePeriodDto {
-  @IsOptional() @Matches(ISO_DATE_PATTERN) public dateFrom?: string;
-  @IsOptional() @Matches(ISO_DATE_PATTERN) public dateTo?: string;
+  @IsOptional() @IsDateOnly() public dateFrom?: string;
+  @IsOptional() @IsDateOnly() public dateTo?: string;
 }

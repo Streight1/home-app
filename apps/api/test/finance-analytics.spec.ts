@@ -7,6 +7,16 @@ import type { HouseholdAccessService } from '../src/modules/households/household
 
 const rows = [
   {
+    id: '0',
+    type: 'EXPENSE',
+    amountMinor: 5_000n,
+    currencyCode: 'CZK',
+    bookedDate: new Date('2026-06-05'),
+    merchantNormalizedName: 'Alza',
+    counterpartyName: 'ALZA',
+    category: { id: 'cat', name: 'Elektronika' },
+  },
+  {
     id: '1',
     type: 'EXPENSE',
     amountMinor: 10_000n,
@@ -49,22 +59,38 @@ const rows = [
 ] as const;
 
 function context() {
-  const findMany = vi.fn().mockResolvedValue(rows);
+  const findMany = vi
+    .fn()
+    .mockImplementation(
+      (request: { where: { bookedDate: { gte: Date; lte: Date } } }) =>
+        Promise.resolve(
+          rows.filter(
+            (row) =>
+              row.bookedDate >= request.where.bookedDate.gte &&
+              row.bookedDate <= request.where.bookedDate.lte,
+          ),
+        ),
+    );
   const prisma = {
     financialTransaction: { findMany },
   } as unknown as PrismaService;
+  const getActiveMembership = vi.fn().mockResolvedValue({
+    householdId: '10000000-0000-4000-8000-000000000001',
+  });
   const access = {
-    getActiveMembership: vi.fn().mockResolvedValue({
-      householdId: '10000000-0000-4000-8000-000000000001',
-    }),
+    getActiveMembership,
   } as unknown as HouseholdAccessService;
   const queries = new FinanceAnalyticsQueryService(prisma, access);
-  return { service: new FinanceAnalyticsService(queries), findMany };
+  return {
+    service: new FinanceAnalyticsService(queries),
+    findMany,
+    getActiveMembership,
+  };
 }
 
 describe('finance analytics ledger semantics', () => {
   it('excludes transfers in the scoped Prisma query and includes credit cards by default', async () => {
-    const { service, findMany } = context();
+    const { service, findMany, getActiveMembership } = context();
     await service.summary('user', {
       includeCreditCards: true,
       dateFrom: '2026-07-01',
@@ -77,6 +103,8 @@ describe('finance analytics ledger semantics', () => {
         }),
       }),
     );
+    expect(findMany).toHaveBeenCalledTimes(1);
+    expect(getActiveMembership).toHaveBeenCalledTimes(1);
   });
 
   it('can exclude credit-card purchases without changing ledger semantics', async () => {
@@ -157,9 +185,60 @@ describe('finance analytics ledger semantics', () => {
       result.currencies.find((item) => item.currencyCode === 'CZK')?.items[0],
     ).toMatchObject({
       amountMinor: '7500',
-      previousAmountMinor: '7500',
-      differenceMinor: '0',
+      previousAmountMinor: '5000',
+      differenceMinor: '2500',
     });
+  });
+
+  it('projects the dashboard from one authorized current/previous ledger query', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-15T12:00:00Z'));
+    try {
+      const optimized = context();
+      const dashboard = await optimized.service.dashboard('user');
+
+      expect(optimized.getActiveMembership).toHaveBeenCalledTimes(1);
+      expect(optimized.findMany).toHaveBeenCalledTimes(1);
+      expect(optimized.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            bookedDate: {
+              gte: new Date('2026-05-31T00:00:00.000Z'),
+              lte: new Date('2026-07-31T00:00:00.000Z'),
+            },
+          }),
+        }),
+      );
+
+      const reference = context().service;
+      const query = {
+        includeCreditCards: true,
+        dateFrom: '2026-07-01',
+        dateTo: '2026-07-31',
+      };
+      const [summary, categories, trend] = await Promise.all([
+        reference.summary('user', query),
+        reference.categoryBreakdown('user', query),
+        reference.monthlyTrend('user', query),
+      ]);
+      expect(dashboard).toEqual({
+        period: summary.period,
+        currencies: summary.currencies.map((currency) => ({
+          ...currency,
+          topCategory:
+            categories.currencies.find(
+              (item) => item.currencyCode === currency.currencyCode,
+            )?.items[0] ?? null,
+          trend:
+            trend.currencies.find(
+              (item) => item.currencyCode === currency.currencyCode,
+            )?.points ?? [],
+        })),
+        navigationTarget: { area: 'finance', screen: 'analytics' },
+      });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('treats a card refund as balance recovery', () => {

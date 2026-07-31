@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APPLICATION_SEARCH_PROVIDER_TOKENS } from '../../common/search/application-search-provider.js';
 import { AuditModule } from '../audit/audit.module.js';
 import { DocumentsModule } from '../documents/documents.module.js';
 import { FinanceModule } from '../finance/finance.module.js';
@@ -73,7 +74,11 @@ import { MaintenanceSearchProvider } from './search/maintenance-search.provider.
     MaintenanceDashboardService,
     MaintenanceFacade,
     MaintenanceSearchProvider,
+    {
+      provide: APPLICATION_SEARCH_PROVIDER_TOKENS.maintenance,
+      useExisting: MaintenanceSearchProvider,
+    },
   ],
-  exports: [MaintenanceFacade, MaintenanceSearchProvider],
+  exports: [MaintenanceFacade, APPLICATION_SEARCH_PROVIDER_TOKENS.maintenance],
 })
 export class MaintenanceModule {}

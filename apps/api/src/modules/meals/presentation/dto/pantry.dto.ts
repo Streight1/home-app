@@ -6,8 +6,8 @@ import {
   Length,
   Matches,
 } from 'class-validator';
+import { IsDateOnly } from '../../../../common/time/is-date-only.decorator.js';
 import {
-  DATE_ONLY_PATTERN,
   DECIMAL_QUANTITY_PATTERN,
   INGREDIENT_UNITS,
   PANTRY_STATUSES,
@@ -23,7 +23,7 @@ export class PantryItemInputDto {
   public unit?: (typeof INGREDIENT_UNITS)[number] | null;
   @IsIn(PANTRY_STATUSES)
   public status!: (typeof PANTRY_STATUSES)[number];
-  @IsOptional() @Matches(DATE_ONLY_PATTERN) public expiresOn?: string | null;
+  @IsOptional() @IsDateOnly() public expiresOn?: string | null;
   @IsOptional() @IsString() @Length(0, 120) public locationLabel?: string;
   @IsOptional() @IsString() @Length(0, 1000) public note?: string;
 }

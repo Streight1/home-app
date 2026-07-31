@@ -315,8 +315,10 @@ jobs:
       - name: Start job timer
         run: printf 'HOMEAPP_CI_STARTED_AT=%s\n' "$(date +%s)" >> "${GITHUB_ENV}"
 
-      - name: Set up project
+      - name: Set up pinned package runner without host dependencies
         uses: ./.github/actions/setup-project
+        with:
+          install-dependencies: 'false'
 
       - name: Build images and run isolated Compose smoke tests
         run: pnpm ci:containers

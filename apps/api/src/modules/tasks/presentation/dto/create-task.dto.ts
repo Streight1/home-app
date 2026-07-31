@@ -12,10 +12,10 @@ import {
   IsUUID,
   Max,
   MaxLength,
-  Matches,
   Min,
   MinLength,
 } from 'class-validator';
+import { IsDateOnly } from '../../../../common/time/is-date-only.decorator.js';
 import {
   taskPriorities,
   recurrenceFrequencies,
@@ -85,7 +85,7 @@ export class CreateTaskDto {
   public categoryId?: string | null;
 
   @IsOptional()
-  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  @IsDateOnly()
   public dueDate?: string | null;
 
   @Type(() => Number)

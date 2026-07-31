@@ -14,10 +14,8 @@ import {
   ValidateIf,
   ValidateNested,
 } from 'class-validator';
-import {
-  ISO_DATE_PATTERN,
-  MINOR_UNITS_PATTERN,
-} from '../../../finance/presentation/dto/finance-dto.helpers.js';
+import { IsDateOnly } from '../../../../common/time/is-date-only.decorator.js';
+import { MINOR_UNITS_PATTERN } from '../../../finance/presentation/dto/finance-dto.helpers.js';
 
 export class BudgetAllocationDto {
   @IsUUID('4') public categoryId!: string;
@@ -29,8 +27,8 @@ export class CreateBudgetDto {
   @IsString() @Length(1, 120) public name!: string;
   @IsIn(['CZK', 'EUR']) public currencyCode!: 'CZK' | 'EUR';
   @IsIn(['MONTHLY', 'CUSTOM']) public periodType!: 'MONTHLY' | 'CUSTOM';
-  @Matches(ISO_DATE_PATTERN) public periodStart!: string;
-  @Matches(ISO_DATE_PATTERN) public periodEnd!: string;
+  @IsDateOnly() public periodStart!: string;
+  @IsDateOnly() public periodEnd!: string;
   @IsOptional() @Matches(MINOR_UNITS_PATTERN) public totalLimitMinor?: string;
   @IsOptional() @IsIn(['DRAFT', 'ACTIVE']) public status: 'DRAFT' | 'ACTIVE' =
     'DRAFT';
@@ -60,7 +58,7 @@ export class UpdateBudgetDto {
 }
 
 export class CopyBudgetDto {
-  @Matches(ISO_DATE_PATTERN) public targetMonth!: string;
+  @IsDateOnly() public targetMonth!: string;
   @IsOptional() @IsString() @Length(1, 120) public name?: string;
 }
 

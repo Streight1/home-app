@@ -216,6 +216,14 @@ if (workflow && setupAction && images && baselineMetadata) {
     );
   }
 
+  const containerSetup = jobs['container-validation']?.steps?.find(
+    (step) => step.uses === './.github/actions/setup-project',
+  );
+  requireCondition(
+    containerSetup?.with?.['install-dependencies'] === 'false',
+    'Container validation nesmí instalovat hostitelské workspace dependencies; buildy je připravují uvnitř image.',
+  );
+
   requireCondition(
     Boolean(jobs['api-tests']?.services?.postgres),
     'API test job musí používat izolovaný PostgreSQL service container.',

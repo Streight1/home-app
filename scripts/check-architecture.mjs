@@ -451,6 +451,47 @@ for (const sensitive of [
     );
 }
 
+const workspaceViewRegistrySource = await readFile(
+  join(workspaceDirectory, 'workspace-view-registry.tsx'),
+  'utf8',
+);
+const workspaceOverlayHostSource = await readFile(
+  join(workspaceDirectory, 'WorkspaceOverlayHost.tsx'),
+  'utf8',
+);
+for (const [name, source] of [
+  ['workspace view registry', workspaceViewRegistrySource],
+  ['workspace overlay host', workspaceOverlayHostSource],
+]) {
+  if (
+    !source.includes('lazy(async') ||
+    !source.includes('loadLazyModuleWithRecovery') ||
+    !source.includes('<Suspense')
+  )
+    errors.push(
+      `${name} musí načítat feature hosty lazy s obnovou zastaralého chunku a Suspense fallbackem.`,
+    );
+  for (const match of source.matchAll(
+    /import\(['"](\.\.\/\.\.\/features\/[^'"]+)['"]\)/g,
+  )) {
+    if (!match[1]?.endsWith('.public.js'))
+      errors.push(
+        `${name} dynamicky importuje interní feature cestu ${match[1]}.`,
+      );
+  }
+  if (/^import(?!\s+type)[^\n]+from ['"]\.\.\/\.\.\/features\//m.test(source))
+    errors.push(`${name} staticky importuje feature implementaci.`);
+}
+
+const persistedWorkspaceContract = `${await readFile(
+  join(workspaceDirectory, 'workspace-navigation.types.ts'),
+  'utf8',
+)}\n${await readFile(join(workspaceDirectory, 'workspace-storage.ts'), 'utf8')}`;
+if (/\bquery\??\s*:|filters\.query/.test(persistedWorkspaceContract))
+  errors.push(
+    'Workspace navigation nesmí persistovat volný query text; patří jen do transientního feature state.',
+  );
+
 const apiSource = join(root, 'apps/api/src');
 const apiMainSource = await readFile(join(apiSource, 'main.ts'), 'utf8');
 const corsOptionsSource = await readFile(
@@ -1030,7 +1071,7 @@ for (const file of [
   const path = relative(root, file);
   if (/\bfetch\s*\(/.test(source) && path.includes('/components/'))
     errors.push(`${path} volá fetch přímo z Calendar komponenty.`);
-  if (/(?:features\/tasks|\.\.\/tasks)\/(?!tasks\.public)/.test(source))
+  if (/(?:features\/tasks|\.\.\/tasks)\/(?![^/]+\.public)/.test(source))
     errors.push(
       `${path} importuje interní část Tasks feature místo public API.`,
     );
@@ -1842,6 +1883,10 @@ for (const file of await collectFiles(searchDirectory, '.ts')) {
     )
   )
     errors.push(`${path} obchází federované module search providery.`);
+  if (/from\s+['"][^'"]*search\.provider(?:\.js)?['"]/.test(source))
+    errors.push(
+      `${path} importuje konkrétní search provider místo veřejného DI tokenu.`,
+    );
   if (
     /SELECT[\s\S]+FROM\s+["'][^"']+["'][\s\S]+JOIN\s+["'][^"']+["']/.test(
       source,
@@ -1849,6 +1894,10 @@ for (const file of await collectFiles(searchDirectory, '.ts')) {
   )
     errors.push(`${path} zavádí centrální SQL dotaz přes doménové tabulky.`);
 }
+if (!searchServiceSource.includes('APPLICATION_SEARCH_PROVIDERS_TOKEN'))
+  errors.push(
+    'Search orchestrace musí providery injektovat přes společné veřejné DI tokeny.',
+  );
 if (
   /logger\.(?:log|warn|error)\s*\([^)]*(?:query|normalizedQuery)/.test(
     searchServiceSource,

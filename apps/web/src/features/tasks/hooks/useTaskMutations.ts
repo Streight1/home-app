@@ -8,7 +8,7 @@ import {
   updateTask,
 } from '../api/tasksApi.js';
 import type { TaskInput } from '../types/task.types.js';
-import { TASKS_QUERY_KEY } from './useTasks.js';
+import { TASKS_QUERY_KEY } from '../tasks-query.public.js';
 
 export function useCreateTask() {
   const queryClient = useQueryClient();

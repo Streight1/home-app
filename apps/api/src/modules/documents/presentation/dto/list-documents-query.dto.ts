@@ -6,11 +6,11 @@ import {
   IsOptional,
   IsString,
   IsUUID,
-  Matches,
   MaxLength,
   Min,
   ValidateIf,
 } from 'class-validator';
+import { IsDateOnly } from '../../../../common/time/is-date-only.decorator.js';
 import {
   documentSortFields,
   documentStatuses,
@@ -24,7 +24,6 @@ import {
   type DocumentTypeKey,
 } from '../../domain/metadata/document-type.js';
 
-const isoDatePattern = /^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$/;
 const pageSizes = [10, 20, 50, 100] as const;
 
 export class ListDocumentsQueryDto {
@@ -65,11 +64,11 @@ export class ListDocumentsQueryDto {
   public status: DocumentStatus = 'ACTIVE';
 
   @IsOptional()
-  @Matches(isoDatePattern)
+  @IsDateOnly()
   public createdFrom?: string;
 
   @IsOptional()
-  @Matches(isoDatePattern)
+  @IsDateOnly()
   public createdTo?: string;
 
   @IsOptional()

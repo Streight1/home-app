@@ -863,15 +863,17 @@ model ExtractionFieldCandidate {
 }
 
 model StoredFileDeletionTask {
-  id            String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  storageKey    String                   @db.VarChar(500)
-  status        StoredFileDeletionStatus @default(PENDING)
-  attempts      Int                      @default(0)
-  lastErrorCode String?                  @db.VarChar(100)
-  createdAt     DateTime                 @default(now())
-  completedAt   DateTime?
+  id                  String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  storageKey          String                   @db.VarChar(500)
+  status              StoredFileDeletionStatus @default(PENDING)
+  attempts            Int                      @default(0)
+  lastErrorCode       String?                  @db.VarChar(100)
+  processingStartedAt DateTime?
+  createdAt           DateTime                 @default(now())
+  completedAt         DateTime?
 
   @@index([status, createdAt])
+  @@index([status, processingStartedAt, createdAt], map: "StoredFileDeletionTask_lease_idx")
 }
 
 model Task {

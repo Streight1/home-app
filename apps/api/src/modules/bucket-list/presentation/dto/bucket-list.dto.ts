@@ -9,10 +9,10 @@ import {
   IsString,
   IsUUID,
   Length,
-  Matches,
   Max,
   Min,
 } from 'class-validator';
+import { IsDateOnly } from '../../../../common/time/is-date-only.decorator.js';
 import {
   BUCKET_LIST_CATEGORIES,
   BUCKET_LIST_ITEM_STATUSES,
@@ -22,8 +22,6 @@ import {
   type BucketListItemStatus,
   type BucketListPriority,
 } from '../../domain/bucket-list.types.js';
-
-const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 export class CreateBucketListDto {
   @Type(() => Number) @IsInt() @Min(2000) @Max(2200) public year!: number;
@@ -82,7 +80,7 @@ export class BucketListItemInputDto {
   @IsOptional()
   @IsIn(BUCKET_LIST_PRIORITIES)
   public priority: BucketListPriority = 'NORMAL';
-  @IsOptional() @Matches(DATE_PATTERN) public targetDate?: string;
+  @IsOptional() @IsDateOnly() public targetDate?: string;
   @IsOptional() @IsUUID('4') public locationPlaceId?: string;
   @IsOptional()
   @IsString()
@@ -114,7 +112,7 @@ export class UpdateBucketListItemDto {
   @IsOptional()
   @IsIn(BUCKET_LIST_PRIORITIES)
   public priority?: BucketListPriority;
-  @IsOptional() @Matches(DATE_PATTERN) public targetDate?: string | null;
+  @IsOptional() @IsDateOnly() public targetDate?: string | null;
   @IsOptional() @IsUUID('4') public locationPlaceId?: string | null;
   @IsOptional()
   @IsString()
@@ -139,7 +137,7 @@ export class UpdateBucketListItemDto {
 }
 
 export class BucketListCompletionDto {
-  @IsOptional() @Matches(DATE_PATTERN) public completedDate?: string;
+  @IsOptional() @IsDateOnly() public completedDate?: string;
   @IsOptional() @IsString() @Length(0, 5000) public note?: string;
 }
 

@@ -12,8 +12,8 @@ import {
   Matches,
   Min,
 } from 'class-validator';
+import { IsDateOnly } from '../../../../common/time/is-date-only.decorator.js';
 import {
-  DATE_ONLY_PATTERN,
   DECIMAL_QUANTITY_PATTERN,
   INGREDIENT_UNITS,
 } from '../../domain/meals.types.js';
@@ -41,8 +41,8 @@ export class ShoppingItemInputDto {
 }
 
 export class GenerateShoppingPreviewDto {
-  @Matches(DATE_ONLY_PATTERN) public dateFrom!: string;
-  @Matches(DATE_ONLY_PATTERN) public dateTo!: string;
+  @IsDateOnly() public dateFrom!: string;
+  @IsDateOnly() public dateTo!: string;
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(200)

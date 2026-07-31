@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { isDateOnly } from '../../../common/time/date-only.js';
 
 export function normalizeCzechDate(value: string): string | null {
   const trimmed = value.trim();
@@ -12,8 +13,7 @@ export function normalizeCzechDate(value: string): string | null {
   if (!parts?.every(Boolean)) return null;
   const [year, month, day] = parts as [string, string, string];
   const normalized = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-  const date = new Date(`${normalized}T00:00:00.000Z`);
-  return date.toISOString().slice(0, 10) === normalized ? normalized : null;
+  return isDateOnly(normalized) ? normalized : null;
 }
 
 export function normalizeAmountMinor(value: string): number | null {

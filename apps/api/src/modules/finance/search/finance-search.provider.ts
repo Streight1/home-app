@@ -9,6 +9,7 @@ import {
   type ModuleSearchRequest,
   type SearchContext,
 } from '../../../common/search/application-search-provider.js';
+import { serializeDateOnly } from '../../../common/time/date-only.js';
 import { PrismaService } from '../../../infrastructure/database/prisma.service.js';
 
 interface FinanceSearchRow {
@@ -72,7 +73,7 @@ export class FinanceSearchProvider implements ApplicationSearchProvider {
           'Finanční pohyb',
         subtitle: row.categoryName ?? row.accountName,
         iconKey: 'finance',
-        dateLabel: row.bookedDate.toISOString().slice(0, 10),
+        dateLabel: serializeDateOnly(row.bookedDate),
         badges: [{ label: row.type }],
         fields: compactSearchFields([
           searchField(

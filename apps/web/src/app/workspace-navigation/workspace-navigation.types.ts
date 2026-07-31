@@ -65,7 +65,6 @@ export type WorkspaceView =
       area: 'finance';
       screen: 'transactions';
       filters?: {
-        query?: string;
         categoryId?: string;
         dateFrom?: string;
         dateTo?: string;

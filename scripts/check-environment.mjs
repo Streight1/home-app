@@ -98,6 +98,30 @@ function parseEnvironment(source) {
 const example = await readFile(join(root, '.env.example'), 'utf8');
 const values = parseEnvironment(example);
 
+const [nodeVersion, rootPackageSource, apiDockerfile, webDockerfile] =
+  await Promise.all([
+    readFile(join(root, '.nvmrc'), 'utf8').then((value) => value.trim()),
+    readFile(join(root, 'package.json'), 'utf8'),
+    readFile(join(root, 'apps/api/Dockerfile'), 'utf8'),
+    readFile(join(root, 'apps/web/Dockerfile'), 'utf8'),
+  ]);
+const packageManager = JSON.parse(rootPackageSource).packageManager;
+const pnpmVersion =
+  typeof packageManager === 'string'
+    ? /^pnpm@(.+)$/.exec(packageManager)?.[1]
+    : undefined;
+if (!/^\d+\.\d+\.\d+$/.test(nodeVersion))
+  errors.push('.nvmrc musí připnout přesnou Node major.minor.patch verzi.');
+for (const [path, dockerfile] of [
+  ['apps/api/Dockerfile', apiDockerfile],
+  ['apps/web/Dockerfile', webDockerfile],
+]) {
+  if (!dockerfile.includes(`ARG NODE_VERSION=${nodeVersion}`))
+    errors.push(`${path} nepoužívá Node ${nodeVersion} z .nvmrc.`);
+  if (!pnpmVersion || !dockerfile.includes(`ARG PNPM_VERSION=${pnpmVersion}`))
+    errors.push(`${path} nepoužívá ${packageManager} z root package.json.`);
+}
+
 for (const key of requiredKeys) {
   if (!values.has(key)) errors.push(`.env.example neobsahuje ${key}.`);
 }

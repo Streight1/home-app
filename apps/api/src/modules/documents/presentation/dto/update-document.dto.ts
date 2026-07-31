@@ -4,16 +4,15 @@ import {
   IsObject,
   IsOptional,
   IsString,
-  Matches,
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { IsDateOnly } from '../../../../common/time/is-date-only.decorator.js';
 import {
   documentTypeKeys,
   type DocumentTypeKey,
 } from '../../domain/metadata/document-type.js';
 
-const isoDatePattern = /^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$/;
 const trim = ({ value }: { value: unknown }): unknown =>
   typeof value === 'string' ? value.trim() : value;
 const nullableText = ({ value }: { value: unknown }): unknown =>
@@ -50,6 +49,6 @@ export class UpdateDocumentDto {
   public metadata?: Record<string, unknown>;
 
   @IsOptional()
-  @Matches(isoDatePattern)
+  @IsDateOnly()
   public documentDate?: string | null;
 }

@@ -15,6 +15,7 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
+import { IsDateOnly } from '../../../../common/time/is-date-only.decorator.js';
 import { routeModes } from '../../../location/domain/location.types.js';
 import {
   calendarColorTokens,
@@ -79,7 +80,7 @@ export class CalendarTemplateDto {
 }
 
 export class ApplyCalendarTemplateDto {
-  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  @IsDateOnly()
   public date!: string;
   @IsOptional()
   @IsBoolean()
@@ -91,7 +92,7 @@ export class BulkApplyCalendarTemplateDto {
   @ArrayMinSize(1)
   @ArrayUnique()
   @ArrayMaxSize(62)
-  @Matches(/^\d{4}-\d{2}-\d{2}$/, { each: true })
+  @IsDateOnly({ each: true })
   public dates!: string[];
   @IsOptional()
   @IsBoolean()

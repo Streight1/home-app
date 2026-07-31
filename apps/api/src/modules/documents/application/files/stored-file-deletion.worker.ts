@@ -33,18 +33,42 @@ export class StoredFileDeletionWorker
     if (this.timer) clearInterval(this.timer);
   }
   public enqueue(taskId?: string): void {
-    setImmediate(() => void this.processPending(taskId));
+    setImmediate(() => {
+      void this.processPending(taskId).catch(() => {
+        this.logger.error({
+          code: 'STORED_FILE_DELETE_WORKER_FAILED',
+          ...(taskId ? { taskId } : {}),
+        });
+      });
+    });
   }
   public async processPending(taskId?: string): Promise<void> {
-    const tasks = await this.documents.findDeletionTasks(20, taskId);
+    const tasks = await this.documents.claimDeletionTasks(20, taskId);
     for (const task of tasks) {
       try {
-        await this.documents.markDeletionTaskProcessing(task.id);
         await this.storage.delete(task.storageKey);
-        await this.documents.completeDeletionTask(task.id);
+        const completed = await this.documents.completeDeletionTask(
+          task.id,
+          task.processingStartedAt,
+        );
+        if (!completed) {
+          this.logger.warn({
+            code: 'STORED_FILE_DELETE_LEASE_LOST',
+            taskId: task.id,
+          });
+        }
       } catch {
-        await this.documents.failDeletionTask(task.id, 'STORAGE_DELETE_FAILED');
-        this.logger.warn({ code: 'STORED_FILE_DELETE_RETRY', taskId: task.id });
+        const failed = await this.documents.failDeletionTask(
+          task.id,
+          'STORAGE_DELETE_FAILED',
+          task.processingStartedAt,
+        );
+        this.logger.warn({
+          code: failed
+            ? 'STORED_FILE_DELETE_RETRY'
+            : 'STORED_FILE_DELETE_LEASE_LOST',
+          taskId: task.id,
+        });
       }
     }
   }

@@ -1,5 +1,4 @@
 import { BarChart3 } from 'lucide-react';
-import { useWorkspaceNavigation } from '../../../app/workspace-navigation/useWorkspaceNavigation.js';
 import { Card } from '../../../components/ui/Card/Card.js';
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState.js';
 import { InlineAlert } from '../../../components/ui/InlineAlert/InlineAlert.js';
@@ -8,8 +7,18 @@ import { useFinanceAnalytics } from '../hooks/useFinanceAnalytics.js';
 import { CategorySpendingChart } from './CategorySpendingChart.js';
 import { SpendingTrendChart } from './SpendingTrendChart.js';
 
-export function FinanceAnalyticsPanel() {
-  const workspace = useWorkspaceNavigation();
+export interface FinanceAnalyticsDrilldownFilters {
+  query?: string;
+  categoryId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export function FinanceAnalyticsPanel({
+  onOpenTransactions,
+}: {
+  onOpenTransactions: (filters: FinanceAnalyticsDrilldownFilters) => void;
+}) {
   const analytics = useFinanceAnalytics();
   if (analytics.isPending)
     return (
@@ -90,11 +99,9 @@ export function FinanceAnalyticsPanel() {
                   items={categories}
                   currencyCode={currency}
                   onSelect={(item) =>
-                    workspace.navigate({
-                      area: 'finance',
-                      screen: 'transactions',
-                      filters: cleanFilters(item.navigationTarget.filters),
-                    })
+                    onOpenTransactions(
+                      cleanFilters(item.navigationTarget.filters),
+                    )
                   }
                 />
               </div>
@@ -105,11 +112,9 @@ export function FinanceAnalyticsPanel() {
                 <SpendingTrendChart
                   points={trend}
                   onSelect={(point) =>
-                    workspace.navigate({
-                      area: 'finance',
-                      screen: 'transactions',
-                      filters: cleanFilters(point.navigationTarget.filters),
-                    })
+                    onOpenTransactions(
+                      cleanFilters(point.navigationTarget.filters),
+                    )
                   }
                 />
               </div>
@@ -122,13 +127,9 @@ export function FinanceAnalyticsPanel() {
                     key={merchant.merchant}
                     className="min-h-11 rounded-md bg-surface-subtle px-3 py-2 text-left hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-focus"
                     onClick={() =>
-                      workspace.navigate({
-                        area: 'finance',
-                        screen: 'transactions',
-                        filters: cleanFilters(
-                          merchant.navigationTarget.filters,
-                        ),
-                      })
+                      onOpenTransactions(
+                        cleanFilters(merchant.navigationTarget.filters),
+                      )
                     }
                   >
                     <span className="font-medium">{merchant.merchant}</span>
@@ -148,11 +149,9 @@ export function FinanceAnalyticsPanel() {
                     type="button"
                     className="min-h-11 rounded-md bg-surface-subtle px-3 py-2 text-left hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-focus"
                     onClick={() =>
-                      workspace.navigate({
-                        area: 'finance',
-                        screen: 'transactions',
-                        filters: cleanFilters(item.navigationTarget.filters),
-                      })
+                      onOpenTransactions(
+                        cleanFilters(item.navigationTarget.filters),
+                      )
                     }
                   >
                     <span className="font-medium">{item.name}: </span>

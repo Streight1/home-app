@@ -1,3 +1,8 @@
+import {
+  dateOnlyToDatabase,
+  serializeNullableDateOnly,
+} from '../../../common/time/date-only.js';
+
 export const MAINTENANCE_READ_ROLE = 'VIEWER' as const;
 export const MAINTENANCE_WRITE_ROLE = 'MEMBER' as const;
 export const MAINTENANCE_ADMIN_ROLE = 'ADMIN' as const;
@@ -52,11 +57,11 @@ export type MaintenanceOccurrenceStatus =
 export type MaintenancePriority = (typeof MAINTENANCE_PRIORITIES)[number];
 
 export function maintenanceDate(value: string): Date {
-  return new Date(`${value}T00:00:00.000Z`);
+  return dateOnlyToDatabase(value);
 }
 
 export function maintenanceDateString(value: Date | null): string | null {
-  return value ? value.toISOString().slice(0, 10) : null;
+  return serializeNullableDateOnly(value);
 }
 
 export function normalizeMaintenanceName(value: string): string {

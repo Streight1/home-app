@@ -1,25 +1,18 @@
-import { HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { ApiException } from '../../../common/errors/api-exception.js';
-import type {
-  ApplicationSearchProvider,
-  SearchEntityType,
-  SearchGroupKey,
+import {
+  APPLICATION_SEARCH_PROVIDERS_TOKEN,
+  type ApplicationSearchProvider,
+  type SearchEntityType,
+  type SearchGroupKey,
 } from '../../../common/search/application-search-provider.js';
-import { isSearchNavigationTarget } from '../../../common/search/search-navigation-target.js';
-import { normalizeSearchText } from '../../../common/search/search-normalization.js';
-import { HouseholdAccessService } from '../../households/household-access.service.js';
-import { BucketListSearchProvider } from '../../bucket-list/infrastructure/bucket-list-search.provider.js';
-import { CalendarSearchProvider } from '../../calendar/search/calendar-search.provider.js';
-import { DocumentsSearchProvider } from '../../documents/search/documents-search.provider.js';
-import { ExpeditionsSearchProvider } from '../../expeditions/expeditions-search.provider.js';
-import { FinanceSearchProvider } from '../../finance/search/finance-search.provider.js';
-import { MaintenanceSearchProvider } from '../../maintenance/search/maintenance-search.provider.js';
-import { MealsSearchProvider } from '../../meals/search/meals-search.provider.js';
-import { TasksSearchProvider } from '../../tasks/search/tasks-search.provider.js';
 import type {
   SearchRequestDto,
   SearchResponseDto,
 } from '../presentation/dto/search.dto.js';
+import { isSearchNavigationTarget } from '../../../common/search/search-navigation-target.js';
+import { normalizeSearchText } from '../../../common/search/search-normalization.js';
+import { HouseholdAccessService } from '../../households/household-access.service.js';
 import { SearchRankingService } from './search-ranking.service.js';
 
 const groupLabels: Record<SearchGroupKey, string> = {
@@ -38,31 +31,13 @@ const TOTAL_RESULT_LIMIT = 50;
 @Injectable()
 export class SearchService {
   private readonly logger = new Logger(SearchService.name);
-  private readonly providers: ApplicationSearchProvider[];
 
   public constructor(
     private readonly access: HouseholdAccessService,
     private readonly ranking: SearchRankingService,
-    documents: DocumentsSearchProvider,
-    tasks: TasksSearchProvider,
-    maintenance: MaintenanceSearchProvider,
-    calendar: CalendarSearchProvider,
-    finance: FinanceSearchProvider,
-    bucketList: BucketListSearchProvider,
-    meals: MealsSearchProvider,
-    expeditions: ExpeditionsSearchProvider,
-  ) {
-    this.providers = [
-      documents,
-      tasks,
-      maintenance,
-      calendar,
-      finance,
-      bucketList,
-      meals,
-      expeditions,
-    ];
-  }
+    @Inject(APPLICATION_SEARCH_PROVIDERS_TOKEN)
+    private readonly providers: readonly ApplicationSearchProvider[],
+  ) {}
 
   public async search(
     userId: string,

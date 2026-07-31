@@ -18,14 +18,14 @@ export function SearchCommandList({
   onRun: (command: SearchCommand) => void;
 }) {
   return (
-    <section role="group" aria-labelledby="search-actions-heading">
-      <h2
-        id="search-actions-heading"
+    <section role="group" aria-label="Rychlé akce">
+      <div
+        aria-hidden="true"
         role="presentation"
         className="mb-2 text-caption font-semibold uppercase tracking-wider text-text-muted"
       >
         Rychlé akce
-      </h2>
+      </div>
       <div className="grid gap-1" role="presentation">
         {commands.map((command) => {
           const Icon = command.icon;

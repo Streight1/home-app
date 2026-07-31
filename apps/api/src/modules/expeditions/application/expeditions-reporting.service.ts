@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { serializeDecimal } from '../../../common/numbers/decimal.js';
+import { serializeDateOnly } from '../../../common/time/date-only.js';
 import { PrismaService } from '../../../infrastructure/database/prisma.service.js';
 import { AuditService } from '../../audit/audit.service.js';
 import { HouseholdAccessService } from '../../households/household-access.service.js';
@@ -35,7 +37,7 @@ export class ExpeditionsReportingService {
       name: item.nameSnapshot,
       categoryNameSnapshot: item.categoryNameSnapshot,
       assignedUserId: item.assignedUserId,
-      quantity: item.quantityDecimal.toFixed(3),
+      quantity: serializeDecimal(item.quantityDecimal),
       unitWeightGrams: item.unitWeightGramsSnapshot,
       loadType: item.loadType,
       packingStatus: item.packingStatus,
@@ -182,7 +184,7 @@ export class ExpeditionsReportingService {
       nextTrip: {
         id: trip.id,
         title: trip.title,
-        startsOn: trip.startsOn.toISOString().slice(0, 10),
+        startsOn: serializeDateOnly(trip.startsOn),
         status: trip.status,
         packedCount: summary.readiness.packedCount,
         totalCount: summary.readiness.totalCount,

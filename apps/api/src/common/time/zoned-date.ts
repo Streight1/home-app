@@ -1,3 +1,5 @@
+import { formatDateOnly, parseDateOnly } from './date-only.js';
+
 export interface ZonedDateParts {
   year: number;
   month: number;
@@ -8,6 +10,13 @@ export interface ZonedDateParts {
 }
 
 const formatterCache = new Map<string, Intl.DateTimeFormat>();
+
+function utcTimestamp(parts: ZonedDateParts): number {
+  const value = new Date(0);
+  value.setUTCHours(parts.hour, parts.minute, parts.second, 0);
+  value.setUTCFullYear(parts.year, parts.month - 1, parts.day);
+  return value.getTime();
+}
 
 function formatter(timezone: string): Intl.DateTimeFormat {
   const cached = formatterCache.get(timezone);
@@ -57,25 +66,11 @@ export function zonedPartsToInstant(
   parts: ZonedDateParts,
   timezone: string,
 ): Date {
-  const desired = Date.UTC(
-    parts.year,
-    parts.month - 1,
-    parts.day,
-    parts.hour,
-    parts.minute,
-    parts.second,
-  );
+  const desired = utcTimestamp(parts);
   let guess = desired;
   for (let attempt = 0; attempt < 4; attempt += 1) {
     const observed = getZonedParts(new Date(guess), timezone);
-    const observedUtc = Date.UTC(
-      observed.year,
-      observed.month - 1,
-      observed.day,
-      observed.hour,
-      observed.minute,
-      observed.second,
-    );
+    const observedUtc = utcTimestamp(observed);
     const adjustment = desired - observedUtc;
     if (adjustment === 0) break;
     guess += adjustment;
@@ -87,16 +82,7 @@ export function shiftLocalDays(
   parts: ZonedDateParts,
   days: number,
 ): ZonedDateParts {
-  const shifted = new Date(
-    Date.UTC(
-      parts.year,
-      parts.month - 1,
-      parts.day + days,
-      parts.hour,
-      parts.minute,
-      parts.second,
-    ),
-  );
+  const shifted = new Date(utcTimestamp({ ...parts, day: parts.day + days }));
   return {
     year: shifted.getUTCFullYear(),
     month: shifted.getUTCMonth() + 1,
@@ -108,14 +94,21 @@ export function shiftLocalDays(
 }
 
 export function isoWeekday(parts: ZonedDateParts): number {
-  const day = new Date(
-    Date.UTC(parts.year, parts.month - 1, parts.day),
-  ).getUTCDay();
+  const day = new Date(utcTimestamp(parts)).getUTCDay();
   return day === 0 ? 7 : day;
 }
 
 export function daysInMonth(year: number, month: number): number {
-  return new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return new Date(
+    utcTimestamp({
+      year,
+      month: month + 1,
+      day: 0,
+      hour: 0,
+      minute: 0,
+      second: 0,
+    }),
+  ).getUTCDate();
 }
 
 export function zonedDayBounds(
@@ -138,12 +131,15 @@ export function zonedDayBounds(
 }
 
 export function addIsoDateDays(value: string, days: number): string {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (!match) throw new Error('INVALID_ISO_DATE');
-  const shifted = new Date(
-    Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]) + days),
-  );
-  return shifted.toISOString().slice(0, 10);
+  const parts = parseDateOnly(value);
+  const shifted = new Date(0);
+  shifted.setUTCHours(0, 0, 0, 0);
+  shifted.setUTCFullYear(parts.year, parts.month - 1, parts.day + days);
+  return formatDateOnly({
+    year: shifted.getUTCFullYear(),
+    month: shifted.getUTCMonth() + 1,
+    day: shifted.getUTCDate(),
+  });
 }
 
 export function localDateTimeCandidates(
@@ -151,30 +147,21 @@ export function localDateTimeCandidates(
   time: string,
   timezone: string,
 ): Date[] {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
   const clock = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(time);
-  if (!match || !clock || !isValidTimezone(timezone)) return [];
+  if (!clock || !isValidTimezone(timezone)) return [];
+  let dateParts: ReturnType<typeof parseDateOnly>;
+  try {
+    dateParts = parseDateOnly(date);
+  } catch {
+    return [];
+  }
   const parts = {
-    year: Number(match[1]),
-    month: Number(match[2]),
-    day: Number(match[3]),
+    ...dateParts,
     hour: Number(clock[1]),
     minute: Number(clock[2]),
+    second: 0,
   };
-  const naive = Date.UTC(
-    parts.year,
-    parts.month - 1,
-    parts.day,
-    parts.hour,
-    parts.minute,
-  );
-  const echo = new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
-  if (
-    echo.getUTCFullYear() !== parts.year ||
-    echo.getUTCMonth() + 1 !== parts.month ||
-    echo.getUTCDate() !== parts.day
-  )
-    return [];
+  const naive = utcTimestamp(parts);
   const candidates: Date[] = [];
   for (let delta = -14 * 60; delta <= 14 * 60; delta += 15) {
     const candidate = new Date(naive + delta * 60_000);

@@ -69,6 +69,16 @@ targety. Dotaz jde pouze v POST body, není auditovaný ani logovaný, response 
 `private, no-store` a partial failure jedné domény nezneplatní ostatní
 autorizované výsledky. PostgreSQL normalizace používá `unaccent`/`pg_trgm` a
 nedestruktivní trigram indexy.
+Stabilizační iterace doplnila měřitelný architektonický audit a reprodukovatelné
+metriky. Search providery se skládají přes veřejné tokeny místo konkrétních
+tříd, date-only a Decimal technická semantika má kanonické helpery, workspace a
+overlaye se načítají po feature public entrypointech a cache invalidace používá
+cílené query-key kontrakty. Finance CSV commit už neověřuje membership a
+kategorii pro každý importovaný řádek, Finance Analytics sdílí jeden načtený
+ledger kontext a document deletion outbox používá transakčně chráněný claim s
+15minutovým crash-recovery lease podle databázového času, omezením pěti pokusů,
+rolling-deploy guardem a ochranou proti zápisu opožděného workeru. Vznikly dvě
+navazující nedestruktivní lease migrace; deployment model se nezměnil.
 Projekt má také plně kontejnerový single-VPS staging. Reprodukovatelná CI
 odděluje statické, API, web, browser accessibility, browser visual a container
 joby, ověřuje migraci od prázdné PostgreSQL, runtime config bez `.env`,
@@ -270,7 +280,8 @@ GitHub Actions a Google production login vyžadují cílové externí prostřed�
 - Lokální úložiště je vhodné pro jeden server, ne pro horizontální škálování.
 - Upload progress zobrazuje probíhající požadavek bez procent přenesených bajtů.
 - Extraction job queue a storage deletion worker jsou in-process; extraction
-  job po restartu nemá automatické obnovení, deletion outbox však zůstává v DB.
+  job po restartu nemá automatické obnovení. Deletion outbox zůstává v DB a
+  osiřelý `PROCESSING` řádek lze po 15 minutách znovu bezpečně claimnout.
 - PDF extrakce vyžaduje dostatečnou textovou vrstvu; image OCR vrací
   `OCR_NOT_CONFIGURED` a DOCX/XLSX se nevytěžují. Quality gate používá
   anonymizovanou syntetickou fakturu, nikoli skutečný uživatelský dokument.
@@ -301,79 +312,30 @@ GitHub Actions a Google production login vyžadují cílové externí prostřed�
 
 ## Poslední ověření
 
-- `pnpm db:generate` — prošlo s Prisma 7.8.0.
-- `pnpm db:migrate:deploy` — prošlo proti zachované lokální PostgreSQL
-  databázi; všech 19 nedestruktivních migrací včetně
-  `20260729120000_household_maintenance` je aplikováno bez resetu.
-- `pnpm env:check` a `pnpm architecture:check` — prošly pro 288 produkčních
-  TSX souborů, 46 centralizovaných environment proměnných a produkční
-  i registry deployment kontrakt.
-- `pnpm docs:check` — 0 lint chyb, 65 Markdown a 62 povinných dokumentů.
-- `pnpm lint` — prošlo bez varování; `pnpm typecheck` prošlo pro API i web.
-- `pnpm test` — API 399/399 a web 216/216 testů prošlo včetně čtyř
-  konfiguračních boundary regresí.
-- `pnpm storybook:test` — 94/94 Chromium story testů prošlo.
-- `pnpm build` — NestJS i Vite build prošly; `pnpm storybook:build` prošel.
-- `pnpm test:visual` — dva po sobě jdoucí kanonické běhy prošly 104/104
-  (fontová metrika + 103 scénářů a 104 PNG baseline);
-  sada pokrývá roční Bucket list a jeho dashboard na mobilu, tabletu
-  a desktopu i finanční ledger, CSV importní review, kategorie a trend
-  v light/dark režimu,
-  rozpočtových stavů, dialogu, zjištění, opakovaných plateb a dashboard widgetu,
-  výdajového formuláře na mobilu, tabletu a desktopu, přesné
-  768px geometrie 720minutové směny, shodné výšky surface a click targetu,
-  day/week překryvů, travel bloku s oddělenou rezervou, měsíčního template
-  pickeru, task-linked delete dialogu, scheduling diagnostiky, date-only
-  formuláře, duration presetů, barevného výběrového režimu kalendáře,
-  all-day/custom-origin formuláře, bulk dialogů, dashboardového error/empty
-  rozlišení a maintenance workflow/dashboardu na 390, 768, 1280 a 1440 px
-  v light/dark režimu.
-- `pnpm test:accessibility` — 76/76 axe, keyboard date-picker, focus, reflow,
-  touch-target a reduced-motion testů prošlo; browser sada má celkem 180
-  Playwright scénářů včetně kanonického fontového kontraktu.
-- `pnpm format:check` a celý `pnpm check` prošly.
-- Storybook dev i Playwright webServer nastartovaly s `CI=true`,
-  `LANG=C.UTF-8` a bez aplikačních env hodnot; jednotlivé browser brány prošly
-  94/94 Storybook, 76/76 accessibility a 104/104 visual testů.
-- Produkční gateway Docker image se sestavil bez root `.env`; generický Vite
-  build prošel kontrolou runtime-config scriptu, secret názvů a nepřítomnosti
-  syntetického testovacího Google Client ID.
-- `deployment/compose.yaml` i restore override prošly `docker compose config`.
-  Lokální GHCR-compatible API/gateway image se sestavily; API běží jako UID
-  10001 a oba image neobsahují source/test fixtures ani development server.
-- Izolovaný one-command Compose smoke nad prázdnými named volumes prošel:
-  `volumes-init` a `migrate` skončily 0, všech 19 migrací se aplikovalo, DB/API
-  byly healthy a PostgreSQL host i local auth používají SCRAM. `/`, `/login` a
-  `/app` vrátily 200, anonymní `/api/v1/auth/me` 401 a gateway odmítla
-  `/uploads/*` i `/internal/*` odpovědí 404.
-- Opakovaný `docker compose up -d` skončil s `No pending migrations`; DB i
-  upload marker přežily `compose down` bez `-v`. Změna veřejného staging labelu
-  aktualizovala `runtime-config.js` při shodném image digestu. Maintenance
-  backup vytvořil dump/archive/manifest/checksumy a izolovaný restore vrátil DB
-  i upload marker. Úmyslný migration exit 42 zabránil startu API.
-- Workflow YAML prošlo Prettier parserem a projektovou kontrolou oprávnění,
-  připnutých SHA, tagů a publish brány. Externí `actionlint` image nebyl spuštěn,
-  protože bezpečnostní sandbox odmítl předání souboru třetímu image. Skutečné
-  publikování do GHCR nebylo bez GitHub Actions credentials provedeno.
-- Skutečný Nest/Vite dev smoke ověřil start obou aplikací, korektní propagaci
-  `SIGINT`, web 200, chráněné `auth/me`, Bucket list, Tasks, Scheduling a
-  Finance API 401 bez session, readiness 401 bez interního tokenu a readiness
-  200 se správným lokálním tokenem proti PostgreSQL (`database: up`).
-- Připnutý Chromium vizuálně ověřil time-grid, Tasks formulář, scheduling,
-  responzivní CSV import a finanční analytické grafy na
-  390×844, 768×1024, 1280×800 a 1440×900 v light/dark režimech: plný blok
-  08:00–20:00, půldenní/noční segmenty, překryvy, current-time/travel block,
-  date picker, date-only termín, presety délky a dashboard error/empty stav bez
-  horizontálního overflow. Přihlášený stav používal deterministické syntetické
-  Storybook/testovací fixtures, nikoli reálný Google účet.
-- Mapy provider kontrakty prošly s mockem. Skutečný Mapy development klíč nebyl
-  v prostředí dostupný, proto reálný provider smoke proveden nebyl.
-- Browser smoke nebyl reálný Google login ani end-to-end databázový Tasks
-  scénář přihlášeného uživatele. Reálný Google účet v tomto prostředí testován
-  nebyl.
-- `git status --short` byl před závěrečným reportem dostupný; změny neobsahují
-  runtime data ani secret soubory. Kontejnerové lifecycle testy používají pouze
-  izolované dočasné volumes a soubory v `/tmp`.
+- `pnpm install --frozen-lockfile`, `pnpm db:generate` a Prisma validate —
+  prošly; schema stále obsahuje 77 modelů a 65 enumů, nově má 24
+  nedestruktivních migrací. Obě navazující outbox migrace prošly na existující
+  lokální DB i od prázdné DB v izolovaném Compose stacku.
+- `pnpm architecture:check`, `pnpm env:check`, `pnpm deployment:check`,
+  `pnpm docs:check`, `pnpm ci:workflow` a `pnpm format:check` — prošly.
+- `pnpm lint`, `pnpm typecheck` a plný `pnpm test` — prošly: 34 API souborů se
+  469 testy a 32 web souborů s 272 testy. Document lifecycle zahrnuje atomický
+  claim, crash recovery i ochranu claim tokenu; date-only HTTP regresní sada
+  odmítá nemožná kalendářní data před zavoláním aplikační služby.
+- `pnpm storybook:test` — 111/111 testů prošlo. Produkční API/Web build a
+  `pnpm storybook:build` rovněž prošly.
+- Aktuální audit eviduje 993 produkčních TS/TSX souborů, 68 spec souborů a 729
+  statických test deklarací. `WorkspacePage` produkční chunk klesl z 694 285 B
+  na 54 738 B díky feature lazy-loading; celý web `dist` vzrostl o 1,5 %.
+- Kanonické browser testy prošly 116/116 visual a 96/96 accessibility scénáři
+  bez změny baseline. Izolovaný `ci:containers` prošel za 54,04 s včetně čisté
+  migrace, druhého startu, persistence a simulovaného selhání migrace. Finální
+  image mají 210 167 877 B (API) a 24 770 526 B (gateway).
+- Závěrečný `pnpm check` prošel za 378,79 s. Je o 52,22 s delší než výchozí
+  baseline, převážně kvůli delšímu kanonickému visual/accessibility úseku a
+  rozšířené regresní sadě; výsledek proto není prezentovaný jako zrychlení CI.
+- Skutečné publikování do GHCR, VPS update, Google production login a Mapy
+  provider smoke se v lokální stabilizační iteraci neprovádějí.
 
 ## Doporučený následující krok
 

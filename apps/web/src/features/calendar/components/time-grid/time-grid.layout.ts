@@ -1,4 +1,5 @@
 import type { CalendarFeedItem } from '../../types/calendar.types.js';
+import { startOfLocalDay } from '../../../../lib/date/dateOnly.js';
 import {
   DEFAULT_TIMED_ITEM_MINUTES,
   MIN_EVENT_HEIGHT_PX,
@@ -11,7 +12,7 @@ import type {
 } from './time-grid.types.js';
 
 function dayStart(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  return startOfLocalDay(date);
 }
 
 export function getMinutesSinceStartOfDay(value: Date, day: Date): number {

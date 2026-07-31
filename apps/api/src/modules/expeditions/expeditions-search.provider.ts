@@ -10,6 +10,7 @@ import {
   type SearchContext,
   type SearchEntityType,
 } from '../../common/search/application-search-provider.js';
+import { serializeDateOnly } from '../../common/time/date-only.js';
 import { PrismaService } from '../../infrastructure/database/prisma.service.js';
 import { HouseholdAccessService } from '../households/household-access.service.js';
 
@@ -209,7 +210,7 @@ export class ExpeditionsSearchProvider implements ApplicationSearchProvider {
       title: row.title,
       subtitle: row.locationLabel ?? row.tripType,
       iconKey: 'mountain',
-      dateLabel: row.startsOn.toISOString().slice(0, 10),
+      dateLabel: serializeDateOnly(row.startsOn),
       fields: compactSearchFields([
         searchField('title', 'Název', row.title, 0.84),
         searchField('location', 'Lokalita', row.locationLabel, 0.74),

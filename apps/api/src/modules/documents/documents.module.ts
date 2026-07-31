@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { MulterModule } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { AppConfigService } from '../../config/app-config.service.js';
+import { APPLICATION_SEARCH_PROVIDER_TOKENS } from '../../common/search/application-search-provider.js';
 import { AuditModule } from '../audit/audit.module.js';
 import { HouseholdsModule } from '../households/households.module.js';
 import { MoveDocumentService } from './application/commands/move-document.service.js';
@@ -96,10 +97,14 @@ import { DocumentsSearchProvider } from './search/documents-search.provider.js';
     StoredFileDeletionWorker,
     DocumentsFacade,
     DocumentsSearchProvider,
+    {
+      provide: APPLICATION_SEARCH_PROVIDER_TOKENS.documents,
+      useExisting: DocumentsSearchProvider,
+    },
   ],
   exports: [
     DocumentsFacade,
-    DocumentsSearchProvider,
+    APPLICATION_SEARCH_PROVIDER_TOKENS.documents,
     DocumentTypeRegistryService,
     ValidateDocumentMetadataService,
   ],

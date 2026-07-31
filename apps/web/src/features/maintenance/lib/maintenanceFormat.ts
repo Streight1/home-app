@@ -4,6 +4,10 @@ import type {
   MaintenancePlanStatus,
   MaintenanceRecurrence,
 } from '../types/maintenance.types.js';
+import {
+  dateOnlyToLocalDate,
+  formatLocalDateOnly,
+} from '../../../lib/date/dateOnly.js';
 
 export const maintenancePriorityLabels: Record<MaintenancePriority, string> = {
   LOW: 'Nízká',
@@ -34,18 +38,13 @@ export const maintenanceOccurrenceStatusLabels: Record<
 };
 
 export function localIsoDate(date = new Date()) {
-  return [
-    String(date.getFullYear()).padStart(4, '0'),
-    String(date.getMonth() + 1).padStart(2, '0'),
-    String(date.getDate()).padStart(2, '0'),
-  ].join('-');
+  return formatLocalDateOnly(date);
 }
 
 export function formatMaintenanceDate(value: string | null) {
   if (!value) return 'Bez dalšího termínu';
-  const [year = 0, month = 1, day = 1] = value.split('-').map(Number);
   return new Intl.DateTimeFormat('cs-CZ', { dateStyle: 'long' }).format(
-    new Date(year, month - 1, day),
+    dateOnlyToLocalDate(value),
   );
 }
 

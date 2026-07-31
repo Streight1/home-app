@@ -16,6 +16,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
+import { IsDateOnly } from '../../../../common/time/is-date-only.decorator.js';
 import {
   MAINTENANCE_COLOR_TOKENS,
   MAINTENANCE_ICON_KEYS,
@@ -27,7 +28,6 @@ import {
   type MaintenancePriority,
 } from '../../domain/maintenance.types.js';
 
-const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const nullableText = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.trim() || null : value;
 
@@ -119,8 +119,8 @@ export class CreateMaintenancePlanDto {
   @IsIn(['FROM_SCHEDULED_DATE', 'FROM_COMPLETION_DATE'])
   public recurrenceBasis: 'FROM_SCHEDULED_DATE' | 'FROM_COMPLETION_DATE' =
     'FROM_SCHEDULED_DATE';
-  @Matches(DATE_PATTERN) public startsOn!: string;
-  @IsOptional() @Matches(DATE_PATTERN) public endsOn?: string | null;
+  @IsDateOnly() public startsOn!: string;
+  @IsOptional() @IsDateOnly() public endsOn?: string | null;
   @IsOptional()
   @Type(() => Number)
   @IsInt()
@@ -189,8 +189,8 @@ export class UpdateMaintenancePlanDto {
   @IsOptional()
   @IsIn(['FROM_SCHEDULED_DATE', 'FROM_COMPLETION_DATE'])
   public recurrenceBasis?: 'FROM_SCHEDULED_DATE' | 'FROM_COMPLETION_DATE';
-  @IsOptional() @Matches(DATE_PATTERN) public startsOn?: string;
-  @IsOptional() @Matches(DATE_PATTERN) public endsOn?: string | null;
+  @IsOptional() @IsDateOnly() public startsOn?: string;
+  @IsOptional() @IsDateOnly() public endsOn?: string | null;
   @IsOptional()
   @Type(() => Number)
   @IsInt()
@@ -243,8 +243,8 @@ export class ListMaintenancePlansQueryDto {
   public priority?: MaintenancePriority;
   @IsOptional() @IsUUID('4') public categoryId?: string;
   @IsOptional() @IsUUID('4') public responsibleUserId?: string;
-  @IsOptional() @Matches(DATE_PATTERN) public dueFrom?: string;
-  @IsOptional() @Matches(DATE_PATTERN) public dueTo?: string;
+  @IsOptional() @IsDateOnly() public dueFrom?: string;
+  @IsOptional() @IsDateOnly() public dueTo?: string;
   @IsOptional()
   @Transform(({ value }) => value === 'true')
   @IsBoolean()
@@ -276,8 +276,8 @@ export class ListMaintenanceOccurrencesQueryDto {
   @IsOptional()
   @IsIn(MAINTENANCE_OCCURRENCE_STATUSES)
   public status?: MaintenanceOccurrenceStatus;
-  @IsOptional() @Matches(DATE_PATTERN) public from?: string;
-  @IsOptional() @Matches(DATE_PATTERN) public to?: string;
+  @IsOptional() @IsDateOnly() public from?: string;
+  @IsOptional() @IsDateOnly() public to?: string;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) public page = 1;
   @IsOptional()
   @Type(() => Number)
@@ -286,7 +286,7 @@ export class ListMaintenanceOccurrencesQueryDto {
 }
 
 export class CompleteMaintenanceOccurrenceDto {
-  @Matches(DATE_PATTERN) public completedOn!: string;
+  @IsDateOnly() public completedOn!: string;
   @IsOptional() @IsUUID('4') public completedByUserId?: string;
   @Transform(nullableText)
   @IsOptional()
@@ -300,7 +300,7 @@ export class CompleteMaintenanceOccurrenceDto {
   public providerName?: string | null;
   @IsOptional() @Matches(/^\d+$/) public actualCostMinor?: string | null;
   @IsOptional() @Matches(/^[A-Z]{3}$/) public currencyCode?: string | null;
-  @IsOptional() @Matches(DATE_PATTERN) public nextDueOn?: string;
+  @IsOptional() @IsDateOnly() public nextDueOn?: string;
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(100)
@@ -322,7 +322,7 @@ export class SkipMaintenanceOccurrenceDto {
 }
 
 export class RescheduleMaintenanceOccurrenceDto {
-  @Matches(DATE_PATTERN) public scheduledFor!: string;
+  @IsDateOnly() public scheduledFor!: string;
 }
 
 export class SetMaintenanceDocumentsDto {

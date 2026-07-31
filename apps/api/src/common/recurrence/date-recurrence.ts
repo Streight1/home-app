@@ -1,4 +1,10 @@
 import { addIsoDateDays, daysInMonth } from '../time/zoned-date.js';
+import {
+  dateOnlyToDatabase,
+  formatDateOnly,
+  parseDateOnly,
+  type DateOnlyParts,
+} from '../time/date-only.js';
 
 export type DateRecurrenceFrequency =
   | 'ONCE'
@@ -19,49 +25,18 @@ export interface DateRecurrenceDefinition {
   weekday?: number;
 }
 
-interface DateParts {
-  year: number;
-  month: number;
-  day: number;
-}
+export const parseIsoDate = parseDateOnly;
 
-const DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
-
-export function parseIsoDate(value: string): DateParts {
-  const match = DATE_PATTERN.exec(value);
-  if (!match) throw new Error('INVALID_ISO_DATE');
-  const parts = {
-    year: Number(match[1]),
-    month: Number(match[2]),
-    day: Number(match[3]),
-  };
-  if (
-    parts.month < 1 ||
-    parts.month > 12 ||
-    parts.day < 1 ||
-    parts.day > daysInMonth(parts.year, parts.month)
-  )
-    throw new Error('INVALID_ISO_DATE');
-  return parts;
-}
-
-export function formatIsoDate(parts: DateParts): string {
-  return `${String(parts.year).padStart(4, '0')}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`;
-}
+export const formatIsoDate = (parts: DateOnlyParts): string =>
+  formatDateOnly(parts);
 
 export function isoDateWeekday(value: string): number {
-  const parts = parseIsoDate(value);
-  const weekday = new Date(
-    Date.UTC(parts.year, parts.month - 1, parts.day),
-  ).getUTCDay();
+  const weekday = dateOnlyToDatabase(value).getUTCDay();
   return weekday === 0 ? 7 : weekday;
 }
 
 function epochDay(value: string): number {
-  const parts = parseIsoDate(value);
-  return Math.floor(
-    Date.UTC(parts.year, parts.month - 1, parts.day) / 86_400_000,
-  );
+  return Math.floor(dateOnlyToDatabase(value).getTime() / 86_400_000);
 }
 
 function mondayEpochDay(value: string): number {

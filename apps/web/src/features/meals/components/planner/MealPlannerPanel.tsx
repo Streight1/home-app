@@ -6,20 +6,17 @@ import { Button } from '../../../../components/ui/Button/Button.js';
 import { Dialog } from '../../../../components/ui/Dialog/Dialog.js';
 import { InlineAlert } from '../../../../components/ui/InlineAlert/InlineAlert.js';
 import { LoadingScreen } from '../../../../components/ui/LoadingScreen/LoadingScreen.js';
+import {
+  addLocalDays,
+  startOfLocalWeek,
+} from '../../../../lib/date/dateOnly.js';
 import { useMealPlan, useMealsMutations } from '../../hooks/useMeals.js';
 import { localDate, MEAL_TYPE_LABELS } from '../../lib/decimalQuantity.js';
 
 const weekStart = (value = new Date()) => {
-  const date = new Date(value);
-  const day = date.getDay() || 7;
-  date.setDate(date.getDate() - day + 1);
+  const date = startOfLocalWeek(value);
   date.setHours(12, 0, 0, 0);
   return date;
-};
-const addDays = (date: Date, amount: number) => {
-  const next = new Date(date);
-  next.setDate(next.getDate() + amount);
-  return next;
 };
 
 export function MealPlannerPanel({ canWrite }: { canWrite: boolean }) {
@@ -27,7 +24,7 @@ export function MealPlannerPanel({ canWrite }: { canWrite: boolean }) {
   const [start, setStart] = useState(() => weekStart());
   const [copyOpen, setCopyOpen] = useState(false);
   const days = useMemo(
-    () => Array.from({ length: 7 }, (_, index) => addDays(start, index)),
+    () => Array.from({ length: 7 }, (_, index) => addLocalDays(start, index)),
     [start],
   );
   const from = localDate(days[0]);
@@ -49,14 +46,14 @@ export function MealPlannerPanel({ canWrite }: { canWrite: boolean }) {
         <div className="flex flex-wrap gap-2">
           <Button
             aria-label="Předchozí týden"
-            onClick={() => setStart((current) => addDays(current, -7))}
+            onClick={() => setStart((current) => addLocalDays(current, -7))}
           >
             <ChevronLeft className="size-4" aria-hidden="true" />
           </Button>
           <Button onClick={() => setStart(weekStart())}>Tento týden</Button>
           <Button
             aria-label="Následující týden"
-            onClick={() => setStart((current) => addDays(current, 7))}
+            onClick={() => setStart((current) => addLocalDays(current, 7))}
           >
             <ChevronRight className="size-4" aria-hidden="true" />
           </Button>
@@ -168,7 +165,7 @@ export function MealPlannerPanel({ canWrite }: { canWrite: boolean }) {
       >
         <p className="text-body-sm text-text-muted">
           Zkopíruje se týden {from} do týdne začínajícího{' '}
-          {localDate(addDays(start, 7))}.
+          {localDate(addLocalDays(start, 7))}.
         </p>
         {mutations.copyWeek.isError ? (
           <InlineAlert variant="danger">
@@ -184,7 +181,7 @@ export function MealPlannerPanel({ canWrite }: { canWrite: boolean }) {
               mutations.copyWeek.mutate(
                 {
                   sourceWeekStart: from,
-                  targetWeekStart: localDate(addDays(start, 7)),
+                  targetWeekStart: localDate(addLocalDays(start, 7)),
                   replaceExisting: false,
                   confirmed: true,
                 },

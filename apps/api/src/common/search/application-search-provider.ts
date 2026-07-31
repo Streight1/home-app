@@ -28,6 +28,37 @@ export type SearchProviderKey =
   | 'meals'
   | 'expeditions';
 
+/**
+ * Stable Nest injection tokens form the only provider registration contract
+ * consumed by the search orchestration module. Domain modules keep ownership
+ * of their concrete provider implementations and export only the matching
+ * token.
+ */
+export const APPLICATION_SEARCH_PROVIDER_TOKENS = {
+  documents: 'homeapp.search-provider.documents',
+  tasks: 'homeapp.search-provider.tasks',
+  maintenance: 'homeapp.search-provider.maintenance',
+  calendar: 'homeapp.search-provider.calendar',
+  finance: 'homeapp.search-provider.finance',
+  'bucket-list': 'homeapp.search-provider.bucket-list',
+  meals: 'homeapp.search-provider.meals',
+  expeditions: 'homeapp.search-provider.expeditions',
+} as const satisfies Readonly<Record<SearchProviderKey, string>>;
+
+export const APPLICATION_SEARCH_PROVIDER_ORDER = [
+  'documents',
+  'tasks',
+  'maintenance',
+  'calendar',
+  'finance',
+  'bucket-list',
+  'meals',
+  'expeditions',
+] as const satisfies readonly SearchProviderKey[];
+
+export const APPLICATION_SEARCH_PROVIDERS_TOKEN =
+  'homeapp.search-providers' as const;
+
 export type SearchGroupKey =
   | 'documents'
   | 'tasks'

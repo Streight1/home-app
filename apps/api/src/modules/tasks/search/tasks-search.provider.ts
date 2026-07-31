@@ -9,6 +9,7 @@ import {
   type ModuleSearchRequest,
   type SearchContext,
 } from '../../../common/search/application-search-provider.js';
+import { serializeDateOnly } from '../../../common/time/date-only.js';
 import { PrismaService } from '../../../infrastructure/database/prisma.service.js';
 
 interface TaskSearchRow {
@@ -67,9 +68,7 @@ export class TasksSearchProvider implements ApplicationSearchProvider {
         title: row.title,
         subtitle: row.categoryName ?? 'Úkol',
         iconKey: 'task',
-        ...(row.dueDate
-          ? { dateLabel: row.dueDate.toISOString().slice(0, 10) }
-          : {}),
+        ...(row.dueDate ? { dateLabel: serializeDateOnly(row.dueDate) } : {}),
         badges: [{ label: row.status }],
         fields: compactSearchFields([
           searchField('title', 'Název', row.title, 0.84),

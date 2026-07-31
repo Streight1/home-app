@@ -4,6 +4,10 @@ import { Button } from '../../../components/ui/Button/Button.js';
 import { Dialog } from '../../../components/ui/Dialog/Dialog.js';
 import { InlineAlert } from '../../../components/ui/InlineAlert/InlineAlert.js';
 import { ApiError } from '../../../lib/api/apiError.js';
+import {
+  addDateOnlyDays,
+  currentLocalDateOnly,
+} from '../../../lib/date/dateOnly.js';
 import { taskErrorMessage } from '../../tasks/lib/taskErrorMessage.js';
 import type { Task } from '../../tasks/types/task.types.js';
 import {
@@ -13,21 +17,6 @@ import {
 import type { SchedulingInput } from '../types/scheduling.types.js';
 import { SchedulingCandidateList } from './SchedulingCandidateList.js';
 import { SchedulingWindowFields } from './SchedulingWindowFields.js';
-
-const localDate = () => {
-  const now = new Date();
-  return new Date(now.getTime() - now.getTimezoneOffset() * 60_000)
-    .toISOString()
-    .slice(0, 10);
-};
-
-const nextDate = (value: string) => {
-  const [year, month, day] = value.split('-').map(Number);
-  const date = new Date(year ?? 1970, (month ?? 1) - 1, (day ?? 1) + 1, 12);
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
-    .toISOString()
-    .slice(0, 10);
-};
 
 export function TaskSchedulingDialog({
   task,
@@ -43,7 +32,7 @@ export function TaskSchedulingDialog({
   const confirm = useConfirmTaskSlot();
   const [selected, setSelected] = useState<string | null>(null);
   const [input, setInput] = useState<SchedulingInput>({
-    date: localDate(),
+    date: currentLocalDateOnly(),
     earliestTime: '06:00',
     latestTime: '22:00',
     timezone:
@@ -122,7 +111,7 @@ export function TaskSchedulingDialog({
                 findWith({ ...input, considerTravel: false })
               }
               onTomorrow={() =>
-                findWith({ ...input, date: nextDate(input.date) })
+                findWith({ ...input, date: addDateOnlyDays(input.date, 1) })
               }
               onExpandWindow={() =>
                 findWith({

@@ -11,8 +11,10 @@ import {
   parseCzechMoneyInput,
   parseMinorUnits,
 } from '../src/modules/finance/domain/money.js';
+import { FinanceLedgerFacade } from '../src/modules/finance/finance-ledger.facade.js';
 import type { PrismaFinancialAccountRepository } from '../src/modules/finance/infrastructure/prisma-financial-account.repository.js';
 import type { PrismaFinancialTransferRepository } from '../src/modules/finance/infrastructure/prisma-financial-transfer.repository.js';
+import type { PrismaService } from '../src/infrastructure/database/prisma.service.js';
 import type { HouseholdAccessService } from '../src/modules/households/household-access.service.js';
 
 const householdId = '10000000-0000-4000-8000-000000000001';
@@ -201,5 +203,95 @@ describe('finance transfer application policy', () => {
       '50000000-0000-4000-8000-000000000005',
     );
     expect(context.transfers.softDelete).toHaveBeenCalledOnce();
+  });
+});
+
+describe('finance import ledger boundary', () => {
+  const categoryId = '60000000-0000-4000-8000-000000000006';
+
+  function importedRow(type: 'EXPENSE' | 'INCOME' | 'REFUND') {
+    return {
+      importRowId: `${type}-row`,
+      type,
+      amountMinor: 1_000n,
+      currencyCode: 'CZK',
+      bookedDate: new Date('2026-07-16T00:00:00.000Z'),
+      transactionDate: null,
+      externalTransactionId: null,
+      fingerprint: `${type}-fingerprint`,
+      merchantNormalizedName: null,
+      categoryId,
+      counterpartyName: null,
+      counterpartyAccount: null,
+      description: null,
+      variableSymbol: null,
+      constantSymbol: null,
+      specificSymbol: null,
+    };
+  }
+
+  function importFacade(categoryKind: 'EXPENSE' | 'INCOME' | 'BOTH') {
+    const access = {
+      getActiveMembership: vi.fn().mockResolvedValue({ householdId }),
+    } as unknown as HouseholdAccessService;
+    const findMany = vi
+      .fn()
+      .mockResolvedValue([{ id: categoryId, kind: categoryKind }]);
+    const createMany = vi.fn().mockResolvedValue({ count: 2 });
+    const prisma = {
+      financialAccount: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: fromId,
+          householdId,
+          name: 'Běžný účet',
+          type: 'CURRENT',
+          currencyCode: 'CZK',
+          archivedAt: null,
+        }),
+      },
+      financialCategory: { findMany },
+      financialTransaction: { createMany },
+    } as unknown as PrismaService;
+    return {
+      facade: new FinanceLedgerFacade(prisma, access),
+      access,
+      findMany,
+      createMany,
+    };
+  }
+
+  it('validates repeated import categories in one household-scoped query', async () => {
+    const context = importFacade('BOTH');
+    await expect(
+      context.facade.createImportedTransactions({
+        userId,
+        accountId: fromId,
+        importSessionId: 'import',
+        rows: [importedRow('EXPENSE'), importedRow('INCOME')],
+      }),
+    ).resolves.toBe(2);
+    expect(context.access.getActiveMembership).toHaveBeenCalledOnce();
+    expect(context.findMany).toHaveBeenCalledOnce();
+    expect(context.findMany).toHaveBeenCalledWith({
+      where: {
+        householdId,
+        id: { in: [categoryId] },
+        archivedAt: null,
+      },
+      select: { id: true, kind: true },
+    });
+  });
+
+  it('rejects a bulk category that does not match every row type', async () => {
+    const context = importFacade('EXPENSE');
+    await expect(
+      context.facade.createImportedTransactions({
+        userId,
+        accountId: fromId,
+        importSessionId: 'import',
+        rows: [importedRow('EXPENSE'), importedRow('INCOME')],
+      }),
+    ).rejects.toMatchObject({ code: 'FINANCE_INVALID_INPUT' });
+    expect(context.createMany).not.toHaveBeenCalled();
   });
 });

@@ -1,4 +1,5 @@
 import { Prisma } from '../../../../generated/prisma/client.js';
+import { serializeDecimal } from '../../../../common/numbers/decimal.js';
 import { mealsInvalid } from '../../domain/meals.errors.js';
 import {
   DECIMAL_QUANTITY_PATTERN,
@@ -6,9 +7,6 @@ import {
 } from '../../domain/meals.types.js';
 
 export type IngredientUnit = (typeof INGREDIENT_UNITS)[number];
-
-const trimDecimal = (value: string) =>
-  value.includes('.') ? value.replace(/0+$/, '').replace(/\.$/, '') : value;
 
 export function decimalQuantity(
   value: string,
@@ -22,7 +20,7 @@ export function decimalQuantity(
 }
 
 export const decimalString = (value: Prisma.Decimal | null) =>
-  value === null ? null : trimDecimal(value.toFixed(3));
+  serializeDecimal(value);
 
 export function scaleQuantity(
   quantity: string | null,

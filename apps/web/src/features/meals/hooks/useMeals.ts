@@ -29,20 +29,21 @@ import {
   updateRecipe,
   updateMealEntry,
 } from '../api/mealsApi.js';
+import { mealKeys } from '../mealQueryKeys.js';
 
-export const MEALS_QUERY_KEY = ['meals'] as const;
+export { MEALS_QUERY_KEY } from '../mealQueryKeys.js';
 
 export const useRecipes = (
   filters: Parameters<typeof getRecipes>[0] = { page: 1, pageSize: 20 },
 ) =>
   useQuery({
-    queryKey: [...MEALS_QUERY_KEY, 'recipes', filters],
+    queryKey: mealKeys.recipeList(filters),
     queryFn: () => getRecipes(filters),
     placeholderData: keepPreviousData,
   });
 export const useRecipe = (recipeId?: string) =>
   useQuery({
-    queryKey: [...MEALS_QUERY_KEY, 'recipe', recipeId],
+    queryKey: mealKeys.recipe(recipeId),
     queryFn: () => {
       if (!recipeId) throw new Error('Chybí identifikátor receptu.');
       return getRecipe(recipeId);
@@ -51,47 +52,59 @@ export const useRecipe = (recipeId?: string) =>
   });
 export const useIngredients = (search = '') =>
   useQuery({
-    queryKey: [...MEALS_QUERY_KEY, 'ingredients', search],
+    queryKey: mealKeys.ingredientSearch(search),
     queryFn: () => getIngredients(search),
   });
 export const useRecipeMetadata = () =>
   useQuery({
-    queryKey: [...MEALS_QUERY_KEY, 'recipe-metadata'],
+    queryKey: mealKeys.recipeMetadata(),
     queryFn: getRecipeMetadata,
   });
 export const useMealPlan = (dateFrom: string, dateTo: string) =>
   useQuery({
-    queryKey: [...MEALS_QUERY_KEY, 'plan', dateFrom, dateTo],
+    queryKey: mealKeys.planRange(dateFrom, dateTo),
     queryFn: () => getMealPlan(dateFrom, dateTo),
   });
 export const useShoppingLists = () =>
   useQuery({
-    queryKey: [...MEALS_QUERY_KEY, 'shopping'],
+    queryKey: mealKeys.shopping(),
     queryFn: getShoppingLists,
   });
 export const useShoppingCategories = () =>
   useQuery({
-    queryKey: [...MEALS_QUERY_KEY, 'shopping-categories'],
+    queryKey: mealKeys.shoppingCategories(),
     queryFn: getShoppingCategories,
   });
 export const usePantry = () =>
-  useQuery({ queryKey: [...MEALS_QUERY_KEY, 'pantry'], queryFn: getPantry });
+  useQuery({ queryKey: mealKeys.pantry(), queryFn: getPantry });
 export const useMealsDashboard = () =>
   useQuery({
-    queryKey: [...MEALS_QUERY_KEY, 'dashboard'],
+    queryKey: mealKeys.dashboard(),
     queryFn: getMealsDashboard,
   });
 export const useMealsCalendarSummary = (dateFrom: string, dateTo: string) =>
   useQuery({
-    queryKey: [...MEALS_QUERY_KEY, 'calendar', dateFrom, dateTo],
+    queryKey: mealKeys.calendarRange(dateFrom, dateTo),
     queryFn: () => getMealsCalendarSummary(dateFrom, dateTo),
   });
 
 export function useMealsMutations() {
   const client = useQueryClient();
-  const refresh = () => client.invalidateQueries({ queryKey: MEALS_QUERY_KEY });
+  const invalidate = (...queryKeys: readonly (readonly unknown[])[]) =>
+    Promise.all(
+      queryKeys.map((queryKey) => client.invalidateQueries({ queryKey })),
+    );
+  const refreshRecipes = () =>
+    invalidate(mealKeys.recipes(), mealKeys.ingredients());
+  const refreshMealPlan = () =>
+    invalidate(mealKeys.plan(), mealKeys.calendar(), mealKeys.dashboard());
+  const refreshShopping = () =>
+    invalidate(mealKeys.shopping(), mealKeys.dashboard());
   return {
-    createRecipe: useMutation({ mutationFn: createRecipe, onSuccess: refresh }),
+    createRecipe: useMutation({
+      mutationFn: createRecipe,
+      onSuccess: refreshRecipes,
+    }),
     updateRecipe: useMutation({
       mutationFn: ({
         recipeId,
@@ -100,11 +113,14 @@ export function useMealsMutations() {
         recipeId: string;
         input: Parameters<typeof updateRecipe>[1];
       }) => updateRecipe(recipeId, input),
-      onSuccess: refresh,
+      onSuccess: (recipe, { recipeId }) => {
+        client.setQueryData(mealKeys.recipe(recipeId), recipe);
+        return refreshRecipes();
+      },
     }),
     createMeal: useMutation({
       mutationFn: createMealEntry,
-      onSuccess: refresh,
+      onSuccess: refreshMealPlan,
     }),
     updateMeal: useMutation({
       mutationFn: ({
@@ -114,16 +130,19 @@ export function useMealsMutations() {
         entryId: string;
         input: Parameters<typeof updateMealEntry>[1];
       }) => updateMealEntry(entryId, input),
-      onSuccess: refresh,
+      onSuccess: refreshMealPlan,
     }),
     deleteMeal: useMutation({
       mutationFn: deleteMealEntry,
-      onSuccess: refresh,
+      onSuccess: refreshMealPlan,
     }),
-    copyWeek: useMutation({ mutationFn: copyMealWeek, onSuccess: refresh }),
+    copyWeek: useMutation({
+      mutationFn: copyMealWeek,
+      onSuccess: refreshMealPlan,
+    }),
     createList: useMutation({
       mutationFn: createShoppingList,
-      onSuccess: refresh,
+      onSuccess: refreshShopping,
     }),
     addItem: useMutation({
       mutationFn: ({
@@ -133,30 +152,27 @@ export function useMealsMutations() {
         listId: string;
         input: Parameters<typeof addShoppingItem>[1];
       }) => addShoppingItem(listId, input),
-      onSuccess: refresh,
+      onSuccess: refreshShopping,
     }),
     checkItem: useMutation({
       mutationFn: ({ itemId, checked }: { itemId: string; checked: boolean }) =>
         setShoppingItemChecked(itemId, checked),
       onMutate: async ({ itemId, checked }) => {
         await client.cancelQueries({
-          queryKey: [...MEALS_QUERY_KEY, 'shopping'],
+          queryKey: mealKeys.shopping(),
         });
-        const previous = client.getQueryData([...MEALS_QUERY_KEY, 'shopping']);
+        const previous = client.getQueryData(mealKeys.shopping());
         client.setQueriesData(
-          { queryKey: [...MEALS_QUERY_KEY, 'shopping'] },
+          { queryKey: mealKeys.shopping() },
           (current: unknown) => optimisticCheck(current, itemId, checked),
         );
         return { previous };
       },
       onError: (_error, _variables, context) => {
         if (context?.previous)
-          client.setQueryData(
-            [...MEALS_QUERY_KEY, 'shopping'],
-            context.previous,
-          );
+          client.setQueryData(mealKeys.shopping(), context.previous);
       },
-      onSettled: refresh,
+      onSettled: refreshShopping,
     }),
     preview: useMutation({
       mutationFn: ({
@@ -175,7 +191,7 @@ export function useMealsMutations() {
         listId: string;
         input: Parameters<typeof confirmShoppingGeneration>[1];
       }) => confirmShoppingGeneration(listId, input),
-      onSuccess: refresh,
+      onSuccess: refreshShopping,
     }),
     savePantry: useMutation({
       mutationFn: ({
@@ -185,11 +201,11 @@ export function useMealsMutations() {
         itemId: string | null;
         input: Parameters<typeof savePantryItem>[1];
       }) => savePantryItem(itemId, input),
-      onSuccess: refresh,
+      onSuccess: () => invalidate(mealKeys.pantry()),
     }),
     deletePantry: useMutation({
       mutationFn: deletePantryItem,
-      onSuccess: refresh,
+      onSuccess: () => invalidate(mealKeys.pantry()),
     }),
   };
 }

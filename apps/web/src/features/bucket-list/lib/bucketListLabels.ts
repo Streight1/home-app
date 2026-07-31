@@ -3,6 +3,7 @@ import type {
   BucketListItemStatus,
   BucketListPriority,
 } from '../types/bucket-list.types.js';
+import { dateOnlyToLocalDate } from '../../../lib/date/dateOnly.js';
 
 export const bucketListCategoryLabels: Record<BucketListCategory, string> = {
   TRAVEL: 'Cestování',
@@ -32,10 +33,9 @@ export const bucketListStatusLabels: Record<BucketListItemStatus, string> = {
 
 export function formatBucketDate(value: string | null) {
   if (!value) return null;
-  const [year = 0, month = 1, day = 1] = value.split('-').map(Number);
   return new Intl.DateTimeFormat('cs-CZ', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
-  }).format(new Date(year, month - 1, day));
+  }).format(dateOnlyToLocalDate(value));
 }

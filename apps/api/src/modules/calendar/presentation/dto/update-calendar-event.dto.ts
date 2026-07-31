@@ -3,7 +3,6 @@ import {
   ArrayUnique,
   IsArray,
   IsBoolean,
-  IsDateString,
   IsIn,
   IsISO8601,
   IsOptional,
@@ -14,6 +13,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ValidateNested } from 'class-validator';
+import { IsDateOnly } from '../../../../common/time/is-date-only.decorator.js';
 import {
   calendarColorTokens,
   calendarEventTypes,
@@ -40,10 +40,10 @@ export class UpdateCalendarEventDto {
   @IsISO8601({ strict: true })
   public endsAt?: string | null;
   @IsOptional()
-  @IsDateString()
+  @IsDateOnly()
   public allDayStartDate?: string | null;
   @IsOptional()
-  @IsDateString()
+  @IsDateOnly()
   public allDayEndDateExclusive?: string | null;
   @IsOptional()
   @IsISO8601({ strict: true })

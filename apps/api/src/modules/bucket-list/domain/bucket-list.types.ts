@@ -1,3 +1,8 @@
+import {
+  dateOnlyToDatabase,
+  serializeNullableDateOnly,
+} from '../../../common/time/date-only.js';
+
 export const BUCKET_LIST_READ_ROLE = 'VIEWER' as const;
 export const BUCKET_LIST_WRITE_ROLE = 'MEMBER' as const;
 
@@ -33,11 +38,11 @@ export type BucketListPriority = (typeof BUCKET_LIST_PRIORITIES)[number];
 export type BucketListItemStatus = (typeof BUCKET_LIST_ITEM_STATUSES)[number];
 
 export function dateOnly(value: string): Date {
-  return new Date(`${value}T00:00:00.000Z`);
+  return dateOnlyToDatabase(value);
 }
 
 export function dateOnlyString(value: Date | null): string | null {
-  return value?.toISOString().slice(0, 10) ?? null;
+  return serializeNullableDateOnly(value);
 }
 
 export function bucketListProgress(input: {

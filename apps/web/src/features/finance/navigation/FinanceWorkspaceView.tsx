@@ -7,7 +7,10 @@ import type { HouseholdRole } from '../../tasks/types/task.types.js';
 import { FinancialAccountsPanel } from '../components/accounts/FinancialAccountsPanel.js';
 import { FinancialCategoriesPanel } from '../components/categories/FinancialCategoriesPanel.js';
 import { FinanceImportWorkspaceView } from '../../finance-imports/workspace/FinanceImportWorkspaceView.js';
-import { FinanceAnalyticsPanel } from '../../finance-analytics/components/FinanceAnalyticsPanel.js';
+import {
+  FinanceAnalyticsPanel,
+  type FinanceAnalyticsDrilldownFilters,
+} from '../../finance-analytics/components/FinanceAnalyticsPanel.js';
 import { CategorizationRulesPanel } from '../../finance-categorization/components/CategorizationRulesPanel.js';
 import { BudgetsPanel } from '../../finance-budgets/components/budgets/BudgetsPanel.js';
 import { SpendingInsightsPanel } from '../../finance-budgets/components/insights/SpendingInsightsPanel.js';
@@ -48,6 +51,21 @@ export function FinanceWorkspaceView({
   const [dialog, setDialog] = useState<DialogKind>(null);
   const canWrite = role !== 'VIEWER';
   const canManage = role === 'OWNER' || role === 'ADMIN';
+  const openTransactions = (filters: FinanceAnalyticsDrilldownFilters) => {
+    setListState({ ...initialListState, ...filters });
+    const persistedFilters = {
+      ...(filters.categoryId ? { categoryId: filters.categoryId } : {}),
+      ...(filters.dateFrom ? { dateFrom: filters.dateFrom } : {}),
+      ...(filters.dateTo ? { dateTo: filters.dateTo } : {}),
+    };
+    workspace.navigate({
+      area: 'finance',
+      screen: 'transactions',
+      ...(Object.keys(persistedFilters).length
+        ? { filters: persistedFilters }
+        : {}),
+    });
+  };
   useEffect(() => {
     if (view.screen === 'transactions' && view.filters)
       setListState((current) => ({ ...current, ...view.filters, page: 1 }));
@@ -128,14 +146,7 @@ export function FinanceWorkspaceView({
           onAddExpense={() => setDialog('expense')}
           onAddIncome={() => setDialog('income')}
           onAddAccount={() => setDialog('account')}
-          onShowCategory={(categoryId) => {
-            setListState((current) => ({
-              ...current,
-              categoryId,
-              page: 1,
-            }));
-            workspace.navigate({ area: 'finance', screen: 'transactions' });
-          }}
+          onShowCategory={(categoryId) => openTransactions({ categoryId })}
         />
       ) : null}
       {view.screen === 'transactions' ? (
@@ -171,7 +182,9 @@ export function FinanceWorkspaceView({
       {view.screen === 'rules' ? (
         <CategorizationRulesPanel canWrite={canWrite} />
       ) : null}
-      {view.screen === 'analytics' ? <FinanceAnalyticsPanel /> : null}
+      {view.screen === 'analytics' ? (
+        <FinanceAnalyticsPanel onOpenTransactions={openTransactions} />
+      ) : null}
       {view.screen === 'budgets' ? <BudgetsPanel canWrite={canWrite} /> : null}
       {view.screen === 'insights' ? (
         <SpendingInsightsPanel canWrite={canWrite} />

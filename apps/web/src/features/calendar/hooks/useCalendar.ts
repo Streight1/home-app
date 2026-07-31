@@ -1,4 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { TASKS_QUERY_KEY } from '../../tasks/tasks-query.public.js';
+import { CALENDAR_QUERY_KEY } from '../calendar-query.public.js';
 import {
   applyCalendarTemplate,
   bulkApplyCalendarTemplate,
@@ -36,20 +38,20 @@ const timezone = () =>
 
 export function useCalendarFeed(from: string, to: string) {
   return useQuery({
-    queryKey: ['calendar', 'feed', from, to],
+    queryKey: [...CALENDAR_QUERY_KEY, 'feed', from, to],
     queryFn: () => getCalendarFeed(from, to),
   });
 }
 export function useCalendarEvent(eventId: string | null) {
   return useQuery({
-    queryKey: ['calendar', 'event', eventId],
+    queryKey: [...CALENDAR_QUERY_KEY, 'event', eventId],
     queryFn: () => getCalendarEvent(eventId ?? ''),
     enabled: Boolean(eventId),
   });
 }
 export function useEventTravelPlans(eventId: string | null) {
   return useQuery({
-    queryKey: ['calendar', 'travel-plans', eventId],
+    queryKey: [...CALENDAR_QUERY_KEY, 'travel-plans', eventId],
     queryFn: () => getEventTravelPlans(eventId ?? ''),
     enabled: Boolean(eventId),
   });
@@ -59,7 +61,12 @@ export function usePreviousEventCandidates(
   travelerUserId: string | null,
 ) {
   return useQuery({
-    queryKey: ['calendar', 'previous-events', eventId, travelerUserId],
+    queryKey: [
+      ...CALENDAR_QUERY_KEY,
+      'previous-events',
+      eventId,
+      travelerUserId,
+    ],
     queryFn: () =>
       getPreviousEventCandidates(eventId ?? '', travelerUserId ?? ''),
     enabled: Boolean(eventId && travelerUserId),
@@ -69,7 +76,7 @@ export function useTravelEstimatePreview(
   input: Parameters<typeof previewTravelEstimate>[0] | null,
 ) {
   return useQuery({
-    queryKey: ['calendar', 'travel-preview', input],
+    queryKey: [...CALENDAR_QUERY_KEY, 'travel-preview', input],
     queryFn: ({ signal }) => {
       if (!input) throw new Error('Travel preview input is required.');
       return previewTravelEstimate(input, signal);
@@ -82,13 +89,13 @@ export function useTravelEstimatePreview(
 }
 export function useCalendarTemplates() {
   return useQuery({
-    queryKey: ['calendar', 'templates'],
+    queryKey: [...CALENDAR_QUERY_KEY, 'templates'],
     queryFn: getCalendarTemplates,
   });
 }
 export function useCalendarDashboard(initialData?: CalendarDashboard) {
   return useQuery({
-    queryKey: ['calendar', 'dashboard', timezone()],
+    queryKey: [...CALENDAR_QUERY_KEY, 'dashboard', timezone()],
     queryFn: () => getCalendarDashboard(timezone()),
     initialData,
     staleTime: initialData ? Number.POSITIVE_INFINITY : 30_000,
@@ -97,13 +104,11 @@ export function useCalendarDashboard(initialData?: CalendarDashboard) {
 export function useCalendarMutations() {
   const queryClient = useQueryClient();
   const refresh = () =>
-    queryClient.invalidateQueries({ queryKey: ['calendar'] });
+    queryClient.invalidateQueries({ queryKey: CALENDAR_QUERY_KEY });
   const refreshAfterDelete = () =>
     Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['calendar'] }),
-      queryClient.invalidateQueries({ queryKey: ['tasks'] }),
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
-      queryClient.invalidateQueries({ queryKey: ['scheduling'] }),
+      queryClient.invalidateQueries({ queryKey: CALENDAR_QUERY_KEY }),
+      queryClient.invalidateQueries({ queryKey: TASKS_QUERY_KEY }),
     ]);
   return {
     createEvent: useMutation({
