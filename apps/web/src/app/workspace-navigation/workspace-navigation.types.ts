@@ -40,10 +40,13 @@ export type WorkspaceView =
       area: 'meals';
       screen: 'planner' | 'recipes' | 'shopping' | 'pantry';
     }
+  | { area: 'meals'; screen: 'recipe'; recipeId: string }
   | {
       area: 'expeditions';
       screen: 'overview' | 'trips' | 'templates' | 'gear';
     }
+  | { area: 'expeditions'; screen: 'gear'; gearItemId: string }
+  | { area: 'expeditions'; screen: 'templates'; templateId: string }
   | { area: 'expeditions'; screen: 'trip'; tripId: string }
   | {
       area: 'finance';

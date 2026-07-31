@@ -47,6 +47,7 @@ import { CalendarEventCreationFacade } from './calendar-event-creation.facade.js
 import { PreviewBulkCalendarEventsService } from './application/events/preview-bulk-calendar-events.service.js';
 import { BulkUpdateCalendarEventsService } from './application/events/bulk-update-calendar-events.service.js';
 import { BulkDeleteCalendarEventsService } from './application/events/bulk-delete-calendar-events.service.js';
+import { CalendarSearchProvider } from './search/calendar-search.provider.js';
 
 @Module({
   imports: [TasksModule, AuditModule, HouseholdsModule, LocationModule],
@@ -92,6 +93,7 @@ import { BulkDeleteCalendarEventsService } from './application/events/bulk-delet
     PreviewBulkCalendarEventsService,
     BulkUpdateCalendarEventsService,
     BulkDeleteCalendarEventsService,
+    CalendarSearchProvider,
     CalendarTemplateValidationService,
     ListCalendarTemplatesService,
     CreateCalendarTemplateService,
@@ -107,6 +109,10 @@ import { BulkDeleteCalendarEventsService } from './application/events/bulk-delet
     CalendarAvailabilityFacade,
     CalendarEventCreationFacade,
   ],
-  exports: [CalendarAvailabilityFacade, CalendarEventCreationFacade],
+  exports: [
+    CalendarAvailabilityFacade,
+    CalendarEventCreationFacade,
+    CalendarSearchProvider,
+  ],
 })
 export class CalendarModule {}

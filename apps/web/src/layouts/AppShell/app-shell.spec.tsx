@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -33,11 +33,15 @@ function renderShell(
     area: 'tasks',
     screen: 'list',
   },
+  role: 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER' = 'OWNER',
 ) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
-  client.setQueryData(AUTH_QUERY_KEY, profile);
+  client.setQueryData(AUTH_QUERY_KEY, {
+    ...profile,
+    activeHousehold: { ...profile.activeHousehold, role },
+  });
   const workspace: WorkspaceNavigationValue = {
     view,
     navigate: vi.fn(),
@@ -201,5 +205,179 @@ describe('application shell navigation', () => {
       kind: 'calendar-create',
       draft: expect.objectContaining({ source: 'dashboard' }),
     });
+  });
+
+  it.each([
+    { key: 'k', ctrlKey: true, metaKey: false },
+    { key: 'k', ctrlKey: false, metaKey: true },
+  ])(
+    'opens and closes the command palette from the keyboard',
+    async (shortcut) => {
+      renderShell();
+      window.dispatchEvent(new KeyboardEvent('keydown', shortcut));
+      expect(
+        await screen.findByRole('dialog', { name: 'Hledat v aplikaci' }),
+      ).toBeInTheDocument();
+      await userEvent.keyboard('{Escape}');
+      await waitFor(() =>
+        expect(
+          screen.queryByRole('dialog', { name: 'Hledat v aplikaci' }),
+        ).not.toBeInTheDocument(),
+      );
+    },
+  );
+
+  it('debounces a POST body search, opens an internal target and keeps /app URL semantics', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          partial: false,
+          unavailableProviders: [],
+          groups: [
+            {
+              key: 'tasks',
+              label: 'Úkoly a údržba',
+              total: 1,
+              items: [
+                {
+                  resultId: 'tasks:TASK:30000000-0000-4000-8000-000000000003',
+                  providerKey: 'tasks',
+                  entityKind: 'TASK',
+                  title: 'Revize kotle',
+                  matchedField: 'Název',
+                  iconKey: 'task',
+                  score: 1,
+                  navigationTarget: {
+                    area: 'tasks',
+                    screen: 'detail',
+                    taskId: '30000000-0000-4000-8000-000000000003',
+                  },
+                },
+              ],
+            },
+          ],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+    const { workspace } = renderShell();
+    const searchButton = screen.getAllByRole('button', {
+      name: /Hledat v aplikaci/,
+    })[0];
+    if (!searchButton) throw new Error('Search trigger was not rendered.');
+    await userEvent.click(searchButton);
+    await userEvent.type(
+      screen.getByRole('combobox', { name: 'Hledat v aplikaci' }),
+      'revize',
+    );
+    await screen.findByText('Revize kotle');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [requestUrl, requestInit] = fetchMock.mock.calls[0] ?? [];
+    const url =
+      typeof requestUrl === 'string'
+        ? requestUrl
+        : requestUrl instanceof URL
+          ? requestUrl.href
+          : requestUrl?.url;
+    const body =
+      typeof requestInit?.body === 'string' ? requestInit.body : undefined;
+    expect(url).toMatch(/\/api\/v1\/search$/);
+    expect(url).not.toContain('revize');
+    expect(requestInit).toMatchObject({ method: 'POST', cache: 'no-store' });
+    expect(body).toContain('revize');
+    await userEvent.keyboard('{Enter}');
+    expect(workspace.navigate).toHaveBeenCalledWith({
+      area: 'tasks',
+      screen: 'detail',
+      taskId: '30000000-0000-4000-8000-000000000003',
+    });
+    expect(window.location.pathname).not.toContain('revize');
+  });
+
+  it('hides create commands from VIEWER while keeping navigation commands', async () => {
+    renderShell({ area: 'dashboard' }, 'VIEWER');
+    const searchButton = screen.getAllByRole('button', {
+      name: /Hledat v aplikaci/,
+    })[0];
+    if (!searchButton) throw new Error('Search trigger was not rendered.');
+    await userEvent.click(searchButton);
+    expect(
+      screen.getByRole('option', { name: /Přejít na Úkoly/ }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole('option', { name: /Nový úkol/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('option', { name: /Nová výprava/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('keeps available results visible when one provider reports a partial failure', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          partial: true,
+          unavailableProviders: ['documents'],
+          groups: [
+            {
+              key: 'tasks',
+              label: 'Úkoly a údržba',
+              total: 1,
+              items: [
+                {
+                  resultId: 'tasks:TASK:30000000-0000-4000-8000-000000000003',
+                  providerKey: 'tasks',
+                  entityKind: 'TASK',
+                  title: 'Revize kotle',
+                  matchedField: 'Název',
+                  iconKey: 'task',
+                  score: 1,
+                  navigationTarget: {
+                    area: 'tasks',
+                    screen: 'detail',
+                    taskId: '30000000-0000-4000-8000-000000000003',
+                  },
+                },
+              ],
+            },
+          ],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+    renderShell();
+    const searchButton = screen.getAllByRole('button', {
+      name: /Hledat v aplikaci/,
+    })[0];
+    if (!searchButton) throw new Error('Search trigger was not rendered.');
+    await userEvent.click(searchButton);
+    await userEvent.type(
+      screen.getByRole('combobox', { name: 'Hledat v aplikaci' }),
+      'revize',
+    );
+    expect(await screen.findByText('Revize kotle')).toBeVisible();
+    expect(
+      screen.getByText(/Některé oblasti dočasně neodpověděly/),
+    ).toBeVisible();
+  });
+
+  it('aborts an obsolete debounced search request', async () => {
+    const signals: AbortSignal[] = [];
+    vi.spyOn(globalThis, 'fetch').mockImplementation((_url, init) => {
+      if (init?.signal) signals.push(init.signal);
+      return new Promise<Response>(() => undefined);
+    });
+    renderShell();
+    const searchButton = screen.getAllByRole('button', {
+      name: /Hledat v aplikaci/,
+    })[0];
+    if (!searchButton) throw new Error('Search trigger was not rendered.');
+    await userEvent.click(searchButton);
+    const input = screen.getByRole('combobox', { name: 'Hledat v aplikaci' });
+    await userEvent.type(input, 're');
+    await waitFor(() => expect(signals).toHaveLength(1));
+    await userEvent.type(input, 'v');
+    await waitFor(() => expect(signals).toHaveLength(2));
+    expect(signals[0]?.aborted).toBe(true);
   });
 });

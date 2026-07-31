@@ -74,6 +74,20 @@ describe('workspace navigation state', () => {
     expect(stateFromHistory(window.history.state)).toEqual(maintenanceDetail);
   });
 
+  it('validates exact gear and template search targets without exposing them in the URL', () => {
+    for (const view of [
+      { area: 'expeditions', screen: 'gear', gearItemId: documentId },
+      { area: 'expeditions', screen: 'templates', templateId: documentId },
+    ] as const) {
+      const state = parseWorkspaceState({ view });
+      expect(state).toEqual({ view });
+      if (!state) throw new Error('Search target was not parsed.');
+      writeWorkspaceHistory(state, false);
+      expect(window.location.pathname).toBe('/app');
+      expect(window.location.href).not.toContain(documentId);
+    }
+  });
+
   it('supports browser Back and Forward between Tasks and Maintenance', async () => {
     const tasksState = {
       view: { area: 'tasks' as const, screen: 'list' as const },

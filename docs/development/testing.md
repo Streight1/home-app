@@ -170,6 +170,15 @@ optimistic rollback, trip-only editor snapshotu, globální dialogy a zachován�
 `/app`. Storybook, axe a kanonické screenshoty pokrývají light/dark přehled,
 katalog, dialogy a compact/expanded packing.
 
+Search regresní sada odděleně ověřuje českou normalizaci, exact-title ranking,
+household context, partial provider failure, bezpečný workspace allowlist,
+POST/no-store kontrakt, rate-limit deklaraci a zákaz citlivé Finance projekce.
+Web testuje `Ctrl+K`/`Cmd+K`, Escape, debounce, AbortController, role commandů,
+partial stav, recent storage a zachování `/app`. Playwright nad syntetickými
+provider výsledky pokrývá dokument, úkol, recept podle suroviny, výpravu,
+keyboard-only flow, mobilní overflow, light/dark screenshot a axe bez ukládání
+dotazu nebo produkčních dat.
+
 ## Externí služby
 
 Testy nevolají Google servery, nevyžadují reálný účet ani neukládají skutečný

@@ -230,6 +230,22 @@ catalog update i review návrhy používají read-only preview a potvrzenou
 transakci. Household access se ověřuje před každým dotazem a audit ukládá jen
 agregované počty/stavy.
 
+## SearchModule
+
+`SearchModule` je pouze orchestrátor nad veřejnými read-only providery
+Documents, Tasks, Maintenance, Calendar, Finance, BucketList, Meals a
+Expeditions. Nejprve přes `HouseholdAccessService` odvodí aktivní household a
+roli, potom providery spustí paralelně s timeoutem. Provider vlastní
+household-scoped query a lifecycle filtry; Search modul neimportuje cizí Prisma
+repository ani neskládá centrální SQL přes všechny tabulky.
+
+Společná normalizace a ranking jsou čisté služby. `Promise.allSettled` zachová
+autorizované výsledky při výpadku jedné oblasti a vrátí bezpečný partial stav.
+Veřejný result obsahuje pouze plain text, omezený snippet a validovaný interní
+workspace target. POST body se neloguje ani neaudituje; log obsahuje jen dobu,
+počty a klíč nedostupného provideru. Podrobnosti jsou v
+[architektuře hledání](search.md).
+
 ## Prisma infrastruktura
 
 Prisma klient je generován jako ESM a používá `@prisma/adapter-pg`. Prisma

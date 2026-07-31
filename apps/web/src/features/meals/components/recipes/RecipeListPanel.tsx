@@ -8,17 +8,30 @@ import { InlineAlert } from '../../../../components/ui/InlineAlert/InlineAlert.j
 import { Input } from '../../../../components/ui/Input/Input.js';
 import { Select } from '../../../../components/ui/Select/Select.js';
 import { LoadingScreen } from '../../../../components/ui/LoadingScreen/LoadingScreen.js';
-import { useRecipeMetadata, useRecipes } from '../../hooks/useMeals.js';
-import type { Recipe } from '../../types/meals.types.js';
+import {
+  useRecipe,
+  useRecipeMetadata,
+  useRecipes,
+} from '../../hooks/useMeals.js';
 import { RecipeDetail } from './RecipeDetail.js';
 
-export function RecipeListPanel({ canWrite }: { canWrite: boolean }) {
+export function RecipeListPanel({
+  canWrite,
+  selectedRecipeId,
+  onSelectRecipe,
+  onCloseRecipe,
+}: {
+  canWrite: boolean;
+  selectedRecipeId?: string;
+  onSelectRecipe: (recipeId: string) => void;
+  onCloseRecipe: () => void;
+}) {
   const workspace = useWorkspaceNavigation();
   const [query, setQuery] = useState('');
   const [favoriteOnly, setFavoriteOnly] = useState(false);
   const [categoryId, setCategoryId] = useState('');
   const [tagId, setTagId] = useState('');
-  const [selected, setSelected] = useState<Recipe | null>(null);
+  const selected = useRecipe(selectedRecipeId);
   const metadata = useRecipeMetadata();
   const recipes = useRecipes({
     query,
@@ -28,8 +41,12 @@ export function RecipeListPanel({ canWrite }: { canWrite: boolean }) {
     page: 1,
     pageSize: 20,
   });
-  if (selected)
-    return <RecipeDetail recipe={selected} onBack={() => setSelected(null)} />;
+  if (selectedRecipeId && selected.isLoading)
+    return <LoadingScreen message="Načítáme recept…" />;
+  if (selectedRecipeId && selected.isError)
+    return <InlineAlert variant="danger">{selected.error.message}</InlineAlert>;
+  if (selected.data)
+    return <RecipeDetail recipe={selected.data} onBack={onCloseRecipe} />;
   return (
     <section className="grid gap-4" aria-labelledby="recipes-title">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -117,7 +134,7 @@ export function RecipeListPanel({ canWrite }: { canWrite: boolean }) {
             key={recipe.id}
             type="button"
             className="min-h-32 rounded-lg border border-border bg-surface-raised p-4 text-left shadow-sm transition hover:border-border-strong hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-focus"
-            onClick={() => setSelected(recipe)}
+            onClick={() => onSelectRecipe(recipe.id)}
           >
             <div className="flex items-start justify-between gap-3">
               <strong>{recipe.title}</strong>

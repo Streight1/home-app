@@ -19,6 +19,8 @@ chování má vždy přednost před zastaralým textem; při rozporu dokument op
 - [Autentizace a autorizace](architecture/authentication-and-authorization.md) — Google login, session, CSRF, access modes a household oprávnění.
 - [Storage](architecture/storage.md) — lokální soubory, runtime data a bezpečnost cest.
 - [Deployment](architecture/deployment.md) — single-VPS topologie, image, sítě, perzistence, migrace a health.
+- [Hledání](architecture/search.md) — federované modulové providery, ranking,
+  indexy, privacy a bezpečné workspace targety.
 
 ## Produktový design
 
@@ -89,6 +91,8 @@ chování má vždy přednost před zastaralým textem; při rozporu dokument op
 - [Výpravy](features/expeditions.md), [výbava](features/gear.md) a
   [gearlisty](features/pack-lists.md) — trekkingové plánování, gramové
   snapshoty, účastníci, mobilní balení a vyhodnocení.
+- [Celoaplikační hledání](features/global-search.md) — desktopová a mobilní
+  command palette, modulové výsledky a lokální bezpečné recent položky.
 
 ## API
 

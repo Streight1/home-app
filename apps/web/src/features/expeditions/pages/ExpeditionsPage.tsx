@@ -18,11 +18,15 @@ const tabs = [
 export function ExpeditionsPage({
   screen,
   tripId,
+  selectedGearItemId,
+  selectedTemplateId,
   role,
   onScreenChange,
 }: {
   screen: ExpeditionsScreen | 'trip';
   tripId?: string;
+  selectedGearItemId?: string;
+  selectedTemplateId?: string;
   role: HouseholdRole;
   onScreenChange: (screen: ExpeditionsScreen) => void;
 }) {
@@ -63,12 +67,16 @@ export function ExpeditionsPage({
       ) : null}
       {screen === 'trips' ? <TripsPanel canWrite={canWrite} /> : null}
       {screen === 'templates' ? (
-        <PackTemplatesPanel canWrite={canWrite} />
+        <PackTemplatesPanel
+          canWrite={canWrite}
+          {...(selectedTemplateId ? { selectedTemplateId } : {})}
+        />
       ) : null}
       {screen === 'gear' ? (
         <GearCatalogPanel
           canWrite={canWrite}
           canManageCategories={role === 'OWNER' || role === 'ADMIN'}
+          {...(selectedGearItemId ? { selectedGearItemId } : {})}
         />
       ) : null}
     </div>

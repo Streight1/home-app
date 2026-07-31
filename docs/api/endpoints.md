@@ -499,6 +499,18 @@ Množství jsou decimal stringy a hmotnosti celé gramy. VIEWER čte, MEMBER
 mutuje běžné záznamy a ADMIN/OWNER spravuje kategorie a archivaci. Vše je
 household scoped; cizí UUID se mapuje na obecnou 404.
 
+### Celoaplikační hledání
+
+- `POST /api/v1/search` — JSON body `{query,types?,limitPerType?}`; query má
+  2–160 znaků, podporovaný typový allowlist a limit 1–10.
+
+Response je `{groups,partial,unavailableProviders}`. Výsledky obsahují pouze
+bezpečný prezentační model a diskriminovaný workspace target, nikdy
+libovolnou URL, HTML, storage cestu nebo raw finance/import data. Dotaz není
+součástí URL, auditu ani aplikačního logu. Odpověď má
+`Cache-Control: private, no-store`; endpoint má limit 60 requestů za minutu na
+standardní throttling klíč. `GET /api/v1/search` neexistuje.
+
 ## Internal
 
 Interní endpointy nejsou pod `/api/v1`, nepřijímají běžnou session a vyžadují

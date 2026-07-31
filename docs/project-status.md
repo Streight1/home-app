@@ -61,6 +61,14 @@ rozpad hmotnosti, rozdělení sdílené výbavy, vyhodnocení po návratu a náv
 procházejí Documents veřejným rozhraním; import z HTTPS URL chrání SSRF,
 velikost i skutečný typ obrázku a volitelné hledání je bez provideru poctivě
 nedostupné.
+Celoaplikační hledání nyní federuje read-only providery Documents, Tasks,
+Maintenance, Calendar, Finance, BucketList, Meals a Expeditions. Command
+palette je dostupná z desktopové i mobilní hlavičky a přes `Ctrl+K`/`Cmd+K`,
+zachovává `/app`, používá existující create overlaye a validované detail
+targety. Dotaz jde pouze v POST body, není auditovaný ani logovaný, response je
+`private, no-store` a partial failure jedné domény nezneplatní ostatní
+autorizované výsledky. PostgreSQL normalizace používá `unaccent`/`pg_trgm` a
+nedestruktivní trigram indexy.
 Projekt má také plně kontejnerový single-VPS staging. Reprodukovatelná CI
 odděluje statické, API, web, browser accessibility, browser visual a container
 joby, ověřuje migraci od prázdné PostgreSQL, runtime config bez `.env`,

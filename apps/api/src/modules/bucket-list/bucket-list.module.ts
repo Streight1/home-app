@@ -18,6 +18,7 @@ import { PrismaBucketListRolloverRepository } from './infrastructure/prisma-buck
 import { SystemBucketListClockAdapter } from './infrastructure/system-bucket-list-clock.adapter.js';
 import { BucketListItemsController } from './presentation/bucket-list-items.controller.js';
 import { BucketListsController } from './presentation/bucket-lists.controller.js';
+import { BucketListSearchProvider } from './infrastructure/bucket-list-search.provider.js';
 
 @Module({
   imports: [AuditModule, DocumentsModule, HouseholdsModule, LocationModule],
@@ -39,6 +40,8 @@ import { BucketListsController } from './presentation/bucket-lists.controller.js
       provide: BUCKET_LIST_CLOCK,
       useExisting: SystemBucketListClockAdapter,
     },
+    BucketListSearchProvider,
   ],
+  exports: [BucketListSearchProvider],
 })
 export class BucketListModule {}

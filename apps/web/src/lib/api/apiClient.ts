@@ -40,6 +40,8 @@ async function performRequest(
     return response;
   } catch (error) {
     if (error instanceof ApiError) throw error;
+    if (error instanceof DOMException && error.name === 'AbortError')
+      throw error;
     if (error instanceof DOMException && error.name === 'TimeoutError')
       throw new ApiError(
         0,

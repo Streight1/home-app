@@ -27,6 +27,7 @@ import { BucketListModule } from './modules/bucket-list/bucket-list.module.js';
 import { MaintenanceModule } from './modules/maintenance/maintenance.module.js';
 import { MealsModule } from './modules/meals/meals.module.js';
 import { ExpeditionsModule } from './modules/expeditions/expeditions.module.js';
+import { SearchModule } from './modules/search/search.module.js';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { ExpeditionsModule } from './modules/expeditions/expeditions.module.js';
     MaintenanceModule,
     MealsModule,
     ExpeditionsModule,
+    SearchModule,
     HealthModule,
   ],
   providers: [

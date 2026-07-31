@@ -56,6 +56,9 @@ schválen k implementaci.
   hmotností, fotografií přes Documents, znovupoužitelných gearlistů,
   snapshotovaných seznamů konkrétních výprav, účastníků, mobilního balení,
   readiness pravidel, váhových přehledů, post-trip review a dashboardu.
+- Celoaplikační hledání je dokončené jako federovaná command palette nad
+  veřejnými modulovými providery, s českou normalizací, bezpečným rankingem,
+  partial failure, rolemi, interní navigací a lokálními recent targety.
 - Single-VPS staging používá hotové GHCR image, named volumes, idempotentní init
   service, automatickou one-shot migraci, runtime public config a Compose
   secrets. Běžný start i aktualizace jsou `docker compose up -d`; bezpečný

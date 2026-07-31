@@ -42,6 +42,14 @@ Významné změny projektu jsou evidovány v tomto souboru ve formátu inspirova
 
 ### Added
 
+- Federované celoaplikační hledání s osmi modulovými providery, českou
+  `unaccent`/`pg_trgm` normalizací, společným rankingem, bezpečným POST
+  kontraktem, provider timeouty a explicitním partial failure stavem.
+- Adaptivní command palette v AppShellu s `Ctrl+K`/`Cmd+K`, přístupným
+  combobox/listbox ovládáním, role-aware rychlými akcemi, validovanými
+  workspace targety a lokálními recent položkami bez query, snippetů a
+  finančních výsledků.
+
 - Samostatný modul Výpravy s katalogem výbavy v celých gramech, household
   kategoriemi, Decimal množstvím, gearlist šablonami a date-only trekkingovými
   výpravami s více účastníky.

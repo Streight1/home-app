@@ -36,6 +36,7 @@ import { TaskCategoriesController } from './presentation/task-categories.control
 import { TasksController } from './presentation/tasks.controller.js';
 import { TaskDashboardController } from './presentation/task-dashboard.controller.js';
 import { TasksFacade } from './tasks.facade.js';
+import { TasksSearchProvider } from './search/tasks-search.provider.js';
 
 @Module({
   imports: [AuditModule, DocumentsModule, HouseholdsModule, LocationModule],
@@ -82,7 +83,8 @@ import { TasksFacade } from './tasks.facade.js';
     TaskDashboardResponseMapper,
     GetTaskDashboardService,
     TasksFacade,
+    TasksSearchProvider,
   ],
-  exports: [GetTaskAttentionService, TasksFacade],
+  exports: [GetTaskAttentionService, TasksFacade, TasksSearchProvider],
 })
 export class TasksModule {}

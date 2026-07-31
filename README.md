@@ -48,6 +48,8 @@ implementované.
 - Výpravy s household katalogem výbavy v gramech, snapshotovými gearlisty,
   účastníky a nositeli, mobilním balením, base/worn/consumable souhrnem,
   kontrolou povinných položek a vyhodnocením po návratu
+- federované celoaplikační hledání a command palette s `Ctrl+K`/`Cmd+K`,
+  household-scoped výsledky, rychlými akcemi a interní navigací při `/app`
 - interní workspace navigace: browser zobrazuje pouze `/login` nebo `/app`,
   zatímco Back/Forward a reload bezpečně obnovují validovaný interní stav
 - kalendář lze rychle otevřít dvojklikem na prázdný desktopový den/slot nebo

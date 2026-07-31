@@ -14,8 +14,15 @@ export function MealsWorkspaceView({
   return (
     <MealsPage
       role={role}
-      screen={view.screen}
+      screen={view.screen === 'recipe' ? 'recipes' : view.screen}
+      {...(view.screen === 'recipe' ? { selectedRecipeId: view.recipeId } : {})}
       onScreenChange={(screen) => workspace.navigate({ area: 'meals', screen })}
+      onCloseRecipe={() =>
+        workspace.navigate({ area: 'meals', screen: 'recipes' })
+      }
+      onSelectRecipe={(recipeId) =>
+        workspace.navigate({ area: 'meals', screen: 'recipe', recipeId })
+      }
     />
   );
 }

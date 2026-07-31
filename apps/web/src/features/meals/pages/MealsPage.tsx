@@ -18,10 +18,16 @@ export function MealsPage({
   screen,
   role,
   onScreenChange,
+  selectedRecipeId,
+  onSelectRecipe,
+  onCloseRecipe,
 }: {
   screen: MealsScreen;
   role: HouseholdRole;
   onScreenChange: (screen: MealsScreen) => void;
+  selectedRecipeId?: string;
+  onSelectRecipe?: (recipeId: string) => void;
+  onCloseRecipe?: () => void;
 }) {
   const canWrite = role !== 'VIEWER';
   return (
@@ -56,7 +62,14 @@ export function MealsPage({
         ))}
       </nav>
       {screen === 'planner' ? <MealPlannerPanel canWrite={canWrite} /> : null}
-      {screen === 'recipes' ? <RecipeListPanel canWrite={canWrite} /> : null}
+      {screen === 'recipes' ? (
+        <RecipeListPanel
+          canWrite={canWrite}
+          {...(selectedRecipeId ? { selectedRecipeId } : {})}
+          onSelectRecipe={onSelectRecipe ?? (() => undefined)}
+          onCloseRecipe={onCloseRecipe ?? (() => undefined)}
+        />
+      ) : null}
       {screen === 'shopping' ? <ShoppingListPanel canWrite={canWrite} /> : null}
       {screen === 'pantry' ? <PantryPanel canWrite={canWrite} /> : null}
     </div>

@@ -11,3 +11,5 @@ export interface AuthProfile {
     role: 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER';
   };
 }
+
+export type HouseholdRole = AuthProfile['activeHousehold']['role'];

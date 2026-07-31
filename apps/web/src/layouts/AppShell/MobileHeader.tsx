@@ -3,12 +3,15 @@ import { EnvironmentBadge } from './EnvironmentBadge.js';
 import { QuickCreateButton } from './QuickCreateButton.js';
 import { UserMenu } from './UserMenu.js';
 import { HomeBrandButton } from './HomeBrandButton.js';
+import { Search } from 'lucide-react';
+import { IconButton } from '../../components/ui/IconButton/IconButton.js';
 
 interface MobileHeaderProps extends AppShellUser {
   environmentLabel: string | null;
   householdName: string;
   isLoggingOut: boolean;
   onLogout: () => void;
+  onOpenSearch: () => void;
 }
 
 export function MobileHeader(props: MobileHeaderProps) {
@@ -27,6 +30,13 @@ export function MobileHeader(props: MobileHeaderProps) {
           </span>
         </span>
       </HomeBrandButton>
+      <IconButton
+        aria-label="Hledat v aplikaci"
+        variant="ghost"
+        onClick={props.onOpenSearch}
+      >
+        <Search className="size-5" aria-hidden="true" />
+      </IconButton>
       <QuickCreateButton compact />
       <UserMenu
         avatarUrl={props.avatarUrl}

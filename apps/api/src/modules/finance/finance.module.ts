@@ -18,6 +18,7 @@ import { FinancialCategoriesController } from './presentation/financial-categori
 import { FinancialTransactionsController } from './presentation/financial-transactions.controller.js';
 import { FinancialTransfersController } from './presentation/financial-transfers.controller.js';
 import { FinanceLedgerFacade } from './finance-ledger.facade.js';
+import { FinanceSearchProvider } from './search/finance-search.provider.js';
 
 @Module({
   imports: [AuditModule, DocumentsModule, HouseholdsModule],
@@ -40,7 +41,8 @@ import { FinanceLedgerFacade } from './finance-ledger.facade.js';
     FinanceTransferService,
     FinanceReportingService,
     FinanceLedgerFacade,
+    FinanceSearchProvider,
   ],
-  exports: [FinanceLedgerFacade],
+  exports: [FinanceLedgerFacade, FinanceSearchProvider],
 })
 export class FinanceModule {}

@@ -58,6 +58,8 @@ dokumentů.
   fotografie a bezpečný import obrázku.
 - [Gearlisty](pack-lists.md) — opakovaně použitelné snapshotové šablony a
   konkrétní mobilní checklist výpravy.
+- [Celoaplikační hledání](global-search.md) — federované household-scoped
+  výsledky, command palette, klávesové ovládání a bezpečné recent targety.
 
 ## Přidání modulu
 

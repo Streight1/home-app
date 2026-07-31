@@ -396,29 +396,26 @@ describe('expeditions access and migration boundaries', () => {
   });
 
   it('scopes the future search provider to the active household', async () => {
-    const access = {
-      getActiveMembership: vi
-        .fn()
-        .mockResolvedValue({ householdId: 'household-a', role: 'VIEWER' }),
-    } as unknown as HouseholdAccessService;
-    const gearFind = vi.fn().mockResolvedValue([]);
-    const templateFind = vi.fn().mockResolvedValue([]);
-    const tripFind = vi.fn().mockResolvedValue([]);
+    const queryRaw = vi.fn().mockResolvedValue([]);
     const prisma = {
-      gearItem: { findMany: gearFind },
-      packTemplate: { findMany: templateFind },
-      trip: { findMany: tripFind },
+      $queryRaw: queryRaw,
     } as unknown as PrismaService;
-    await new ExpeditionsSearchProvider(prisma, access).search(
-      'viewer-a',
-      'batoh',
+    await new ExpeditionsSearchProvider(prisma).search(
+      {
+        userId: 'viewer-a',
+        householdId: '10000000-0000-4000-8000-000000000001',
+        role: 'VIEWER',
+      },
+      {
+        normalizedQuery: 'batoh',
+        requestedTypes: new Set(),
+        limitPerType: 5,
+      },
     );
-    for (const find of [gearFind, templateFind, tripFind])
-      expect(find).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ householdId: 'household-a' }),
-        }),
-      );
+    expect(queryRaw).toHaveBeenCalledTimes(3);
+    expect(JSON.stringify(queryRaw.mock.calls)).toContain(
+      '10000000-0000-4000-8000-000000000001',
+    );
   });
 
   it('declares snapshots, Decimal quantities and household indexes', () => {

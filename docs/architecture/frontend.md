@@ -265,6 +265,14 @@ transaction filter; React je znovu nepočítá z raw ledgeru. Finance workspace
 rozšiřují typované screens `budgets`, `insights` a `recurring` bez nové browser
 routy nebo zápisu částek/evidence do navigation state.
 
+`global-search` vlastní POST API adaptér, 250ms debounce/cancellation hook,
+adaptivní `GlobalSearchPalette`, bezpečný recent-storage adapter a command
+registry nad existujícími workspace overlayi. Paleta je hostovaná jednou v
+`AppShell`; desktopový top bar i mobilní hlavička otevírají stejnou instanci.
+Result target se před navigací znovu validuje parserem workspace state a URL
+zůstává `/app`. Search response není persistentní Query cache a query se
+neukládá do history, sessionStorage ani localStorage.
+
 Generický Vite build, Vitest a Storybook používají
 `vite.shared.config.ts` s `envDir: false`; nečtou aplikační `.env`.
 `vite.development.config.ts` je samostatný explicitní vstup lokálního

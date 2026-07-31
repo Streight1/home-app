@@ -37,6 +37,7 @@ import { DocumentFilesController } from './presentation/document-files.controlle
 import { DocumentFoldersController } from './presentation/document-folders.controller.js';
 import { DocumentTypesController } from './presentation/document-types.controller.js';
 import { DocumentsController } from './presentation/documents.controller.js';
+import { DocumentsSearchProvider } from './search/documents-search.provider.js';
 
 @Module({
   imports: [
@@ -94,9 +95,11 @@ import { DocumentsController } from './presentation/documents.controller.js';
     PreviewDocumentFileService,
     StoredFileDeletionWorker,
     DocumentsFacade,
+    DocumentsSearchProvider,
   ],
   exports: [
     DocumentsFacade,
+    DocumentsSearchProvider,
     DocumentTypeRegistryService,
     ValidateDocumentMetadataService,
   ],

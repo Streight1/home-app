@@ -1,5 +1,5 @@
 import { Copy, ListChecks, Plus } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Badge } from '../../../../components/ui/Badge/Badge.js';
 import { Button } from '../../../../components/ui/Button/Button.js';
 import { EmptyState } from '../../../../components/ui/EmptyState/EmptyState.js';
@@ -8,9 +8,23 @@ import { usePackTemplates } from '../../hooks/useExpeditions.js';
 import { formatWeight, TRIP_TYPE_LABELS } from '../../lib/expeditionLabels.js';
 import { PackTemplateDialog } from '../dialogs/PackTemplateDialog.js';
 
-export function PackTemplatesPanel({ canWrite }: { canWrite: boolean }) {
+export function PackTemplatesPanel({
+  canWrite,
+  selectedTemplateId,
+}: {
+  canWrite: boolean;
+  selectedTemplateId?: string;
+}) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const templates = usePackTemplates();
+  useEffect(() => {
+    if (!selectedTemplateId) return;
+    const target = document.getElementById(
+      `template-search-target-${selectedTemplateId}`,
+    );
+    target?.scrollIntoView({ block: 'center' });
+    target?.focus({ preventScroll: true });
+  }, [selectedTemplateId, templates.data]);
   return (
     <section className="grid gap-4" aria-labelledby="pack-templates-title">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -55,7 +69,12 @@ export function PackTemplatesPanel({ canWrite }: { canWrite: boolean }) {
         {(templates.data ?? []).map((template) => (
           <article
             key={template.id}
-            className="rounded-lg border border-border bg-surface-raised p-4"
+            id={`template-search-target-${template.id}`}
+            tabIndex={-1}
+            aria-current={
+              selectedTemplateId === template.id ? 'true' : undefined
+            }
+            className={`rounded-lg border bg-surface-raised p-4 focus-visible:outline-2 focus-visible:outline-focus ${selectedTemplateId === template.id ? 'border-focus bg-selected-surface' : 'border-border'}`}
           >
             <div className="flex items-start justify-between gap-3">
               <div>

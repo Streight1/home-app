@@ -19,6 +19,12 @@ export function ExpeditionsWorkspaceView({
       role={role}
       screen={view.screen}
       {...(view.screen === 'trip' ? { tripId: view.tripId } : {})}
+      {...(view.screen === 'gear' && 'gearItemId' in view
+        ? { selectedGearItemId: view.gearItemId }
+        : {})}
+      {...(view.screen === 'templates' && 'templateId' in view
+        ? { selectedTemplateId: view.templateId }
+        : {})}
       onScreenChange={(screen: ExpeditionsScreen) =>
         workspace.navigate({ area: 'expeditions', screen })
       }

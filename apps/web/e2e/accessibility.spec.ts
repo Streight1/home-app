@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { openStory } from './storybook-test-helpers.js';
+import { installGlobalSearchApiMock } from './global-search-test-helpers.js';
 
 function createAxeBuilder(page: Page): AxeBuilder {
   return new AxeBuilder({ page }).withTags([
@@ -125,6 +126,78 @@ for (const story of [
     expect(results.violations).toEqual([]);
   });
 }
+
+test('command palette podporuje klávesnici, bezpečné hledání a návrat focusu', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await installGlobalSearchApiMock(page);
+  await openStory(page, 'layouts-appshell--desktop');
+  const trigger = page
+    .getByRole('button', { name: /Hledat v aplikaci/ })
+    .first();
+  await trigger.focus();
+  await page.keyboard.press('Control+k');
+  const dialog = page.getByRole('dialog', { name: 'Hledat v aplikaci' });
+  await expect(dialog).toBeVisible();
+  const input = dialog.getByRole('combobox', { name: 'Hledat v aplikaci' });
+  await expect(input).toBeFocused();
+  await input.fill('dokument');
+  await expect(dialog.getByText('Revize kotle 2026')).toBeVisible();
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowUp');
+  const results = await analyzeAccessibility(page);
+  expect(results.violations).toEqual([]);
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
+});
+
+test('command palette otevře interní výsledky a rychlou akci bez změny URL', async ({
+  page,
+}) => {
+  await installGlobalSearchApiMock(page);
+  await openStory(page, 'layouts-appshell--desktop');
+  await page.keyboard.press('Meta+k');
+  const dialog = page.getByRole('dialog', { name: 'Hledat v aplikaci' });
+  const input = dialog.getByRole('combobox', { name: 'Hledat v aplikaci' });
+  for (const query of ['lékárnička', 'rajčata', 'krkon']) {
+    await input.fill(query);
+    await expect(dialog.getByRole('option')).toHaveCount(1);
+  }
+  await input.fill('rajčata');
+  await page.keyboard.press('Enter');
+  await expect(dialog).toBeHidden();
+  expect(new URL(page.url()).pathname).toBe('/iframe.html');
+  expect(new URL(page.url()).searchParams.get('id')).toBe(
+    'layouts-appshell--desktop',
+  );
+
+  await page.keyboard.press('Control+k');
+  await expect(dialog.getByRole('option', { name: /Nový úkol/ })).toBeVisible();
+  await page.keyboard.press('Escape');
+});
+
+test('mobilní command palette nemá horizontální overflow', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await installGlobalSearchApiMock(page);
+  await openStory(page, 'layouts-appshell--mobile');
+  await page
+    .getByRole('button', { name: /Hledat v aplikaci/ })
+    .first()
+    .click();
+  const dialog = page.getByRole('dialog', { name: 'Hledat v aplikaci' });
+  await dialog
+    .getByRole('combobox', { name: 'Hledat v aplikaci' })
+    .fill('krkon');
+  await expect(dialog.getByText('Přechod Krkonoš')).toBeVisible();
+  const hasOverflow = await page.evaluate(
+    () =>
+      document.documentElement.scrollWidth >
+      document.documentElement.clientWidth,
+  );
+  expect(hasOverflow).toBe(false);
+});
 
 test('kalendář termínu je ovladatelný klávesnicí', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });

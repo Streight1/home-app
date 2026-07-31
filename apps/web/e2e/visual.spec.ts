@@ -6,6 +6,7 @@ import {
   fontMetrics,
   openVisualStory as openStory,
 } from './storybook-test-helpers.js';
+import { installGlobalSearchApiMock } from './global-search-test-helpers.js';
 
 const dashboardViewports = [
   {
@@ -384,6 +385,41 @@ test('desktopové menu lze sbalit a brand zůstává samostatný', async ({
   ).toBeVisible();
   await expect(page).toHaveScreenshot('app-shell-sidebar-collapsed.png');
 });
+
+for (const scenario of [
+  {
+    name: 'desktop-light',
+    width: 1280,
+    height: 800,
+    query: 'rajčata',
+    result: 'Rajčatové těstoviny',
+  },
+  {
+    name: 'mobile-dark',
+    width: 390,
+    height: 844,
+    query: 'krkon',
+    result: 'Přechod Krkonoš',
+  },
+] as const) {
+  test(`celoaplikační hledání · ${scenario.name}`, async ({ page }) => {
+    await page.setViewportSize(scenario);
+    await installGlobalSearchApiMock(page);
+    await openStory(page, 'layouts-appshell--desktop');
+    const trigger = page
+      .getByRole('button', { name: /Hledat v aplikaci/ })
+      .first();
+    await trigger.click();
+    const dialog = page.getByRole('dialog', { name: 'Hledat v aplikaci' });
+    await expect(dialog).toBeVisible();
+    await dialog
+      .getByRole('combobox', { name: 'Hledat v aplikaci' })
+      .fill(scenario.query);
+    await expect(dialog.getByText(scenario.result)).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+    await expect(page).toHaveScreenshot(`global-search-${scenario.name}.png`);
+  });
+}
 
 test('bucket list dashboard · desktop-wide-dark', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });

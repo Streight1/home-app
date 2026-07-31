@@ -1,4 +1,8 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
+import {
+  GlobalSearchPalette,
+  useGlobalSearchShortcut,
+} from '../../features/global-search/components/GlobalSearchPalette.js';
 import { webEnvironment } from '../../lib/config/environment.js';
 import type { AppShellProps } from './app-shell.types.js';
 import { AppTopBar } from './AppTopBar.js';
@@ -19,6 +23,9 @@ export function AppShell({
 }: AppShellProps) {
   const [sidebarCollapsed, setSidebarCollapsedState] =
     useState(readSidebarCollapsed);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const openSearch = useCallback(() => setSearchOpen(true), []);
+  useGlobalSearchShortcut(openSearch);
   const setSidebarCollapsed = (collapsed: boolean) => {
     setSidebarCollapsedState(collapsed);
     storeSidebarCollapsed(collapsed);
@@ -35,7 +42,11 @@ export function AppShell({
       >
         Přejít k hlavnímu obsahu
       </a>
-      <MobileHeader {...shellProps} environmentLabel={environmentLabel} />
+      <MobileHeader
+        {...shellProps}
+        environmentLabel={environmentLabel}
+        onOpenSearch={openSearch}
+      />
       <TabletNavigationRail />
       {sidebarCollapsed ? (
         <CollapsedSidebar onExpand={() => setSidebarCollapsed(false)} />
@@ -45,7 +56,11 @@ export function AppShell({
       <div
         className={`min-w-0 transition-[padding] duration-(--motion-standard) motion-reduce:transition-none md:pl-(--navigation-rail-width) ${desktopOffset}`}
       >
-        <AppTopBar {...shellProps} environmentLabel={environmentLabel} />
+        <AppTopBar
+          {...shellProps}
+          environmentLabel={environmentLabel}
+          onOpenSearch={openSearch}
+        />
         <main
           id="main-content"
           tabIndex={-1}
@@ -55,6 +70,7 @@ export function AppShell({
         </main>
       </div>
       <MobileBottomNavigation />
+      <GlobalSearchPalette open={searchOpen} onOpenChange={setSearchOpen} />
     </div>
   );
 }

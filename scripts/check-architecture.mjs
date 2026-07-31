@@ -305,6 +305,10 @@ const sidebarPreferencePath = join(
   webSource,
   'layouts/AppShell/sidebarPreference.ts',
 );
+const recentSearchStoragePath = join(
+  webSource,
+  'features/global-search/storage/recentSearchItems.ts',
+);
 const themeStorageSource = await readFile(themeStoragePath, 'utf8');
 if (!themeStorageSource.includes("THEME_STORAGE_KEY = 'homeapp.theme'"))
   errors.push('Theme preference nepoužívá stabilní klíč homeapp.theme.');
@@ -317,6 +321,7 @@ for (const file of [...tsxFiles, ...webTsFiles]) {
       themeStoragePath,
       calendarPreferenceCachePath,
       sidebarPreferencePath,
+      recentSearchStoragePath,
     ].includes(file)
   )
     errors.push(`${path} přistupuje k localStorage mimo themeStorage.ts.`);
@@ -1810,6 +1815,115 @@ for (const required of [
 ]) {
   if (!prismaSchema.includes(required))
     errors.push(`Prisma schema postrádá Expeditions prvek ${required}.`);
+}
+
+const searchDirectory = join(apiSource, 'modules/search');
+const searchControllerSource = await readFile(
+  join(searchDirectory, 'presentation/search.controller.ts'),
+  'utf8',
+);
+const searchServiceSource = await readFile(
+  join(searchDirectory, 'application/search.service.ts'),
+  'utf8',
+);
+if (
+  !searchControllerSource.includes('@Post()') ||
+  /@Get\s*\(/.test(searchControllerSource)
+)
+  errors.push('Celoaplikační hledání musí používat výhradně POST kontrakt.');
+if (!searchControllerSource.includes('private, no-store'))
+  errors.push('Search response musí zakazovat sdílenou i perzistentní cache.');
+for (const file of await collectFiles(searchDirectory, '.ts')) {
+  const source = await readFile(file, 'utf8');
+  const path = relative(root, file);
+  if (
+    /Prisma(?:Service|Client)|\$queryRaw|modules\/.+\/infrastructure\//.test(
+      source,
+    )
+  )
+    errors.push(`${path} obchází federované module search providery.`);
+  if (
+    /SELECT[\s\S]+FROM\s+["'][^"']+["'][\s\S]+JOIN\s+["'][^"']+["']/.test(
+      source,
+    )
+  )
+    errors.push(`${path} zavádí centrální SQL dotaz přes doménové tabulky.`);
+}
+if (
+  /logger\.(?:log|warn|error)\s*\([^)]*(?:query|normalizedQuery)/.test(
+    searchServiceSource,
+  )
+)
+  errors.push('Search orchestrace nesmí logovat hledaný text.');
+
+const providerFiles = [
+  join(apiSource, 'modules/documents/search/documents-search.provider.ts'),
+  join(apiSource, 'modules/tasks/search/tasks-search.provider.ts'),
+  join(apiSource, 'modules/maintenance/search/maintenance-search.provider.ts'),
+  join(apiSource, 'modules/calendar/search/calendar-search.provider.ts'),
+  join(apiSource, 'modules/finance/search/finance-search.provider.ts'),
+  join(
+    apiSource,
+    'modules/bucket-list/infrastructure/bucket-list-search.provider.ts',
+  ),
+  join(apiSource, 'modules/meals/search/meals-search.provider.ts'),
+  join(apiSource, 'modules/expeditions/expeditions-search.provider.ts'),
+];
+for (const file of providerFiles) {
+  const source = await readFile(file, 'utf8');
+  if (
+    !source.includes('context.householdId') ||
+    source.includes('@PublicEndpoint')
+  )
+    errors.push(
+      `${relative(root, file)} neomezuje search na ověřenou domácnost.`,
+    );
+}
+const financeSearchSource = await readFile(
+  join(apiSource, 'modules/finance/search/finance-search.provider.ts'),
+  'utf8',
+);
+for (const forbidden of [
+  'counterpartyAccount',
+  'fingerprint',
+  'externalTransactionId',
+  'importSessionId',
+  'importRowId',
+]) {
+  if (financeSearchSource.includes(forbidden))
+    errors.push(`Finance search vrací zakázané interní pole ${forbidden}.`);
+}
+
+const webSearchDirectory = join(webSource, 'features/global-search');
+const webSearchApiSource = await readFile(
+  join(webSearchDirectory, 'api/searchApi.ts'),
+  'utf8',
+);
+const webSearchPaletteSource = await readFile(
+  join(webSearchDirectory, 'components/GlobalSearchPalette.tsx'),
+  'utf8',
+);
+if (
+  !webSearchApiSource.includes("method: 'POST'") ||
+  /\/search\?/.test(webSearchApiSource)
+)
+  errors.push('Frontend search musí posílat dotaz pouze v POST body.');
+if (
+  /TaskCreateDialog|EventCreateDialog|RecipeDialog|TripDialog|GearItemDialog/.test(
+    webSearchPaletteSource,
+  )
+)
+  errors.push('Command palette kopíruje formulář místo overlay registry.');
+if (
+  /window\.history|location\.(?:href|assign)|['"]\/app\//.test(
+    webSearchPaletteSource,
+  )
+)
+  errors.push('Search mění browser URL mimo typovanou workspace navigaci.');
+const recentSearchSource = await readFile(recentSearchStoragePath, 'utf8');
+for (const forbidden of ['snippet', 'subtitle', 'query', 'amount']) {
+  if (new RegExp(`\\b${forbidden}\\s*:`).test(recentSearchSource))
+    errors.push(`Recent search storage persistuje zakázané pole ${forbidden}.`);
 }
 
 const gitignore = await readFile(join(root, '.gitignore'), 'utf8');

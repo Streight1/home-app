@@ -255,6 +255,14 @@ class ExpeditionsPolicyController {
   }
 }
 
+@Controller('search')
+class SearchPolicyController {
+  @Post()
+  public search(): { status: 'must-be-protected' } {
+    return { status: 'must-be-protected' };
+  }
+}
+
 describe('deny-by-default HTTP access policy', () => {
   let app: INestApplication;
   const auth = {
@@ -292,6 +300,7 @@ describe('deny-by-default HTTP access policy', () => {
         MaintenancePolicyController,
         MealsPolicyController,
         ExpeditionsPolicyController,
+        SearchPolicyController,
       ],
       providers: [
         { provide: AuthService, useValue: auth },
@@ -523,6 +532,15 @@ describe('deny-by-default HTTP access policy', () => {
       expect(response.body).toMatchObject({ code: 'AUTH_INVALID_SESSION' });
     },
   );
+
+  it('returns 401 for anonymous application search', async () => {
+    const response = await request(app.getHttpServer() as Server)
+      .post('/api/v1/search')
+      .set('Origin', config.webOrigin)
+      .send({ query: 'revize' })
+      .expect(401);
+    expect(response.body).toMatchObject({ code: 'AUTH_INVALID_SESSION' });
+  });
 
   it('rejects an authenticated logout without a CSRF token', async () => {
     prisma.session.findUnique.mockResolvedValue({

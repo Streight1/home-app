@@ -73,10 +73,11 @@ stav balení, chybějící povinné položky, base weight a cíl. Rozlišuje loa
 API chybu a pravdivý empty state. Globální `Přidat` nabízí `Nová výprava` a
 `Nová položka výbavy`.
 
-Read-only `ExpeditionsSearchProvider` je připravený pro budoucí globální
-hledání názvu/značky/modelu výbavy, názvu gearlistu a názvu/lokality výpravy.
-Výsledek obsahuje jen household-scoped summary a validovaný interní navigation
-target; globální Search modul zatím nevznikl.
+Read-only `ExpeditionsSearchProvider` je zapojený do
+[celoaplikačního hledání](global-search.md) pro název/značku/model výbavy,
+název gearlistu a název/lokalitu výpravy. Výsledek obsahuje jen
+household-scoped summary a validovaný interní navigation target; výbava a
+gearlist se po otevření zvýrazní v příslušné sekci.
 
 ## Oprávnění a bezpečnost
 

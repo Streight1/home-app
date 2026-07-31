@@ -18,6 +18,7 @@ import {
   ShoppingListItemsController,
   ShoppingListsController,
 } from './presentation/shopping.controller.js';
+import { MealsSearchProvider } from './search/meals-search.provider.js';
 
 @Module({
   imports: [AuditModule, DocumentsModule, HouseholdsModule],
@@ -38,7 +39,8 @@ import {
     MealsCatalogService,
     MealsDashboardService,
     MealsFacade,
+    MealsSearchProvider,
   ],
-  exports: [MealsFacade],
+  exports: [MealsFacade, MealsSearchProvider],
 })
 export class MealsModule {}

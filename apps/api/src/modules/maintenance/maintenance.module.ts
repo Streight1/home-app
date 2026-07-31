@@ -30,6 +30,7 @@ import { MaintenanceHistoryController } from './presentation/maintenance-history
 import { MaintenanceOccurrencesController } from './presentation/maintenance-occurrences.controller.js';
 import { MaintenancePlansController } from './presentation/maintenance-plans.controller.js';
 import { MaintenanceTaskContextController } from './presentation/maintenance-task-context.controller.js';
+import { MaintenanceSearchProvider } from './search/maintenance-search.provider.js';
 
 @Module({
   imports: [
@@ -71,7 +72,8 @@ import { MaintenanceTaskContextController } from './presentation/maintenance-tas
     MaintenanceCategoriesService,
     MaintenanceDashboardService,
     MaintenanceFacade,
+    MaintenanceSearchProvider,
   ],
-  exports: [MaintenanceFacade],
+  exports: [MaintenanceFacade, MaintenanceSearchProvider],
 })
 export class MaintenanceModule {}

@@ -1,4 +1,5 @@
 import { Backpack, Plus, Scale } from 'lucide-react';
+import { useEffect } from 'react';
 import { useWorkspaceNavigation } from '../../../../app/workspace-navigation/useWorkspaceNavigation.js';
 import { Badge } from '../../../../components/ui/Badge/Badge.js';
 import { Button } from '../../../../components/ui/Button/Button.js';
@@ -25,14 +26,24 @@ function gearSecondaryLabel(item: GearItem) {
 export function GearCatalogPanel({
   canWrite,
   canManageCategories,
+  selectedGearItemId,
 }: {
   canWrite: boolean;
   canManageCategories: boolean;
+  selectedGearItemId?: string;
 }) {
   const workspace = useWorkspaceNavigation();
   const gear = useGear({ page: 1, pageSize: 50 });
   const categories = useGearCategories();
   const mutations = useExpeditionMutations();
+  useEffect(() => {
+    if (!selectedGearItemId) return;
+    const target = document.getElementById(
+      `gear-search-target-${selectedGearItemId}`,
+    );
+    target?.scrollIntoView({ block: 'center' });
+    target?.focus({ preventScroll: true });
+  }, [gear.data, selectedGearItemId]);
   return (
     <section className="grid gap-4" aria-labelledby="gear-catalog-title">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -108,7 +119,10 @@ export function GearCatalogPanel({
           {gear.data.items.map((item) => (
             <article
               key={item.id}
-              className="rounded-lg border border-border bg-surface-raised p-4 shadow-sm"
+              id={`gear-search-target-${item.id}`}
+              tabIndex={-1}
+              aria-current={selectedGearItemId === item.id ? 'true' : undefined}
+              className={`rounded-lg border bg-surface-raised p-4 shadow-sm focus-visible:outline-2 focus-visible:outline-focus ${selectedGearItemId === item.id ? 'border-focus bg-selected-surface' : 'border-border'}`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div>

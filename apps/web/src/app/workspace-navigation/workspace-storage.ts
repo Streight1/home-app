@@ -105,13 +105,36 @@ function parseView(value: unknown): WorkspaceView | null {
   )
     return { area: 'meals', screen: value.screen };
   if (
+    value.area === 'meals' &&
+    value.screen === 'recipe' &&
+    typeof value.recipeId === 'string' &&
+    uuid.test(value.recipeId)
+  )
+    return { area: 'meals', screen: 'recipe', recipeId: value.recipeId };
+  if (
     value.area === 'expeditions' &&
     (value.screen === 'overview' ||
       value.screen === 'trips' ||
       value.screen === 'templates' ||
       value.screen === 'gear')
   )
-    return { area: 'expeditions', screen: value.screen };
+    return value.screen === 'gear' &&
+      typeof value.gearItemId === 'string' &&
+      uuid.test(value.gearItemId)
+      ? {
+          area: 'expeditions',
+          screen: 'gear',
+          gearItemId: value.gearItemId,
+        }
+      : value.screen === 'templates' &&
+          typeof value.templateId === 'string' &&
+          uuid.test(value.templateId)
+        ? {
+            area: 'expeditions',
+            screen: 'templates',
+            templateId: value.templateId,
+          }
+        : { area: 'expeditions', screen: value.screen };
   if (
     value.area === 'expeditions' &&
     value.screen === 'trip' &&
